@@ -99,7 +99,7 @@
           placeholder="Skills"
           search-placeholder="Search skills..."
           open-direction="up"
-          :disabled="disabled || !activeThreadId || isTurnInProgress || skills.length === 0"
+          :disabled="disabled || !activeThreadId || isTurnInProgress || (skills ?? []).length === 0"
           @toggle="onSkillDropdownToggle"
         />
 

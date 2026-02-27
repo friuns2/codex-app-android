@@ -5,7 +5,7 @@ import type {
   ThreadListResponse,
   UserInput,
 } from '../appServerDtos'
-import type { UiMessage, UiProjectGroup, UiThread } from '../../types/codex'
+import type { CommandExecutionData, UiMessage, UiProjectGroup, UiThread } from '../../types/codex'
 
 function toIso(seconds: number): string {
   return new Date(seconds * 1000).toISOString()
@@ -116,7 +116,31 @@ function toUiMessages(item: ThreadItem): UiMessage[] {
     return []
   }
 
+  if (item.type === 'commandExecution') {
+    const raw = item as Record<string, unknown>
+    const status = normalizeCommandStatus(raw.status)
+    const cmd = typeof raw.command === 'string' ? raw.command : ''
+    const cwd = typeof raw.cwd === 'string' ? raw.cwd : null
+    const aggregatedOutput = typeof raw.aggregatedOutput === 'string' ? raw.aggregatedOutput : ''
+    const exitCode = typeof raw.exitCode === 'number' ? raw.exitCode : null
+    return [
+      {
+        id: item.id,
+        role: 'system' as const,
+        text: cmd,
+        messageType: 'commandExecution',
+        commandExecution: { command: cmd, cwd, status, aggregatedOutput, exitCode },
+      },
+    ]
+  }
+
   return []
+}
+
+function normalizeCommandStatus(value: unknown): CommandExecutionData['status'] {
+  if (value === 'completed' || value === 'failed' || value === 'declined' || value === 'interrupted') return value
+  if (value === 'inProgress' || value === 'in_progress') return 'inProgress'
+  return 'completed'
 }
 
 function pickThreadName(summary: Thread): string {
