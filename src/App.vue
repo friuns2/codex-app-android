@@ -170,7 +170,7 @@ import IconTablerSearch from './components/icons/IconTablerSearch.vue'
 import IconTablerX from './components/icons/IconTablerX.vue'
 import { useDesktopState } from './composables/useDesktopState'
 import { useMobile } from './composables/useMobile'
-import { getProjectRootSuggestion, openProjectRoot } from './api/codexGateway'
+import { getHomeDirectory, getProjectRootSuggestion, openProjectRoot } from './api/codexGateway'
 import type { ReasoningEffort, ThreadScrollState } from './types/codex'
 
 const SIDEBAR_COLLAPSED_STORAGE_KEY = 'codex-web-local.sidebar-collapsed.v1'
@@ -231,6 +231,7 @@ const sidebarSearchQuery = ref('')
 const isSidebarSearchVisible = ref(false)
 const sidebarSearchInputRef = ref<HTMLInputElement | null>(null)
 const defaultNewProjectName = ref('New Project (1)')
+const homeDirectory = ref('')
 
 const routeThreadId = computed(() => {
   const rawThreadId = route.params.threadId
@@ -301,6 +302,7 @@ const newThreadFolderOptions = computed(() => {
 onMounted(() => {
   window.addEventListener('keydown', onWindowKeyDown)
   void initialize()
+  void loadHomeDirectory()
   void refreshDefaultProjectName()
 })
 
@@ -470,7 +472,15 @@ function getProjectBaseDirectory(): string {
   if (selected) return getPathParent(selected)
   const first = newThreadFolderOptions.value[0]?.value?.trim() ?? ''
   if (first) return getPathParent(first)
-  return ''
+  return homeDirectory.value.trim()
+}
+
+async function loadHomeDirectory(): Promise<void> {
+  try {
+    homeDirectory.value = await getHomeDirectory()
+  } catch {
+    homeDirectory.value = ''
+  }
 }
 
 function getPathParent(path: string): string {

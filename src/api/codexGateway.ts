@@ -297,6 +297,23 @@ export async function getWorkspaceRootsState(): Promise<WorkspaceRootsState> {
   return normalizeWorkspaceRootsState(envelope.data)
 }
 
+export async function getHomeDirectory(): Promise<string> {
+  const response = await fetch('/codex-api/home-directory')
+  const payload = (await response.json()) as unknown
+  if (!response.ok) {
+    throw new Error('Failed to load home directory')
+  }
+  const record =
+    payload && typeof payload === 'object' && !Array.isArray(payload)
+      ? (payload as Record<string, unknown>)
+      : {}
+  const data =
+    record.data && typeof record.data === 'object' && !Array.isArray(record.data)
+      ? (record.data as Record<string, unknown>)
+      : {}
+  return typeof data.path === 'string' ? data.path.trim() : ''
+}
+
 export async function setWorkspaceRootsState(nextState: WorkspaceRootsState): Promise<void> {
   const response = await fetch('/codex-api/workspace-roots-state', {
     method: 'PUT',

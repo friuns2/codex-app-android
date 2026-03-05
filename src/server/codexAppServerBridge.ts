@@ -1130,6 +1130,11 @@ export function createCodexBridgeMiddleware(): CodexBridgeMiddleware {
         return
       }
 
+      if (req.method === 'GET' && url.pathname === '/codex-api/home-directory') {
+        setJson(res, 200, { data: { path: homedir() } })
+        return
+      }
+
       if (req.method === 'PUT' && url.pathname === '/codex-api/workspace-roots-state') {
         const payload = await readJsonBody(req)
         const record = asRecord(payload)
