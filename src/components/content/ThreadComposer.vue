@@ -234,6 +234,7 @@ const cameraCaptureInputRef = ref<HTMLInputElement | null>(null)
 const inputRef = ref<HTMLInputElement | null>(null)
 const isAttachMenuOpen = ref(false)
 const isSlashMenuOpen = ref(false)
+const isAndroid = typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent)
 
 const reasoningOptions: Array<{ value: ReasoningEffort; label: string }> = [
   { value: 'none', label: 'None' },
@@ -282,6 +283,10 @@ function onSubmit(mode: 'steer' | 'queue' = 'steer'): void {
   selectedSkills.value = []
   isAttachMenuOpen.value = false
   isSlashMenuOpen.value = false
+  if (isAndroid) {
+    inputRef.value?.blur()
+    return
+  }
   nextTick(() => inputRef.value?.focus())
 }
 
