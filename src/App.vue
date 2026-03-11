@@ -2,67 +2,88 @@
   <DesktopLayout :is-sidebar-collapsed="isSidebarCollapsed" @close-sidebar="setSidebarCollapsed(true)">
     <template #sidebar>
       <section class="sidebar-root">
-        <SidebarThreadControls
-          v-if="!isSidebarCollapsed"
-          class="sidebar-thread-controls-host"
-          :is-sidebar-collapsed="isSidebarCollapsed"
-          :is-auto-refresh-enabled="isAutoRefreshEnabled"
-          :auto-refresh-button-label="autoRefreshButtonLabel"
-          :show-new-thread-button="true"
-          @toggle-sidebar="setSidebarCollapsed(!isSidebarCollapsed)"
-          @toggle-auto-refresh="onToggleAutoRefreshTimer"
-          @start-new-thread="onStartNewThreadFromToolbar"
-        >
-          <button
-            class="sidebar-search-toggle"
-            type="button"
-            :aria-pressed="isSidebarSearchVisible"
-            aria-label="Search threads"
-            title="Search threads"
-            @click="toggleSidebarSearch"
+        <div class="sidebar-scrollable">
+          <SidebarThreadControls
+            v-if="!isSidebarCollapsed"
+            class="sidebar-thread-controls-host"
+            :is-sidebar-collapsed="isSidebarCollapsed"
+            :is-auto-refresh-enabled="isAutoRefreshEnabled"
+            :auto-refresh-button-label="autoRefreshButtonLabel"
+            :show-new-thread-button="true"
+            @toggle-sidebar="setSidebarCollapsed(!isSidebarCollapsed)"
+            @toggle-auto-refresh="onToggleAutoRefreshTimer"
+            @start-new-thread="onStartNewThreadFromToolbar"
           >
-            <IconTablerSearch class="sidebar-search-toggle-icon" />
-          </button>
-        </SidebarThreadControls>
+            <button
+              class="sidebar-search-toggle"
+              type="button"
+              :aria-pressed="isSidebarSearchVisible"
+              aria-label="Search threads"
+              title="Search threads"
+              @click="toggleSidebarSearch"
+            >
+              <IconTablerSearch class="sidebar-search-toggle-icon" />
+            </button>
+          </SidebarThreadControls>
 
-        <div v-if="!isSidebarCollapsed && isSidebarSearchVisible" class="sidebar-search-bar">
-          <IconTablerSearch class="sidebar-search-bar-icon" />
-          <input
-            ref="sidebarSearchInputRef"
-            v-model="sidebarSearchQuery"
-            class="sidebar-search-input"
-            type="text"
-            placeholder="Filter threads..."
-            @keydown="onSidebarSearchKeydown"
-          />
+          <div v-if="!isSidebarCollapsed && isSidebarSearchVisible" class="sidebar-search-bar">
+            <IconTablerSearch class="sidebar-search-bar-icon" />
+            <input
+              ref="sidebarSearchInputRef"
+              v-model="sidebarSearchQuery"
+              class="sidebar-search-input"
+              type="text"
+              placeholder="Filter threads..."
+              @keydown="onSidebarSearchKeydown"
+            />
+            <button
+              v-if="sidebarSearchQuery.length > 0"
+              class="sidebar-search-clear"
+              type="button"
+              aria-label="Clear search"
+              @click="clearSidebarSearch"
+            >
+              <IconTablerX class="sidebar-search-clear-icon" />
+            </button>
+          </div>
+
           <button
-            v-if="sidebarSearchQuery.length > 0"
-            class="sidebar-search-clear"
+            v-if="!isSidebarCollapsed"
+            class="sidebar-skills-link"
+            :class="{ 'is-active': isSkillsRoute }"
             type="button"
-            aria-label="Clear search"
-            @click="clearSidebarSearch"
+            @click="router.push({ name: 'skills' }); isMobile && setSidebarCollapsed(true)"
           >
-            <IconTablerX class="sidebar-search-clear-icon" />
+            Skills Hub
           </button>
+
+          <SidebarThreadTree :groups="projectGroups" :project-display-name-by-id="projectDisplayNameById"
+            v-if="!isSidebarCollapsed"
+            :selected-thread-id="selectedThreadId" :is-loading="isLoadingThreads"
+            :search-query="sidebarSearchQuery"
+            @select="onSelectThread"
+            @archive="onArchiveThread" @start-new-thread="onStartNewThread" @rename-project="onRenameProject"
+            @remove-project="onRemoveProject" @reorder-project="onReorderProject" />
         </div>
 
-        <button
-          v-if="!isSidebarCollapsed"
-          class="sidebar-skills-link"
-          :class="{ 'is-active': isSkillsRoute }"
-          type="button"
-          @click="router.push({ name: 'skills' }); isMobile && setSidebarCollapsed(true)"
-        >
-          Skills Hub
-        </button>
-
-        <SidebarThreadTree :groups="projectGroups" :project-display-name-by-id="projectDisplayNameById"
-          v-if="!isSidebarCollapsed"
-          :selected-thread-id="selectedThreadId" :is-loading="isLoadingThreads"
-          :search-query="sidebarSearchQuery"
-          @select="onSelectThread"
-          @archive="onArchiveThread" @start-new-thread="onStartNewThread" @rename-project="onRenameProject"
-          @remove-project="onRemoveProject" @reorder-project="onReorderProject" />
+        <div v-if="!isSidebarCollapsed" class="sidebar-settings-area">
+          <Transition name="settings-panel">
+            <div v-if="isSettingsOpen" class="sidebar-settings-panel">
+              <button class="sidebar-settings-row" type="button" @click="toggleSendWithEnter">
+                <span class="sidebar-settings-label">Require ⌘ + enter to send</span>
+                <span class="sidebar-settings-toggle" :class="{ 'is-on': !sendWithEnter }" />
+              </button>
+              <button class="sidebar-settings-row" type="button" @click="cycleDarkMode">
+                <span class="sidebar-settings-label">Appearance</span>
+                <span class="sidebar-settings-value">{{ darkMode === 'system' ? 'System' : darkMode === 'dark' ? 'Dark' : 'Light' }}</span>
+              </button>
+            </div>
+          </Transition>
+          <button class="sidebar-settings-button" type="button" @click="isSettingsOpen = !isSettingsOpen">
+            <IconTablerSettings class="sidebar-settings-icon" />
+            <span>Settings</span>
+          </button>
+        </div>
       </section>
     </template>
 
@@ -109,7 +130,7 @@
                 :models="availableModelIds" :selected-model="selectedModelId"
                 :selected-reasoning-effort="selectedReasoningEffort" :skills="installedSkills"
                 :is-turn-in-progress="false"
-                :is-interrupting-turn="false" @submit="onSubmitThreadMessage"
+                :is-interrupting-turn="false" :send-with-enter="sendWithEnter" @submit="onSubmitThreadMessage"
                 @update:selected-model="onSelectModel" @update:selected-reasoning-effort="onSelectReasoningEffort" />
             </div>
           </template>
@@ -140,6 +161,7 @@
                   :skills="installedSkills"
                   :is-turn-in-progress="isSelectedThreadInProgress" :is-interrupting-turn="isInterruptingTurn"
                   :has-queue-above="selectedThreadQueuedMessages.length > 0"
+                  :send-with-enter="sendWithEnter"
                   @submit="onSubmitThreadMessage" @update:selected-model="onSelectModel"
                   @update:selected-reasoning-effort="onSelectReasoningEffort" @interrupt="onInterruptTurn" />
               </div>
@@ -167,6 +189,7 @@ import ComposerDropdown from './components/content/ComposerDropdown.vue'
 import SkillsHub from './components/content/SkillsHub.vue'
 import SidebarThreadControls from './components/sidebar/SidebarThreadControls.vue'
 import IconTablerSearch from './components/icons/IconTablerSearch.vue'
+import IconTablerSettings from './components/icons/IconTablerSettings.vue'
 import IconTablerX from './components/icons/IconTablerX.vue'
 import { useDesktopState } from './composables/useDesktopState'
 import { useMobile } from './composables/useMobile'
@@ -232,6 +255,11 @@ const isSidebarSearchVisible = ref(false)
 const sidebarSearchInputRef = ref<HTMLInputElement | null>(null)
 const defaultNewProjectName = ref('New Project (1)')
 const homeDirectory = ref('')
+const isSettingsOpen = ref(false)
+const SEND_WITH_ENTER_KEY = 'codex-web-local.send-with-enter.v1'
+const DARK_MODE_KEY = 'codex-web-local.dark-mode.v1'
+const sendWithEnter = ref(loadBoolPref(SEND_WITH_ENTER_KEY, true))
+const darkMode = ref<'system' | 'light' | 'dark'>(loadDarkModePref())
 
 const routeThreadId = computed(() => {
   const rawThreadId = route.params.threadId
@@ -299,8 +327,12 @@ const newThreadFolderOptions = computed(() => {
 
   return options
 })
+const darkModeMediaQuery = typeof window !== 'undefined' ? window.matchMedia('(prefers-color-scheme: dark)') : null
+
 onMounted(() => {
   window.addEventListener('keydown', onWindowKeyDown)
+  applyDarkMode()
+  darkModeMediaQuery?.addEventListener('change', applyDarkMode)
   void initialize()
   void loadHomeDirectory()
   void refreshDefaultProjectName()
@@ -308,6 +340,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('keydown', onWindowKeyDown)
+  darkModeMediaQuery?.removeEventListener('change', applyDarkMode)
   stopPolling()
 })
 
@@ -538,6 +571,45 @@ function onRollback(payload: { turnIndex: number }): void {
   void rollbackSelectedThread(payload.turnIndex)
 }
 
+function loadBoolPref(key: string, fallback: boolean): boolean {
+  if (typeof window === 'undefined') return fallback
+  const v = window.localStorage.getItem(key)
+  if (v === null) return fallback
+  return v === '1'
+}
+
+function loadDarkModePref(): 'system' | 'light' | 'dark' {
+  if (typeof window === 'undefined') return 'system'
+  const v = window.localStorage.getItem(DARK_MODE_KEY)
+  if (v === 'light' || v === 'dark') return v
+  return 'system'
+}
+
+function toggleSendWithEnter(): void {
+  sendWithEnter.value = !sendWithEnter.value
+  window.localStorage.setItem(SEND_WITH_ENTER_KEY, sendWithEnter.value ? '1' : '0')
+}
+
+function cycleDarkMode(): void {
+  const order: Array<'system' | 'light' | 'dark'> = ['system', 'light', 'dark']
+  const idx = order.indexOf(darkMode.value)
+  darkMode.value = order[(idx + 1) % order.length]
+  window.localStorage.setItem(DARK_MODE_KEY, darkMode.value)
+  applyDarkMode()
+}
+
+function applyDarkMode(): void {
+  const root = document.documentElement
+  if (darkMode.value === 'dark') {
+    root.classList.add('dark')
+  } else if (darkMode.value === 'light') {
+    root.classList.remove('dark')
+  } else {
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+    root.classList.toggle('dark', prefersDark)
+  }
+}
+
 function loadSidebarCollapsed(): boolean {
   if (typeof window === 'undefined') return false
   return window.localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY) === '1'
@@ -678,12 +750,16 @@ async function submitFirstMessageForNewThread(
 @reference "tailwindcss";
 
 .sidebar-root {
-  @apply min-h-full py-4 px-2 flex flex-col gap-2 select-none;
+  @apply h-full flex flex-col select-none;
 }
 
 .sidebar-root input,
 .sidebar-root textarea {
   @apply select-text;
+}
+
+.sidebar-scrollable {
+  @apply flex-1 min-h-0 overflow-y-auto py-4 px-2 flex flex-col gap-2;
 }
 
 .content-root {
@@ -780,6 +856,66 @@ async function submitFirstMessageForNewThread(
 
 .new-thread-folder-dropdown :deep(.composer-dropdown-chevron) {
   @apply h-4 w-4 sm:h-5 sm:w-5 mt-0;
+}
+
+.sidebar-settings-area {
+  @apply shrink-0 bg-slate-100 pt-2 px-2 pb-2 border-t border-zinc-200;
+}
+
+.sidebar-settings-button {
+  @apply flex items-center gap-2 w-full rounded-lg border-0 bg-transparent px-2 py-2 text-sm text-zinc-600 transition hover:bg-zinc-200 hover:text-zinc-900 cursor-pointer;
+}
+
+.sidebar-settings-icon {
+  @apply w-4.5 h-4.5;
+}
+
+.sidebar-settings-panel {
+  @apply mb-1 rounded-lg border border-zinc-200 bg-white overflow-hidden;
+}
+
+.sidebar-settings-row {
+  @apply flex items-center justify-between w-full px-3 py-2.5 text-sm text-zinc-700 border-0 bg-transparent transition hover:bg-zinc-50 cursor-pointer;
+}
+
+.sidebar-settings-row + .sidebar-settings-row {
+  @apply border-t border-zinc-100;
+}
+
+.sidebar-settings-label {
+  @apply text-left;
+}
+
+.sidebar-settings-value {
+  @apply text-xs text-zinc-500 bg-zinc-100 rounded px-1.5 py-0.5;
+}
+
+.sidebar-settings-toggle {
+  @apply relative w-9 h-5 rounded-full bg-zinc-300 transition-colors shrink-0;
+}
+
+.sidebar-settings-toggle::after {
+  content: '';
+  @apply absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform shadow-sm;
+}
+
+.sidebar-settings-toggle.is-on {
+  @apply bg-zinc-800;
+}
+
+.sidebar-settings-toggle.is-on::after {
+  transform: translateX(16px);
+}
+
+.settings-panel-enter-active,
+.settings-panel-leave-active {
+  transition: all 150ms ease;
+}
+
+.settings-panel-enter-from,
+.settings-panel-leave-to {
+  opacity: 0;
+  transform: translateY(8px);
 }
 
 .build-badge {

@@ -240,6 +240,7 @@ const props = defineProps<{
   isInterruptingTurn?: boolean
   disabled?: boolean
   hasQueueAbove?: boolean
+  sendWithEnter?: boolean
 }>()
 
 export type FileAttachment = { label: string; path: string; fsPath: string }
@@ -480,7 +481,10 @@ function onInputKeydown(event: KeyboardEvent): void {
     }
   }
 
-  if (event.key === 'Enter' && !event.shiftKey) {
+  const shouldSend = props.sendWithEnter !== false
+    ? event.key === 'Enter' && !event.shiftKey
+    : event.key === 'Enter' && (event.metaKey || event.ctrlKey)
+  if (shouldSend) {
     event.preventDefault()
     onSubmit('steer')
     return
@@ -812,7 +816,7 @@ watch(
 }
 
 .thread-composer-controls {
-  @apply mt-2 sm:mt-3 flex flex-wrap items-center gap-2 sm:gap-4;
+  @apply mt-2 sm:mt-3 flex items-center gap-2 sm:gap-4 overflow-x-auto;
 }
 
 .thread-composer-attach {
@@ -832,7 +836,11 @@ watch(
 }
 
 .thread-composer-control {
-  @apply shrink-0;
+  @apply shrink-1 min-w-0;
+}
+
+.thread-composer-control :deep(.composer-dropdown-value) {
+  @apply truncate;
 }
 
 .thread-composer-actions {

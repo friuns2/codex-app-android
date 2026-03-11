@@ -214,7 +214,7 @@ onBeforeUnmount(() => {
 }
 
 .composer-dropdown-trigger {
-  @apply inline-flex h-7 items-center gap-1 border-0 bg-transparent p-0 text-sm leading-none text-zinc-500 outline-none transition;
+  @apply inline-flex h-7 min-w-0 items-center gap-1 border-0 bg-transparent p-0 text-sm leading-none text-zinc-500 outline-none transition;
 }
 
 .composer-dropdown-trigger:disabled {
@@ -222,7 +222,7 @@ onBeforeUnmount(() => {
 }
 
 .composer-dropdown-value {
-  @apply whitespace-nowrap text-left;
+  @apply whitespace-nowrap text-left truncate;
 }
 
 .composer-dropdown-chevron {

@@ -116,7 +116,7 @@ function onResizeHandleMouseDown(event: MouseEvent): void {
 }
 
 .desktop-sidebar {
-  @apply bg-slate-100 min-h-0 overflow-y-auto;
+  @apply bg-slate-100 min-h-0 overflow-hidden;
 }
 
 .desktop-resize-handle {
@@ -137,7 +137,7 @@ function onResizeHandleMouseDown(event: MouseEvent): void {
 }
 
 .mobile-drawer {
-  @apply absolute top-0 left-0 bottom-0 w-[85vw] max-w-80 bg-slate-100 overflow-y-auto shadow-2xl;
+  @apply absolute top-0 left-0 bottom-0 w-[85vw] max-w-80 bg-slate-100 overflow-hidden shadow-2xl;
 }
 
 .drawer-enter-active,
