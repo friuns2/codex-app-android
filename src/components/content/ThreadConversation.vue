@@ -1181,7 +1181,7 @@ onBeforeUnmount(() => {
 }
 
 .rollback-button {
-  @apply opacity-0 mt-1 inline-flex items-center gap-1 self-end rounded-md border border-zinc-200 bg-white px-2 py-1 text-xs text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-700 hover:border-zinc-300;
+  @apply opacity-0 mt-1 inline-flex items-center gap-1 self-start rounded-md border border-zinc-200 bg-white px-2 py-1 text-xs text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-700 hover:border-zinc-300;
 }
 
 .rollback-icon {
