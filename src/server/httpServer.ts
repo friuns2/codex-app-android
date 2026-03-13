@@ -32,18 +32,6 @@ const IMAGE_CONTENT_TYPES: Record<string, string> = {
   '.webp': 'image/webp',
 }
 
-const INLINE_FILE_CONTENT_TYPES: Record<string, string> = {
-  ...IMAGE_CONTENT_TYPES,
-  '.json': 'application/json; charset=utf-8',
-  '.log': 'text/plain; charset=utf-8',
-  '.md': 'text/markdown; charset=utf-8',
-  '.pdf': 'application/pdf',
-  '.txt': 'text/plain; charset=utf-8',
-  '.xml': 'application/xml; charset=utf-8',
-  '.yaml': 'text/yaml; charset=utf-8',
-  '.yml': 'text/yaml; charset=utf-8',
-}
-
 function normalizeLocalImagePath(rawPath: string): string {
   const trimmed = rawPath.trim()
   if (!trimmed) return ''
@@ -106,7 +94,7 @@ export function createServer(options: ServerOptions = {}): ServerInstance {
     })
   })
 
-  // 4. Serve local files as downloadable attachments.
+  // 4. Serve local files inline for browser preview.
   app.get('/codex-local-file', (req, res) => {
     const rawPath = typeof req.query.path === 'string' ? req.query.path : ''
     const localPath = normalizeLocalPath(rawPath)
@@ -115,21 +103,9 @@ export function createServer(options: ServerOptions = {}): ServerInstance {
       return
     }
 
-    const extension = extname(localPath).toLowerCase()
-    const inlineContentType = INLINE_FILE_CONTENT_TYPES[extension]
     res.setHeader('Cache-Control', 'private, no-store')
-
-    if (inlineContentType) {
-      res.type(inlineContentType)
-      res.setHeader('Content-Disposition', `inline; filename="${basename(localPath)}"`)
-      res.sendFile(localPath, { dotfiles: 'allow' }, (error) => {
-        if (!error) return
-        if (!res.headersSent) res.status(404).json({ error: 'File not found.' })
-      })
-      return
-    }
-
-    res.download(localPath, basename(localPath), { dotfiles: 'allow' }, (error) => {
+    res.setHeader('Content-Disposition', `inline; filename="${basename(localPath)}"`)
+    res.sendFile(localPath, { dotfiles: 'allow' }, (error) => {
       if (!error) return
       if (!res.headersSent) res.status(404).json({ error: 'File not found.' })
     })

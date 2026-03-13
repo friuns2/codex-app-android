@@ -135,9 +135,8 @@
                   <a
                     class="message-file-link message-file-chip-name"
                     :href="toDownloadUrl(att.path)"
-                    :download="isPreviewableFilePath(att.path) ? undefined : getBasename(att.path)"
-                    :target="isPreviewableFilePath(att.path) ? '_blank' : undefined"
-                    :rel="isPreviewableFilePath(att.path) ? 'noopener noreferrer' : undefined"
+                    target="_blank"
+                    rel="noopener noreferrer"
                     :title="att.path"
                   >
                     {{ att.path }}
@@ -189,9 +188,8 @@
                           v-else-if="segment.kind === 'file'"
                           class="message-file-link"
                           :href="toDownloadUrl(segment.path)"
-                          :download="isPreviewableFilePath(segment.path) ? undefined : segment.downloadName"
-                          :target="isPreviewableFilePath(segment.path) ? '_blank' : undefined"
-                          :rel="isPreviewableFilePath(segment.path) ? 'noopener noreferrer' : undefined"
+                          target="_blank"
+                          rel="noopener noreferrer"
                           :title="segment.path"
                         >
                           {{ segment.displayPath }}
@@ -555,29 +553,6 @@ function toDownloadUrl(pathValue: string): string {
   }
 
   return '#'
-}
-
-function isPreviewableFilePath(pathValue: string): boolean {
-  const parsed = parseFileReference(pathValue.trim())
-  const resolved = (parsed?.path ?? pathValue).trim().toLowerCase()
-  return (
-    resolved.endsWith('.txt') ||
-    resolved.endsWith('.md') ||
-    resolved.endsWith('.json') ||
-    resolved.endsWith('.xml') ||
-    resolved.endsWith('.yml') ||
-    resolved.endsWith('.yaml') ||
-    resolved.endsWith('.log') ||
-    resolved.endsWith('.pdf') ||
-    resolved.endsWith('.png') ||
-    resolved.endsWith('.jpg') ||
-    resolved.endsWith('.jpeg') ||
-    resolved.endsWith('.gif') ||
-    resolved.endsWith('.webp') ||
-    resolved.endsWith('.bmp') ||
-    resolved.endsWith('.svg') ||
-    resolved.endsWith('.avif')
-  )
 }
 
 function parseMessageBlocks(text: string): MessageBlock[] {

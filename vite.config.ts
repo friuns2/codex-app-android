@@ -17,18 +17,6 @@ const IMAGE_CONTENT_TYPES: Record<string, string> = {
   ".webp": "image/webp",
 };
 
-const INLINE_FILE_CONTENT_TYPES: Record<string, string> = {
-  ...IMAGE_CONTENT_TYPES,
-  ".json": "application/json; charset=utf-8",
-  ".log": "text/plain; charset=utf-8",
-  ".md": "text/markdown; charset=utf-8",
-  ".pdf": "application/pdf",
-  ".txt": "text/plain; charset=utf-8",
-  ".xml": "application/xml; charset=utf-8",
-  ".yaml": "text/yaml; charset=utf-8",
-  ".yml": "text/yaml; charset=utf-8",
-};
-
 function normalizeLocalImagePath(rawPath: string): string {
   const trimmed = rawPath.trim();
   if (!trimmed) return "";
@@ -178,18 +166,9 @@ export default defineConfig({
             return;
           }
 
-          const extension = extname(localPath).toLowerCase();
-          const inlineContentType = INLINE_FILE_CONTENT_TYPES[extension];
-
           res.statusCode = 200;
           res.setHeader("Cache-Control", "private, no-store");
-          if (inlineContentType) {
-            res.setHeader("Content-Type", inlineContentType);
-            res.setHeader("Content-Disposition", `inline; filename="${basename(localPath)}"`);
-          } else {
-            res.setHeader("Content-Type", "application/octet-stream");
-            res.setHeader("Content-Disposition", `attachment; filename="${basename(localPath)}"`);
-          }
+          res.setHeader("Content-Disposition", `inline; filename="${basename(localPath)}"`);
 
           const stream = createReadStream(localPath);
           stream.on("error", () => {
