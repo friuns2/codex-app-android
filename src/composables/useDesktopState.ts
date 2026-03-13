@@ -735,28 +735,6 @@ export function useDesktopState() {
     if (!summary) return combined
     return insertTurnSummaryMessage(combined, summary)
   })
-  const threadMessageSearchTextById = computed<Record<string, string>>(() => {
-    const byId: Record<string, string> = {}
-    const threadIds = new Set([
-      ...Object.keys(persistedMessagesByThreadId.value),
-      ...Object.keys(liveAgentMessagesByThreadId.value),
-    ])
-
-    for (const threadId of threadIds) {
-      const persisted = persistedMessagesByThreadId.value[threadId] ?? []
-      const live = liveAgentMessagesByThreadId.value[threadId] ?? []
-      const parts: string[] = []
-      for (const message of [...persisted, ...live]) {
-        const text = message.text.trim()
-        if (text) parts.push(text)
-      }
-      if (parts.length > 0) {
-        byId[threadId] = parts.join('\n')
-      }
-    }
-
-    return byId
-  })
 
   function setSelectedThreadId(nextThreadId: string): void {
     if (selectedThreadId.value === nextThreadId) return
@@ -2790,7 +2768,6 @@ export function useDesktopState() {
     selectedReasoningEffort,
     installedSkills,
     messages,
-    threadMessageSearchTextById,
     isLoadingThreads,
     isLoadingMessages,
     isSendingMessage,

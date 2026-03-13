@@ -6,6 +6,7 @@ import { homedir } from 'node:os'
 import { tmpdir } from 'node:os'
 import { isAbsolute, join, resolve } from 'node:path'
 import { writeFile } from 'node:fs/promises'
+import zvec from '@zvec/zvec'
 
 type JsonRpcCall = {
   jsonrpc: '2.0'
@@ -51,6 +52,20 @@ type PendingServerRequest = {
   receivedAtIso: string
 }
 
+type ThreadSearchDocument = {
+  id: string
+  title: string
+  preview: string
+  messageText: string
+  searchableText: string
+}
+
+type ThreadSearchIndex = {
+  docsById: Map<string, ThreadSearchDocument>
+  collection: InstanceType<typeof zvec.ZVecCollection> | null
+  collectionPath: string
+}
+
 function asRecord(value: unknown): Record<string, unknown> | null {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
     ? (value as Record<string, unknown>)
@@ -80,6 +95,88 @@ function setJson(res: ServerResponse, statusCode: number, payload: unknown): voi
   res.statusCode = statusCode
   res.setHeader('Content-Type', 'application/json; charset=utf-8')
   res.end(JSON.stringify(payload))
+}
+
+function tokenizeText(value: string): string[] {
+  return (value.toLowerCase().match(/[a-z0-9_]+/g) ?? []).filter((token) => token.length > 1)
+}
+
+function hashToken(token: string): number {
+  let hash = 2166136261
+  for (let i = 0; i < token.length; i += 1) {
+    hash ^= token.charCodeAt(i)
+    hash = Math.imul(hash, 16777619)
+  }
+  return Math.abs(hash >>> 0) % 262144
+}
+
+function toSparseVector(value: string): Record<number, number> {
+  const counts = new Map<number, number>()
+  for (const token of tokenizeText(value)) {
+    const key = hashToken(token)
+    counts.set(key, (counts.get(key) ?? 0) + 1)
+  }
+
+  let norm = 0
+  for (const count of counts.values()) {
+    norm += count * count
+  }
+  if (norm === 0) return {}
+  const denom = Math.sqrt(norm)
+
+  const vector: Record<number, number> = {}
+  for (const [key, count] of counts.entries()) {
+    vector[key] = count / denom
+  }
+  return vector
+}
+
+function extractThreadMessageText(threadReadPayload: unknown): string {
+  const payload = asRecord(threadReadPayload)
+  const thread = asRecord(payload?.thread)
+  const turns = Array.isArray(thread?.turns) ? thread.turns : []
+  const parts: string[] = []
+
+  for (const turn of turns) {
+    const turnRecord = asRecord(turn)
+    const items = Array.isArray(turnRecord?.items) ? turnRecord.items : []
+    for (const item of items) {
+      const itemRecord = asRecord(item)
+      const type = typeof itemRecord?.type === 'string' ? itemRecord.type : ''
+      if (type === 'agentMessage' && typeof itemRecord?.text === 'string' && itemRecord.text.trim().length > 0) {
+        parts.push(itemRecord.text.trim())
+        continue
+      }
+      if (type === 'userMessage') {
+        const content = Array.isArray(itemRecord?.content) ? itemRecord.content : []
+        for (const block of content) {
+          const blockRecord = asRecord(block)
+          if (blockRecord?.type === 'text' && typeof blockRecord.text === 'string' && blockRecord.text.trim().length > 0) {
+            parts.push(blockRecord.text.trim())
+          }
+        }
+        continue
+      }
+      if (type === 'commandExecution') {
+        const command = typeof itemRecord?.command === 'string' ? itemRecord.command.trim() : ''
+        const output = typeof itemRecord?.aggregatedOutput === 'string' ? itemRecord.aggregatedOutput.trim() : ''
+        if (command) parts.push(command)
+        if (output) parts.push(output)
+      }
+    }
+  }
+
+  return parts.join('\n').trim()
+}
+
+function scoreLexicalMatch(query: string, doc: ThreadSearchDocument): number {
+  const q = query.toLowerCase()
+  if (!q) return 0
+  let score = 0
+  if (doc.title.toLowerCase().includes(q)) score += 3
+  if (doc.preview.toLowerCase().includes(q)) score += 2
+  if (doc.messageText.toLowerCase().includes(q)) score += 2
+  return score
 }
 
 function scoreFileCandidate(path: string, query: string): number {
@@ -1053,8 +1150,125 @@ function getSharedBridgeState(): SharedBridgeState {
   return created
 }
 
+async function loadAllThreadsForSearch(appServer: AppServerProcess): Promise<ThreadSearchDocument[]> {
+  const threads: Array<{ id: string; title: string; preview: string }> = []
+  let cursor: string | null = null
+
+  do {
+    const response = asRecord(await appServer.rpc('thread/list', {
+      archived: false,
+      limit: 100,
+      sortKey: 'updated_at',
+      cursor,
+    }))
+    const data = Array.isArray(response?.data) ? response.data : []
+    for (const row of data) {
+      const record = asRecord(row)
+      const id = typeof record?.id === 'string' ? record.id : ''
+      if (!id) continue
+      const title = typeof record?.name === 'string' && record.name.trim().length > 0
+        ? record.name.trim()
+        : (typeof record?.preview === 'string' && record.preview.trim().length > 0 ? record.preview.trim() : 'Untitled thread')
+      const preview = typeof record?.preview === 'string' ? record.preview : ''
+      threads.push({ id, title, preview })
+    }
+    cursor = typeof response?.nextCursor === 'string' && response.nextCursor.length > 0 ? response.nextCursor : null
+  } while (cursor)
+
+  const docs: ThreadSearchDocument[] = []
+  const concurrency = 4
+  for (let offset = 0; offset < threads.length; offset += concurrency) {
+    const batch = threads.slice(offset, offset + concurrency)
+    const loaded = await Promise.all(batch.map(async (thread) => {
+      try {
+        const readResponse = await appServer.rpc('thread/read', {
+          threadId: thread.id,
+          includeTurns: true,
+        })
+        const messageText = extractThreadMessageText(readResponse)
+        const searchableText = [thread.title, thread.preview, messageText].filter(Boolean).join('\n')
+        return {
+          id: thread.id,
+          title: thread.title,
+          preview: thread.preview,
+          messageText,
+          searchableText,
+        } satisfies ThreadSearchDocument
+      } catch {
+        const searchableText = [thread.title, thread.preview].filter(Boolean).join('\n')
+        return {
+          id: thread.id,
+          title: thread.title,
+          preview: thread.preview,
+          messageText: '',
+          searchableText,
+        } satisfies ThreadSearchDocument
+      }
+    }))
+    docs.push(...loaded)
+  }
+
+  return docs
+}
+
+async function buildThreadSearchIndex(appServer: AppServerProcess): Promise<ThreadSearchIndex> {
+  const docs = await loadAllThreadsForSearch(appServer)
+  const docsById = new Map<string, ThreadSearchDocument>(docs.map((doc) => [doc.id, doc]))
+
+  const collectionPath = await mkdtemp(join(tmpdir(), 'codex-web-local-thread-search-'))
+  let collection: ThreadSearchIndex['collection'] = null
+  try {
+    const schema = new zvec.ZVecCollectionSchema({
+      name: 'thread_search',
+      vectors: {
+        name: 'content_vec',
+        dataType: zvec.ZVecDataType.SPARSE_VECTOR_FP32,
+        indexParams: {
+          indexType: zvec.ZVecIndexType.FLAT,
+          metricType: zvec.ZVecMetricType.IP,
+        },
+      },
+      fields: [
+        { name: 'title', dataType: zvec.ZVecDataType.STRING },
+      ],
+    })
+    collection = zvec.ZVecCreateAndOpen(collectionPath, schema)
+    collection.insertSync(docs.map((doc) => ({
+      id: doc.id,
+      vectors: {
+        content_vec: toSparseVector(doc.searchableText),
+      },
+      fields: {
+        title: doc.title,
+      },
+    })))
+  } catch {
+    await rm(collectionPath, { recursive: true, force: true })
+    return { docsById, collection: null, collectionPath: '' }
+  }
+
+  return { docsById, collection, collectionPath }
+}
+
 export function createCodexBridgeMiddleware(): CodexBridgeMiddleware {
   const { appServer, methodCatalog } = getSharedBridgeState()
+  let threadSearchIndex: ThreadSearchIndex | null = null
+  let threadSearchIndexPromise: Promise<ThreadSearchIndex> | null = null
+
+  async function getThreadSearchIndex(): Promise<ThreadSearchIndex> {
+    if (threadSearchIndex) return threadSearchIndex
+    if (!threadSearchIndexPromise) {
+      threadSearchIndexPromise = buildThreadSearchIndex(appServer)
+        .then((index) => {
+          threadSearchIndex = index
+          return index
+        })
+        .finally(() => {
+          threadSearchIndexPromise = null
+        })
+    }
+    return threadSearchIndexPromise
+  }
 
   const middleware = async (req: IncomingMessage, res: ServerResponse, next: () => void) => {
     try {
@@ -1277,6 +1491,52 @@ export function createCodexBridgeMiddleware(): CodexBridgeMiddleware {
         return
       }
 
+      if (req.method === 'POST' && url.pathname === '/codex-api/thread-search') {
+        const payload = asRecord(await readJsonBody(req))
+        const query = typeof payload?.query === 'string' ? payload.query.trim() : ''
+        const limitRaw = typeof payload?.limit === 'number' ? payload.limit : 200
+        const limit = Math.max(1, Math.min(1000, Math.floor(limitRaw)))
+        if (!query) {
+          setJson(res, 200, { data: { threadIds: [], indexedThreadCount: 0 } })
+          return
+        }
+
+        const index = await getThreadSearchIndex()
+        const candidateScores = new Map<string, number>()
+
+        if (index.collection) {
+          try {
+            const semanticRows = index.collection.querySync({
+              fieldName: 'content_vec',
+              vector: toSparseVector(query),
+              topk: Math.max(limit * 3, 150),
+            })
+            for (const row of semanticRows) {
+              if (!row || typeof row.id !== 'string') continue
+              if (!index.docsById.has(row.id)) continue
+              candidateScores.set(row.id, (candidateScores.get(row.id) ?? 0) + row.score)
+            }
+          } catch {
+            // Fall back to lexical ranking below.
+          }
+        }
+
+        for (const [id, doc] of index.docsById.entries()) {
+          const lexicalScore = scoreLexicalMatch(query, doc)
+          if (lexicalScore > 0) {
+            candidateScores.set(id, (candidateScores.get(id) ?? 0) + lexicalScore)
+          }
+        }
+
+        const rankedIds = Array.from(candidateScores.entries())
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, limit)
+          .map(([id]) => id)
+
+        setJson(res, 200, { data: { threadIds: rankedIds, indexedThreadCount: index.docsById.size } })
+        return
+      }
+
       if (req.method === 'PUT' && url.pathname === '/codex-api/thread-titles') {
         const payload = asRecord(await readJsonBody(req))
         const id = typeof payload?.id === 'string' ? payload.id : ''
@@ -1436,6 +1696,17 @@ export function createCodexBridgeMiddleware(): CodexBridgeMiddleware {
   }
 
   middleware.dispose = () => {
+    if (threadSearchIndex?.collection) {
+      try {
+        threadSearchIndex.collection.closeSync()
+      } catch {
+        // ignore disposal errors
+      }
+    }
+    if (threadSearchIndex?.collectionPath) {
+      void rm(threadSearchIndex.collectionPath, { recursive: true, force: true })
+    }
+    threadSearchIndex = null
     appServer.dispose()
   }
   middleware.subscribeNotifications = (

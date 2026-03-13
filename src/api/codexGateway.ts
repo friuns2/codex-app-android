@@ -37,6 +37,11 @@ export type ComposerFileSuggestion = {
   path: string
 }
 
+export type ThreadSearchResult = {
+  threadIds: string[]
+  indexedThreadCount: number
+}
+
 async function callRpc<T>(method: string, params?: unknown): Promise<T> {
   try {
     return await rpcCall<T>(method, params)
@@ -433,6 +438,19 @@ export async function searchComposerFiles(cwd: string, query: string, limit = 20
     suggestions.push({ path: value })
   }
   return suggestions
+}
+
+export async function searchThreads(query: string, limit = 200): Promise<ThreadSearchResult> {
+  const response = await fetch('/codex-api/thread-search', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query, limit }),
+  })
+  const payload = (await response.json()) as { data?: ThreadSearchResult; error?: string }
+  if (!response.ok) {
+    throw new Error(payload.error || 'Failed to search threads')
+  }
+  return payload.data ?? { threadIds: [], indexedThreadCount: 0 }
 }
 
 function getErrorMessageFromPayload(payload: unknown, fallback: string): string {

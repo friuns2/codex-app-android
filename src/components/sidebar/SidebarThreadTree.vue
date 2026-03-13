@@ -368,7 +368,7 @@ const props = defineProps<{
   selectedThreadId: string
   isLoading: boolean
   searchQuery: string
-  threadSearchTextById: Record<string, string>
+  searchMatchedThreadIds: string[] | null
 }>()
 
 const emit = defineEmits<{
@@ -494,16 +494,18 @@ watch(threadViewMode, (value) => {
 const normalizedSearchQuery = computed(() => props.searchQuery.trim().toLowerCase())
 
 const isSearchActive = computed(() => normalizedSearchQuery.value.length > 0)
+const matchedThreadIdSet = computed(() => {
+  if (!props.searchMatchedThreadIds) return null
+  return new Set(props.searchMatchedThreadIds)
+})
 
 function threadMatchesSearch(thread: UiThread): boolean {
   if (!isSearchActive.value) return true
+  if (matchedThreadIdSet.value) {
+    return matchedThreadIdSet.value.has(thread.id)
+  }
   const q = normalizedSearchQuery.value
-  const searchText = (props.threadSearchTextById[thread.id] ?? '').toLowerCase()
-  return (
-    thread.title.toLowerCase().includes(q) ||
-    thread.preview.toLowerCase().includes(q) ||
-    searchText.includes(q)
-  )
+  return thread.title.toLowerCase().includes(q) || thread.preview.toLowerCase().includes(q)
 }
 
 const filteredGroups = computed<UiProjectGroup[]>(() => {
