@@ -14,11 +14,14 @@
    - find pre-merge `main` from reflog (example: `git reflog main`)
    - `git checkout main`
    - `git reset --hard <pre-merge-main-commit>`
+   - `git checkout <your-branch>`
+   - `git rebase main`
+   - `git checkout main`
    - `git merge --no-ff <your-branch> -m "Merge branch '<your-branch>' into main"`
 3. Otherwise, merge into local `main` from the main worktree:
+   - `git checkout <your-branch>`
+   - `git rebase main`
    - `git checkout main`
-   - `git merge --ff-only <your-branch>`
-4. If `--ff-only` fails (non-linear history), use:
    - `git merge --no-ff <your-branch>`
 
 ## Commit After Each Task
