@@ -82,6 +82,10 @@
                 <span class="sidebar-settings-label">Appearance</span>
                 <span class="sidebar-settings-value">{{ darkMode === 'system' ? 'System' : darkMode === 'dark' ? 'Dark' : 'Light' }}</span>
               </button>
+              <button class="sidebar-settings-row" type="button" @click="toggleDictationClickToToggle">
+                <span class="sidebar-settings-label">Click to toggle dictation</span>
+                <span class="sidebar-settings-toggle" :class="{ 'is-on': dictationClickToToggle }" />
+              </button>
             </div>
           </Transition>
           <button class="sidebar-settings-button" type="button" @click="isSettingsOpen = !isSettingsOpen">
@@ -147,7 +151,8 @@
                 :models="availableModelIds" :selected-model="selectedModelId"
                 :selected-reasoning-effort="selectedReasoningEffort" :skills="installedSkills"
                 :is-turn-in-progress="false"
-                :is-interrupting-turn="false" :send-with-enter="sendWithEnter" :in-progress-submit-mode="inProgressSendMode" @submit="onSubmitThreadMessage"
+                :is-interrupting-turn="false" :send-with-enter="sendWithEnter" :in-progress-submit-mode="inProgressSendMode"
+                :dictation-click-to-toggle="dictationClickToToggle" @submit="onSubmitThreadMessage"
                 @update:selected-model="onSelectModel" @update:selected-reasoning-effort="onSelectReasoningEffort" />
             </div>
           </template>
@@ -179,6 +184,7 @@
                   :is-turn-in-progress="isSelectedThreadInProgress" :is-interrupting-turn="isInterruptingTurn"
                   :has-queue-above="selectedThreadQueuedMessages.length > 0"
                   :send-with-enter="sendWithEnter" :in-progress-submit-mode="inProgressSendMode"
+                  :dictation-click-to-toggle="dictationClickToToggle"
                   @submit="onSubmitThreadMessage" @update:selected-model="onSelectModel"
                   @update:selected-reasoning-effort="onSelectReasoningEffort" @interrupt="onInterruptTurn" />
               </div>
@@ -292,9 +298,11 @@ const isSettingsOpen = ref(false)
 const SEND_WITH_ENTER_KEY = 'codex-web-local.send-with-enter.v1'
 const IN_PROGRESS_SEND_MODE_KEY = 'codex-web-local.in-progress-send-mode.v1'
 const DARK_MODE_KEY = 'codex-web-local.dark-mode.v1'
+const DICTATION_CLICK_TO_TOGGLE_KEY = 'codex-web-local.dictation-click-to-toggle.v1'
 const sendWithEnter = ref(loadBoolPref(SEND_WITH_ENTER_KEY, true))
 const inProgressSendMode = ref<'steer' | 'queue'>(loadInProgressSendModePref())
 const darkMode = ref<'system' | 'light' | 'dark'>(loadDarkModePref())
+const dictationClickToToggle = ref(loadBoolPref(DICTATION_CLICK_TO_TOGGLE_KEY, false))
 
 const routeThreadId = computed(() => {
   const rawThreadId = route.params.threadId
@@ -794,6 +802,11 @@ function cycleDarkMode(): void {
   darkMode.value = order[(idx + 1) % order.length]
   window.localStorage.setItem(DARK_MODE_KEY, darkMode.value)
   applyDarkMode()
+}
+
+function toggleDictationClickToToggle(): void {
+  dictationClickToToggle.value = !dictationClickToToggle.value
+  window.localStorage.setItem(DICTATION_CLICK_TO_TOGGLE_KEY, dictationClickToToggle.value ? '1' : '0')
 }
 
 function applyDarkMode(): void {

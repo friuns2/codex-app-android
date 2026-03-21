@@ -211,6 +211,12 @@
             :title="dictationButtonLabel"
             :disabled="isInteractionDisabled || dictationState === 'transcribing'"
             @click="onDictationToggle"
+            @mousedown.prevent="onDictationPressStart"
+            @mouseup="onDictationPressEnd"
+            @mouseleave="dictationState === 'recording' && onDictationPressEnd()"
+            @touchstart.prevent="onDictationPressStart"
+            @touchend="onDictationPressEnd"
+            @touchcancel="onDictationPressEnd"
           >
             <IconTablerPlayerStopFilled
               v-if="dictationState === 'recording'"
@@ -307,6 +313,7 @@ const props = defineProps<{
   hasQueueAbove?: boolean
   sendWithEnter?: boolean
   inProgressSubmitMode?: 'steer' | 'queue'
+  dictationClickToToggle?: boolean
 }>()
 
 export type FileAttachment = { label: string; path: string; fsPath: string }
@@ -353,6 +360,8 @@ const {
   isSupported: isDictationSupported,
   recordingDurationMs,
   waveformCanvasRef: dictationWaveformCanvasRef,
+  startRecording,
+  stopRecording,
   toggleRecording,
 } = useDictation({
   onTranscript: (text) => {
@@ -361,7 +370,9 @@ const {
     nextTick(() => inputRef.value?.focus())
   },
   onEmpty: () => {
-    dictationFeedback.value = 'No speech detected. Click again after speaking.'
+    dictationFeedback.value = props.dictationClickToToggle
+      ? 'No speech detected. Click again after speaking.'
+      : 'No speech detected. Hold the mic and speak.'
   },
   onError: (error) => {
     if (error instanceof DOMException && error.name === 'NotAllowedError') {
@@ -429,7 +440,7 @@ const isDictationRecording = computed(() => dictationState.value === 'recording'
 const dictationButtonLabel = computed(() => {
   if (dictationState.value === 'recording') return 'Stop dictation'
   if (dictationState.value === 'transcribing') return 'Transcribing dictation'
-  return 'Dictate'
+  return props.dictationClickToToggle ? 'Click to dictate' : 'Hold to dictate'
 })
 const dictationErrorText = computed(() =>
   dictationState.value === 'idle' ? dictationFeedback.value.trim() : '',
@@ -483,10 +494,24 @@ function onReasoningEffortSelect(value: string): void {
 }
 
 function onDictationToggle(): void {
+  if (!props.dictationClickToToggle) return
   if (dictationFeedback.value) {
     dictationFeedback.value = ''
   }
   toggleRecording()
+}
+
+function onDictationPressStart(): void {
+  if (props.dictationClickToToggle) return
+  if (dictationFeedback.value) {
+    dictationFeedback.value = ''
+  }
+  void startRecording()
+}
+
+function onDictationPressEnd(): void {
+  if (props.dictationClickToToggle) return
+  stopRecording()
 }
 
 function toggleAttachMenu(): void {
