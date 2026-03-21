@@ -8,6 +8,7 @@ import {
   type RpcNotification,
 } from './codexRpcClient'
 import type {
+  CollaborationModeListResponse,
   ConfigReadResponse,
   ModelListResponse,
   ReasoningEffort,
@@ -21,6 +22,8 @@ import {
   readThreadInProgressFromResponse,
 } from './normalizers/v2'
 import type {
+  CollaborationModeKind,
+  CollaborationModeOption,
   UiCreditsSnapshot,
   UiMessage,
   UiProjectGroup,
@@ -42,6 +45,11 @@ export type WorkspaceRootsState = {
 export type ComposerFileSuggestion = {
   path: string
 }
+
+const DEFAULT_COLLABORATION_MODE_OPTIONS: CollaborationModeOption[] = [
+  { value: 'default', label: 'Default' },
+  { value: 'plan', label: 'Plan' },
+]
 
 export type WorktreeCreateResult = {
   cwd: string
@@ -309,6 +317,7 @@ export async function startThreadTurn(
   effort?: ReasoningEffort,
   skills?: Array<{ name: string; path: string }>,
   fileAttachments: FileAttachmentParam[] = [],
+  collaborationMode?: CollaborationModeKind,
 ): Promise<void> {
   try {
     const finalText = buildTextWithAttachments(text, fileAttachments)
@@ -338,6 +347,16 @@ export async function startThreadTurn(
     }
     if (typeof effort === 'string' && effort.length > 0) {
       params.effort = effort
+    }
+    if (collaborationMode === 'plan') {
+      params.collaborationMode = {
+        mode: 'plan',
+        settings: {
+          model: model ?? '',
+          reasoning_effort: effort ?? null,
+          developer_instructions: null,
+        },
+      }
     }
     await callRpc('turn/start', params)
   } catch (error) {
@@ -380,6 +399,48 @@ export async function getCurrentModelConfig(): Promise<CurrentModelConfig> {
   const model = payload.config.model ?? ''
   const reasoningEffort = normalizeReasoningEffort(payload.config.model_reasoning_effort)
   return { model, reasoningEffort }
+}
+
+function normalizeCollaborationModeLabel(value: string): string {
+  const trimmed = value.trim()
+  if (!trimmed) return ''
+  return trimmed
+    .replace(/[_-]+/g, ' ')
+    .replace(/\b\w/g, (segment) => segment.toUpperCase())
+}
+
+export async function getAvailableCollaborationModes(): Promise<CollaborationModeOption[]> {
+  try {
+    const payload = await callRpc<CollaborationModeListResponse>('collaborationMode/list', {})
+    const seen = new Set<CollaborationModeKind>()
+    const normalized: CollaborationModeOption[] = []
+
+    for (const row of payload.data) {
+      const mode = row.mode
+      if (mode !== 'default' && mode !== 'plan') continue
+      if (seen.has(mode)) continue
+      seen.add(mode)
+      normalized.push({
+        value: mode,
+        label: normalizeCollaborationModeLabel(row.name || mode) || (mode === 'plan' ? 'Plan' : 'Default'),
+      })
+    }
+
+    if (normalized.length > 0) {
+      for (const fallback of DEFAULT_COLLABORATION_MODE_OPTIONS) {
+        if (!seen.has(fallback.value)) {
+          normalized.push(fallback)
+        }
+      }
+      return normalized.sort((first, second) => (
+        first.value === second.value ? 0 : first.value === 'default' ? -1 : 1
+      ))
+    }
+  } catch {
+    // Fall back to static options when the app-server does not expose presets.
+  }
+
+  return DEFAULT_COLLABORATION_MODE_OPTIONS
 }
 
 function normalizeWorkspaceRootsState(payload: unknown): WorkspaceRootsState {

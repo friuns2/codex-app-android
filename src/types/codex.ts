@@ -3,6 +3,7 @@ export type RpcEnvelope<T> = {
 }
 
 export type ReasoningEffort = 'none' | 'minimal' | 'low' | 'medium' | 'high' | 'xhigh'
+export type CollaborationModeKind = 'default' | 'plan'
 
 export type RpcMethodCatalog = {
   data: string[]
@@ -81,6 +82,19 @@ export type CommandExecutionData = {
 
 export type UiFileAttachment = { label: string; path: string }
 
+export type UiPlanStepStatus = 'pending' | 'inProgress' | 'completed'
+
+export type UiPlanStep = {
+  step: string
+  status: UiPlanStepStatus
+}
+
+export type UiPlanData = {
+  explanation?: string
+  steps: UiPlanStep[]
+  isStreaming?: boolean
+}
+
 export type UiMessage = {
   id: string
   role: 'user' | 'assistant' | 'system'
@@ -91,6 +105,7 @@ export type UiMessage = {
   rawPayload?: string
   isUnhandled?: boolean
   commandExecution?: CommandExecutionData
+  plan?: UiPlanData
   turnIndex?: number
 }
 
@@ -165,4 +180,9 @@ export type ChatThread = {
   projectName: string
   updatedAt: string | null
   messages: ChatMessage[]
+}
+
+export type CollaborationModeOption = {
+  value: CollaborationModeKind
+  label: string
 }

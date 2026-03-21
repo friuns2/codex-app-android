@@ -148,12 +148,15 @@
 
                 <ThreadComposer :active-thread-id="composerThreadContextId"
                   :cwd="composerCwd"
+                  :collaboration-modes="availableCollaborationModes"
+                  :selected-collaboration-mode="selectedCollaborationMode"
                   :models="availableModelIds" :selected-model="selectedModelId"
                   :selected-reasoning-effort="selectedReasoningEffort" :skills="installedSkills"
                   :codex-quota="codexQuota"
                   :is-turn-in-progress="false"
                   :is-interrupting-turn="false" :send-with-enter="sendWithEnter" :in-progress-submit-mode="inProgressSendMode"
                   :dictation-click-to-toggle="dictationClickToToggle" @submit="onSubmitThreadMessage"
+                  @update:selected-collaboration-mode="onSelectCollaborationMode"
                   @update:selected-model="onSelectModel" @update:selected-reasoning-effort="onSelectReasoningEffort" />
             </div>
           </template>
@@ -179,6 +182,8 @@
                 />
                 <ThreadComposer :active-thread-id="composerThreadContextId"
                   :cwd="composerCwd"
+                  :collaboration-modes="availableCollaborationModes"
+                  :selected-collaboration-mode="selectedCollaborationMode"
                   :models="availableModelIds"
                   :selected-model="selectedModelId" :selected-reasoning-effort="selectedReasoningEffort"
                   :skills="installedSkills"
@@ -187,6 +192,7 @@
                   :has-queue-above="selectedThreadQueuedMessages.length > 0"
                   :send-with-enter="sendWithEnter" :in-progress-submit-mode="inProgressSendMode"
                   :dictation-click-to-toggle="dictationClickToToggle"
+                  @update:selected-collaboration-mode="onSelectCollaborationMode"
                   @submit="onSubmitThreadMessage" @update:selected-model="onSelectModel"
                   @update:selected-reasoning-effort="onSelectReasoningEffort" @interrupt="onInterruptTurn" />
               </div>
@@ -242,7 +248,9 @@ const {
   selectedLiveOverlay,
   codexQuota,
   selectedThreadId,
+  availableCollaborationModes,
   availableModelIds,
+  selectedCollaborationMode,
   selectedModelId,
   selectedReasoningEffort,
   installedSkills,
@@ -265,6 +273,7 @@ const {
   selectedThreadQueuedMessages,
   removeQueuedMessage,
   steerQueuedMessage,
+  setSelectedCollaborationMode,
   setSelectedModelId,
   setSelectedReasoningEffort,
   respondToPendingServerRequest,
@@ -842,6 +851,10 @@ function normalizeMessageType(rawType: string | undefined, role: string): string
     return normalized
   }
   return role.trim() || 'message'
+}
+
+function onSelectCollaborationMode(mode: 'default' | 'plan'): void {
+  setSelectedCollaborationMode(mode)
 }
 
 async function initialize(): Promise<void> {

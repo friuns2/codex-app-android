@@ -414,6 +414,50 @@
   @apply border-amber-600 bg-amber-600 text-white hover:bg-amber-700;
 }
 
+:root.dark .request-question-option-description {
+  @apply text-amber-400;
+}
+
+:root.dark .plan-card {
+  @apply border-sky-800 bg-sky-950/40;
+}
+
+:root.dark .plan-card-title {
+  @apply text-sky-200;
+}
+
+:root.dark .plan-card-badge {
+  @apply bg-sky-800 text-sky-100;
+}
+
+:root.dark .plan-card-explanation {
+  @apply text-zinc-300;
+}
+
+:root.dark .plan-step-item {
+  @apply border-zinc-700 bg-zinc-900/70 text-zinc-200;
+}
+
+:root.dark .plan-step-item[data-status='completed'] {
+  @apply border-emerald-900 bg-emerald-950/40;
+}
+
+:root.dark .plan-step-item[data-status='inProgress'] {
+  @apply border-amber-900 bg-amber-950/40;
+}
+
+:root.dark .plan-step-status {
+  @apply bg-zinc-700 text-zinc-200;
+}
+
+:root.dark .plan-step-status[data-status='completed'] {
+  @apply bg-emerald-900 text-emerald-200;
+}
+
+:root.dark .plan-step-status[data-status='inProgress'] {
+  @apply bg-amber-900 text-amber-200;
+}
+
 :root.dark .message-action-button {
   @apply border-zinc-700 bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-300 hover:border-zinc-600;
 }

@@ -6,7 +6,15 @@ import type {
   Turn,
   UserInput,
 } from '../appServerDtos'
-import type { CommandExecutionData, UiFileAttachment, UiMessage, UiProjectGroup, UiThread } from '../../types/codex'
+import type {
+  CommandExecutionData,
+  UiFileAttachment,
+  UiMessage,
+  UiPlanData,
+  UiPlanStep,
+  UiProjectGroup,
+  UiThread,
+} from '../../types/codex'
 
 function toIso(seconds: number): string {
   return new Date(seconds * 1000).toISOString()
@@ -102,6 +110,44 @@ function parseUserMessageContent(
   }
 }
 
+function parsePlanText(value: string): UiPlanData | null {
+  const normalized = value.replace(/\r\n/g, '\n').trim()
+  if (!normalized) return null
+
+  const lines = normalized.split('\n')
+  const steps: UiPlanStep[] = []
+  const explanationLines: string[] = []
+
+  for (const line of lines) {
+    const trimmed = line.trim()
+    if (!trimmed) {
+      if (steps.length === 0) explanationLines.push('')
+      continue
+    }
+
+    const match = trimmed.match(/^[-*]\s+\[([ xX~>|-])\]\s+(.+)$/)
+    if (match) {
+      const marker = (match[1] ?? ' ').toLowerCase()
+      const step = match[2]?.trim()
+      if (!step) continue
+      let status: UiPlanStep['status'] = 'pending'
+      if (marker === 'x') status = 'completed'
+      if (marker === '~' || marker === '>' || marker === '-') status = 'inProgress'
+      steps.push({ step, status })
+      continue
+    }
+
+    explanationLines.push(trimmed)
+  }
+
+  if (steps.length === 0) return null
+
+  return {
+    explanation: explanationLines.join('\n').trim() || undefined,
+    steps,
+  }
+}
+
 function toUiMessages(item: ThreadItem): UiMessage[] {
   if (item.type === 'agentMessage') {
     return [
@@ -140,6 +186,19 @@ function toUiMessages(item: ThreadItem): UiMessage[] {
 
   if (item.type === 'reasoning') {
     return []
+  }
+
+  if (item.type === 'plan') {
+    const text = typeof item.text === 'string' ? item.text : ''
+    return [
+      {
+        id: item.id,
+        role: 'assistant',
+        text,
+        messageType: 'plan',
+        plan: parsePlanText(text) ?? undefined,
+      },
+    ]
   }
 
   if (item.type === 'commandExecution') {

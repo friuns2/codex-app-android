@@ -1,6 +1,7 @@
 import { computed, ref } from 'vue'
 import {
   archiveThread,
+  getAvailableCollaborationModes,
   getAccountRateLimits,
   renameThread,
   getAvailableModelIds,
@@ -27,11 +28,15 @@ import {
   type SkillInfo,
 } from '../api/codexGateway'
 import type {
+  CollaborationModeKind,
+  CollaborationModeOption,
   CommandExecutionData,
   ReasoningEffort,
   ThreadScrollState,
   UiLiveOverlay,
   UiMessage,
+  UiPlanData,
+  UiPlanStep,
   UiProjectGroup,
   UiRateLimitSnapshot,
   UiServerRequest,
@@ -48,6 +53,7 @@ const SCROLL_STATE_STORAGE_KEY = 'codex-web-local.thread-scroll-state.v1'
 const SELECTED_THREAD_STORAGE_KEY = 'codex-web-local.selected-thread-id.v1'
 const PROJECT_ORDER_STORAGE_KEY = 'codex-web-local.project-order.v1'
 const PROJECT_DISPLAY_NAME_STORAGE_KEY = 'codex-web-local.project-display-name.v1'
+const COLLABORATION_MODE_STORAGE_KEY = 'codex-web-local.collaboration-mode.v1'
 const EVENT_SYNC_DEBOUNCE_MS = 220
 const REASONING_EFFORT_OPTIONS: ReasoningEffort[] = ['none', 'minimal', 'low', 'medium', 'high', 'xhigh']
 const GLOBAL_SERVER_REQUEST_SCOPE = '__global__'
@@ -71,6 +77,17 @@ function loadReadStateMap(): Record<string, string> {
 function saveReadStateMap(state: Record<string, string>): void {
   if (typeof window === 'undefined') return
   window.localStorage.setItem(READ_STATE_STORAGE_KEY, JSON.stringify(state))
+}
+
+function loadSelectedCollaborationMode(): CollaborationModeKind {
+  if (typeof window === 'undefined') return 'default'
+  const raw = window.localStorage.getItem(COLLABORATION_MODE_STORAGE_KEY)
+  return raw === 'plan' ? 'plan' : 'default'
+}
+
+function saveSelectedCollaborationMode(value: CollaborationModeKind): void {
+  if (typeof window === 'undefined') return
+  window.localStorage.setItem(COLLABORATION_MODE_STORAGE_KEY, value)
 }
 
 function clamp(value: number, minValue: number, maxValue: number): number {
@@ -256,6 +273,26 @@ function areCommandExecutionsEqual(first?: CommandExecutionData, second?: Comman
   return first.status === second.status && first.aggregatedOutput === second.aggregatedOutput && first.exitCode === second.exitCode
 }
 
+function arePlanStepsEqual(first: UiPlanStep[] = [], second: UiPlanStep[] = []): boolean {
+  if (first.length !== second.length) return false
+  for (let index = 0; index < first.length; index += 1) {
+    if (first[index]?.step !== second[index]?.step || first[index]?.status !== second[index]?.status) {
+      return false
+    }
+  }
+  return true
+}
+
+function arePlanDataEqual(first?: UiPlanData, second?: UiPlanData): boolean {
+  if (!first && !second) return true
+  if (!first || !second) return false
+  return (
+    first.explanation === second.explanation &&
+    first.isStreaming === second.isStreaming &&
+    arePlanStepsEqual(first.steps, second.steps)
+  )
+}
+
 function isUnsupportedChatGptModelError(error: unknown): boolean {
   if (!(error instanceof Error)) return false
   const message = error.message.toLowerCase()
@@ -275,6 +312,7 @@ function areMessageFieldsEqual(first: UiMessage, second: UiMessage): boolean {
     first.rawPayload === second.rawPayload &&
     first.isUnhandled === second.isUnhandled &&
     areCommandExecutionsEqual(first.commandExecution, second.commandExecution) &&
+    arePlanDataEqual(first.plan, second.plan) &&
     first.turnIndex === second.turnIndex
   )
 }
@@ -634,23 +672,37 @@ export function useDesktopState() {
   const sourceGroups = ref<UiProjectGroup[]>([])
   const selectedThreadId = ref(loadSelectedThreadId())
   const persistedMessagesByThreadId = ref<Record<string, UiMessage[]>>({})
+  const livePlanMessagesByThreadId = ref<Record<string, UiMessage[]>>({})
   const liveAgentMessagesByThreadId = ref<Record<string, UiMessage[]>>({})
   const liveReasoningTextByThreadId = ref<Record<string, string>>({})
   const liveCommandsByThreadId = ref<Record<string, UiMessage[]>>({})
   const inProgressById = ref<Record<string, boolean>>({})
   type FileAttachment = { label: string; path: string; fsPath: string }
-  type QueuedMessage = { id: string; text: string; imageUrls: string[]; skills: Array<{ name: string; path: string }>; fileAttachments: FileAttachment[] }
+  type QueuedMessage = {
+    id: string
+    text: string
+    imageUrls: string[]
+    skills: Array<{ name: string; path: string }>
+    fileAttachments: FileAttachment[]
+    collaborationMode: CollaborationModeKind
+  }
   type PendingTurnRequest = {
     text: string
     imageUrls: string[]
     skills: Array<{ name: string; path: string }>
     fileAttachments: FileAttachment[]
     effort: ReasoningEffort | ''
+    collaborationMode: CollaborationModeKind
     fallbackRetried: boolean
   }
   const queuedMessagesByThreadId = ref<Record<string, QueuedMessage[]>>({})
   const eventUnreadByThreadId = ref<Record<string, boolean>>({})
   const availableModelIds = ref<string[]>([])
+  const availableCollaborationModes = ref<CollaborationModeOption[]>([
+    { value: 'default', label: 'Default' },
+    { value: 'plan', label: 'Plan' },
+  ])
+  const selectedCollaborationMode = ref<CollaborationModeKind>(loadSelectedCollaborationMode())
   const selectedModelId = ref('')
   const selectedReasoningEffort = ref<ReasoningEffort | ''>('medium')
   const readStateByThreadId = ref<Record<string, string>>(loadReadStateMap())
@@ -730,9 +782,10 @@ export function useDesktopState() {
     if (!threadId) return []
 
     const persisted = persistedMessagesByThreadId.value[threadId] ?? []
+    const livePlan = livePlanMessagesByThreadId.value[threadId] ?? []
     const liveAgent = liveAgentMessagesByThreadId.value[threadId] ?? []
     const liveCommands = liveCommandsByThreadId.value[threadId] ?? []
-    const combined = [...persisted, ...liveCommands, ...liveAgent]
+    const combined = [...persisted, ...livePlan, ...liveCommands, ...liveAgent]
 
     const summary = turnSummaryByThreadId.value[threadId]
     if (!summary) return combined
@@ -749,6 +802,13 @@ export function useDesktopState() {
 
   function setSelectedModelId(modelId: string): void {
     selectedModelId.value = modelId.trim()
+  }
+
+  function setSelectedCollaborationMode(mode: CollaborationModeKind): void {
+    const nextMode: CollaborationModeKind = mode === 'plan' ? 'plan' : 'default'
+    if (selectedCollaborationMode.value === nextMode) return
+    selectedCollaborationMode.value = nextMode
+    saveSelectedCollaborationMode(nextMode)
   }
 
   function setCodexRateLimit(nextSnapshot: UiRateLimitSnapshot | null): void {
@@ -796,6 +856,7 @@ export function useDesktopState() {
       try {
         const rolledBackMessages = await rollbackThread(threadId, 1)
         setPersistedMessagesForThread(threadId, rolledBackMessages)
+        clearLivePlansForThread(threadId)
         setLiveAgentMessagesForThread(threadId, [])
         clearLiveReasoningForThread(threadId)
         if (liveCommandsByThreadId.value[threadId]) {
@@ -809,7 +870,7 @@ export function useDesktopState() {
       setTurnSummaryForThread(threadId, null)
       setTurnActivityForThread(threadId, {
         label: 'Thinking',
-        details: buildPendingTurnDetails(MODEL_FALLBACK_ID, pending.effort),
+        details: buildPendingTurnDetails(MODEL_FALLBACK_ID, pending.effort, pending.collaborationMode),
       })
       setThreadInProgress(threadId, true)
 
@@ -825,6 +886,7 @@ export function useDesktopState() {
         pending.effort || undefined,
         pending.skills.length > 0 ? pending.skills : undefined,
         pending.fileAttachments,
+        pending.collaborationMode,
       )
 
       resumedThreadById.value = {
@@ -853,10 +915,27 @@ export function useDesktopState() {
     selectedReasoningEffort.value = effort
   }
 
-  function buildPendingTurnDetails(modelId: string, effort: ReasoningEffort | ''): string[] {
+  async function refreshCollaborationModes(): Promise<void> {
+    try {
+      const modes = await getAvailableCollaborationModes()
+      availableCollaborationModes.value = modes
+      if (!modes.some((mode) => mode.value === selectedCollaborationMode.value)) {
+        setSelectedCollaborationMode('default')
+      }
+    } catch {
+      // Keep the last known collaboration mode choices on transient failures.
+    }
+  }
+
+  function buildPendingTurnDetails(
+    modelId: string,
+    effort: ReasoningEffort | '',
+    collaborationMode: CollaborationModeKind = selectedCollaborationMode.value,
+  ): string[] {
     const modelLabel = modelId.trim() || 'default'
     const effortLabel = effort || 'default'
-    return [`Model: ${modelLabel}`, `Thinking: ${effortLabel}`]
+    const modeLabel = collaborationMode === 'plan' ? 'Plan' : 'Default'
+    return [`Mode: ${modeLabel}`, `Model: ${modelLabel}`, `Thinking: ${effortLabel}`]
   }
 
   async function refreshModelPreferences(): Promise<void> {
@@ -1154,6 +1233,21 @@ export function useDesktopState() {
     }
   }
 
+  function setLivePlanMessagesForThread(threadId: string, nextMessages: UiMessage[]): void {
+    const previous = livePlanMessagesByThreadId.value[threadId] ?? []
+    if (areMessageArraysEqual(previous, nextMessages)) return
+    livePlanMessagesByThreadId.value = {
+      ...livePlanMessagesByThreadId.value,
+      [threadId]: nextMessages,
+    }
+  }
+
+  function upsertLivePlanMessage(threadId: string, nextMessage: UiMessage): void {
+    const previous = livePlanMessagesByThreadId.value[threadId] ?? []
+    const next = upsertMessage(previous, nextMessage)
+    setLivePlanMessagesForThread(threadId, next)
+  }
+
   function upsertLiveAgentMessage(threadId: string, nextMessage: UiMessage): void {
     const previous = liveAgentMessagesByThreadId.value[threadId] ?? []
     const next = upsertMessage(previous, nextMessage)
@@ -1186,6 +1280,92 @@ export function useDesktopState() {
     if (!threadId) return
     if (!(threadId in liveReasoningTextByThreadId.value)) return
     liveReasoningTextByThreadId.value = omitKey(liveReasoningTextByThreadId.value, threadId)
+  }
+
+  function clearLivePlansForThread(threadId: string): void {
+    if (!threadId) return
+    if (!(threadId in livePlanMessagesByThreadId.value)) return
+    livePlanMessagesByThreadId.value = omitKey(livePlanMessagesByThreadId.value, threadId)
+  }
+
+  function normalizePlanStepStatus(value: unknown): UiPlanStep['status'] {
+    if (value === 'completed') return 'completed'
+    if (value === 'inProgress' || value === 'in_progress') return 'inProgress'
+    return 'pending'
+  }
+
+  function buildPlanMessageText(plan: UiPlanData): string {
+    const lines: string[] = []
+    if (plan.explanation?.trim()) {
+      lines.push(plan.explanation.trim())
+    }
+    for (const step of plan.steps) {
+      const marker = step.status === 'completed' ? 'x' : step.status === 'inProgress' ? '~' : ' '
+      lines.push(`- [${marker}] ${step.step}`)
+    }
+    return lines.join('\n').trim()
+  }
+
+  function readPlanUpdate(notification: RpcNotification): { threadId: string; message: UiMessage } | null {
+    if (notification.method !== 'turn/plan/updated') return null
+    const params = asRecord(notification.params)
+    const threadId = extractThreadIdFromNotification(notification)
+    const turnId = readString(params?.turnId) || readString(params?.turn_id)
+    const rawSteps = Array.isArray(params?.plan) ? params?.plan : []
+    const steps: UiPlanStep[] = rawSteps
+      .map((row) => asRecord(row))
+      .map((row) => ({
+        step: readString(row?.step),
+        status: normalizePlanStepStatus(row?.status),
+      }))
+      .filter((row) => row.step.length > 0)
+
+    if (!threadId || !turnId) return null
+
+    const explanation = readString(params?.explanation).trim()
+    const plan: UiPlanData = {
+      explanation: explanation || undefined,
+      steps,
+      isStreaming: true,
+    }
+
+    return {
+      threadId,
+      message: {
+        id: `${turnId}:plan`,
+        role: 'assistant',
+        text: buildPlanMessageText(plan),
+        messageType: 'plan.live',
+        plan,
+      },
+    }
+  }
+
+  function readPlanDelta(notification: RpcNotification): { threadId: string; message: UiMessage } | null {
+    if (notification.method !== 'item/plan/delta') return null
+    const params = asRecord(notification.params)
+    const threadId = extractThreadIdFromNotification(notification)
+    const turnId = readString(params?.turnId) || readString(params?.turn_id)
+    const delta = readString(params?.delta)
+    if (!threadId || !turnId || !delta) return null
+
+    const messageId = `${turnId}:plan`
+    const existing = (livePlanMessagesByThreadId.value[threadId] ?? []).find((message) => message.id === messageId)
+    const nextText = `${existing?.text ?? ''}${delta}`
+    const nextPlan: UiPlanData | undefined = existing?.plan
+      ? { ...existing.plan, isStreaming: true }
+      : undefined
+
+    return {
+      threadId,
+      message: {
+        id: messageId,
+        role: 'assistant',
+        text: nextText,
+        messageType: 'plan.live',
+        plan: nextPlan,
+      },
+    }
   }
 
   function asRecord(value: unknown): Record<string, unknown> | null {
@@ -1705,6 +1885,7 @@ export function useDesktopState() {
         ...activeTurnIdByThreadId.value,
         [startedTurn.threadId]: startedTurn.turnId,
       }
+      clearLivePlansForThread(startedTurn.threadId)
       setTurnSummaryForThread(startedTurn.threadId, null)
       setTurnErrorForThread(startedTurn.threadId, null)
       setThreadInProgress(startedTurn.threadId, true)
@@ -1782,6 +1963,24 @@ export function useDesktopState() {
     }
 
     const notificationThreadId = extractThreadIdFromNotification(notification)
+    const planUpdate = readPlanUpdate(notification)
+    if (planUpdate) {
+      upsertLivePlanMessage(planUpdate.threadId, planUpdate.message)
+      setTurnActivityForThread(planUpdate.threadId, {
+        label: 'Planning',
+        details: planUpdate.message.plan?.steps.map((step) => step.step).slice(0, 2) ?? [],
+      })
+    }
+
+    const planDelta = readPlanDelta(notification)
+    if (planDelta) {
+      upsertLivePlanMessage(planDelta.threadId, planDelta.message)
+      setTurnActivityForThread(planDelta.threadId, {
+        label: 'Planning',
+        details: [],
+      })
+    }
+
     if (!notificationThreadId || notificationThreadId !== selectedThreadId.value) return
 
     const startedAgentMessageId = readAgentMessageStartedId(notification)
@@ -2064,6 +2263,9 @@ export function useDesktopState() {
         }
       }
       setThreadInProgress(threadId, inProgress)
+      if (!inProgress) {
+        clearLivePlansForThread(threadId)
+      }
       markThreadAsRead(threadId)
     } finally {
       if (shouldShowLoading) {
@@ -2096,6 +2298,7 @@ export function useDesktopState() {
       await loadThreads()
       await Promise.all([
         refreshModelPreferences(),
+        refreshCollaborationModes(),
         refreshSkills(),
         refreshCodexRateLimits(),
       ])
@@ -2160,7 +2363,17 @@ export function useDesktopState() {
       const id = `q-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
       queuedMessagesByThreadId.value = {
         ...queuedMessagesByThreadId.value,
-        [threadId]: [...queue, { id, text: nextText, imageUrls, skills, fileAttachments }],
+        [threadId]: [
+          ...queue,
+          {
+            id,
+            text: nextText,
+            imageUrls,
+            skills,
+            fileAttachments,
+            collaborationMode: selectedCollaborationMode.value,
+          },
+        ],
       }
       return
     }
@@ -2180,7 +2393,14 @@ export function useDesktopState() {
     setTurnSummaryForThread(threadId, null)
     setTurnActivityForThread(
       threadId,
-      { label: 'Thinking', details: buildPendingTurnDetails(selectedModelId.value, selectedReasoningEffort.value) },
+      {
+        label: 'Thinking',
+        details: buildPendingTurnDetails(
+          selectedModelId.value,
+          selectedReasoningEffort.value,
+          selectedCollaborationMode.value,
+        ),
+      },
     )
     setTurnErrorForThread(threadId, null)
     setThreadInProgress(threadId, true)
@@ -2237,7 +2457,14 @@ export function useDesktopState() {
       setTurnSummaryForThread(threadId, null)
       setTurnActivityForThread(
         threadId,
-        { label: 'Thinking', details: buildPendingTurnDetails(selectedModelId.value, selectedReasoningEffort.value) },
+        {
+          label: 'Thinking',
+          details: buildPendingTurnDetails(
+            selectedModelId.value,
+            selectedReasoningEffort.value,
+            selectedCollaborationMode.value,
+          ),
+        },
       )
       setTurnErrorForThread(threadId, null)
       setThreadInProgress(threadId, true)
@@ -2283,6 +2510,7 @@ export function useDesktopState() {
   ): Promise<void> {
     const modelId = selectedModelId.value.trim()
     const reasoningEffort = selectedReasoningEffort.value
+    const collaborationMode = selectedCollaborationMode.value
     const normalizedText = nextText.trim()
     const normalizedSkills = skills.map((skill) => ({ name: skill.name, path: skill.path }))
     const normalizedFileAttachments = fileAttachments.map((file) => ({ ...file }))
@@ -2293,6 +2521,7 @@ export function useDesktopState() {
       skills: normalizedSkills,
       fileAttachments: normalizedFileAttachments,
       effort: reasoningEffort,
+      collaborationMode,
       fallbackRetried: false,
     })
 
@@ -2310,6 +2539,7 @@ export function useDesktopState() {
           reasoningEffort || undefined,
           skills.length > 0 ? skills : undefined,
           fileAttachments,
+          collaborationMode,
         )
       } catch (unknownError) {
         if (modelId && modelId !== MODEL_FALLBACK_ID && isUnsupportedChatGptModelError(unknownError)) {
@@ -2320,6 +2550,7 @@ export function useDesktopState() {
             skills: normalizedSkills,
             fileAttachments: normalizedFileAttachments,
             effort: reasoningEffort,
+            collaborationMode,
             fallbackRetried: true,
           })
           await startThreadTurn(
@@ -2330,6 +2561,7 @@ export function useDesktopState() {
             reasoningEffort || undefined,
             skills.length > 0 ? skills : undefined,
             fileAttachments,
+            collaborationMode,
           )
         } else {
           throw unknownError
@@ -2360,10 +2592,22 @@ export function useDesktopState() {
     error.value = ''
     shouldAutoScrollOnNextAgentEvent = true
     setTurnSummaryForThread(threadId, null)
-    setTurnActivityForThread(threadId, { label: 'Thinking', details: buildPendingTurnDetails(selectedModelId.value, selectedReasoningEffort.value) })
+    setTurnActivityForThread(
+      threadId,
+      {
+        label: 'Thinking',
+        details: buildPendingTurnDetails(
+          selectedModelId.value,
+          selectedReasoningEffort.value,
+          next.collaborationMode,
+        ),
+      },
+    )
+
     setTurnErrorForThread(threadId, null)
     setThreadInProgress(threadId, true)
     try {
+      setSelectedCollaborationMode(next.collaborationMode)
       await startTurnForThread(threadId, next.text, next.imageUrls, next.skills, next.fileAttachments)
     } catch {
       setThreadInProgress(threadId, false)
@@ -2417,6 +2661,7 @@ export function useDesktopState() {
     try {
       const nextMessages = await rollbackThread(threadId, numTurns)
       setPersistedMessagesForThread(threadId, nextMessages)
+      clearLivePlansForThread(threadId)
       setLiveAgentMessagesForThread(threadId, [])
       clearLiveReasoningForThread(threadId)
       if (liveCommandsByThreadId.value[threadId]) {
@@ -2731,6 +2976,7 @@ export function useDesktopState() {
     activeReasoningItemId = ''
     shouldAutoScrollOnNextAgentEvent = false
     persistedMessagesByThreadId.value = {}
+    livePlanMessagesByThreadId.value = {}
     liveAgentMessagesByThreadId.value = {}
     liveReasoningTextByThreadId.value = {}
     liveCommandsByThreadId.value = {}
@@ -2767,6 +3013,7 @@ export function useDesktopState() {
     const msg = queue.find((m) => m.id === messageId)
     if (!msg) return
     removeQueuedMessage(messageId)
+    setSelectedCollaborationMode(msg.collaborationMode)
     void sendMessageToSelectedThread(msg.text, msg.imageUrls, msg.skills, 'steer', msg.fileAttachments)
   }
 
@@ -2779,7 +3026,9 @@ export function useDesktopState() {
     selectedLiveOverlay,
     codexQuota,
     selectedThreadId,
+    availableCollaborationModes,
     availableModelIds,
+    selectedCollaborationMode,
     selectedModelId,
     selectedReasoningEffort,
     installedSkills,
@@ -2803,6 +3052,7 @@ export function useDesktopState() {
     selectedThreadQueuedMessages,
     removeQueuedMessage,
     steerQueuedMessage,
+    setSelectedCollaborationMode,
     setSelectedModelId,
     setSelectedReasoningEffort,
     respondToPendingServerRequest,

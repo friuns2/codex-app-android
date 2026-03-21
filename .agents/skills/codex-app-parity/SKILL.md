@@ -258,6 +258,28 @@ After each feature implementation session that uses this skill:
 ## Findings: Mobile Composer Auto-Zoom Fallback (2026-03-21)
 
 - Codex.app could not be inspected in this environment, so mobile zoom behavior was handled with a browser-level fallback.
+
+## Findings: Plan Mode Fallback Wiring (2026-03-22)
+
+- Codex.app could not be inspected in this Linux environment because `/Applications/Codex.app` is unavailable, so plan-mode behavior was aligned to the shipped app-server protocol instead of renderer-bundle parity.
+- App-server protocol already exposes the full plan-mode surface needed by the web UI:
+  - `TurnStartParams.collaborationMode`
+  - `ModeKind = "plan" | "default"`
+  - `turn/plan/updated`
+  - `item/plan/delta`
+  - `ThreadItem.type = "plan"`
+  - `item/tool/requestUserInput`
+- Conservative web fallback for plan mode:
+  - persist the selected collaboration mode locally under `codex-web-local.collaboration-mode.v1`
+  - send `collaborationMode: { mode: "plan", settings: { model, reasoning_effort, developer_instructions: null } }` only when plan mode is selected
+  - omit `collaborationMode` entirely for default mode to disable plan mode cleanly
+- `collaborationMode/list` can be treated as advisory rather than authoritative for web fallback:
+  - when available, use server labels for `default` / `plan`
+  - still keep static `Default` and `Plan` options available so the feature remains usable against servers that lag the preset-list endpoint
+- `request_user_input` questions need broader handling than the original approval-like UI:
+  - support selectable options with descriptions
+  - support free-text questions when `options` is `null` or empty
+  - support secret answers via password inputs when `isSecret` is true
 - On mobile browsers, especially iOS Safari, focusing text inputs below `16px` commonly triggers viewport auto-zoom.
 - In this repo, the main composer textarea used `text-sm` (`14px` computed on mobile), which is sufficient to trigger that browser behavior.
 - Conservative fix: keep viewport meta unchanged and raise focusable text input font-size to `16px` on mobile widths, instead of disabling pinch zoom globally.

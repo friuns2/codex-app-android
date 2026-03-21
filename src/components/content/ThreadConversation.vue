@@ -46,18 +46,37 @@
                   <p class="request-question-title">{{ question.header || question.question }}</p>
                   <p v-if="question.header && question.question" class="request-question-text">{{ question.question }}</p>
                   <select
+                    v-if="question.options.length > 0"
                     class="request-select"
-                    :value="readQuestionAnswer(request.id, question.id, question.options[0] || '')"
+                    :value="readQuestionAnswer(request.id, question.id, question.options[0]?.label || '')"
                     @change="onQuestionAnswerChange(request.id, question.id, $event)"
                   >
-                    <option v-for="option in question.options" :key="`${request.id}:${question.id}:${option}`" :value="option">
-                      {{ option }}
+                    <option
+                      v-for="option in question.options"
+                      :key="`${request.id}:${question.id}:${option.label}`"
+                      :value="option.label"
+                    >
+                      {{ option.label }}
                     </option>
                   </select>
+                  <p
+                    v-if="question.options.length > 0 && readQuestionOptionDescription(request.id, question)"
+                    class="request-question-option-description"
+                  >
+                    {{ readQuestionOptionDescription(request.id, question) }}
+                  </p>
+                  <input
+                    v-else
+                    class="request-input"
+                    :type="question.isSecret ? 'password' : 'text'"
+                    :value="readQuestionAnswer(request.id, question.id, '')"
+                    :placeholder="question.isSecret ? 'Enter secret answer' : 'Enter answer'"
+                    @input="onQuestionAnswerInput(request.id, question.id, $event)"
+                  />
                   <input
                     v-if="question.isOther"
                     class="request-input"
-                    type="text"
+                    :type="question.isSecret ? 'password' : 'text'"
                     :value="readQuestionOtherAnswer(request.id, question.id)"
                     placeholder="Other answer"
                     @input="onQuestionOtherAnswerInput(request.id, question.id, $event)"
@@ -178,6 +197,27 @@
                       </div>
                     </div>
                   </div>
+                </div>
+                <div v-else-if="isPlanMessage(message)" class="plan-card" :data-streaming="message.messageType === 'plan.live'">
+                  <div class="plan-card-header">
+                    <p class="plan-card-title">Plan</p>
+                    <span v-if="message.messageType === 'plan.live'" class="plan-card-badge">Updating</span>
+                  </div>
+                  <p v-if="readPlanExplanation(message)" class="plan-card-explanation">
+                    {{ readPlanExplanation(message) }}
+                  </p>
+                  <ol v-if="readPlanSteps(message).length > 0" class="plan-step-list">
+                    <li
+                      v-for="(step, stepIndex) in readPlanSteps(message)"
+                      :key="`${message.id}:plan-step:${stepIndex}`"
+                      class="plan-step-item"
+                      :data-status="step.status"
+                    >
+                      <span class="plan-step-status" :data-status="step.status">{{ planStepStatusIcon(step.status) }}</span>
+                      <span class="plan-step-text">{{ step.step }}</span>
+                    </li>
+                  </ol>
+                  <p v-else class="message-text">{{ message.text }}</p>
                 </div>
                 <div v-else class="message-text-flow">
                   <template v-for="(block, blockIndex) in parseMessageBlocks(message.text)" :key="`block-${blockIndex}`">
@@ -456,7 +496,7 @@
 
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, ref, watch } from 'vue'
-import type { ThreadScrollState, UiLiveOverlay, UiMessage, UiServerRequest } from '../../types/codex'
+import type { ThreadScrollState, UiLiveOverlay, UiMessage, UiPlanStep, UiServerRequest } from '../../types/codex'
 import IconTablerX from '../icons/IconTablerX.vue'
 import IconTablerArrowBackUp from '../icons/IconTablerArrowBackUp.vue'
 import IconTablerCopy from '../icons/IconTablerCopy.vue'
@@ -466,8 +506,78 @@ const collapsingCommandIds = ref<Set<string>>(new Set())
 const expandedWorkedIds = ref<Set<string>>(new Set())
 const prevCommandStatuses = ref<Record<string, string>>({})
 
+function parsePlanFromMessageText(text: string): { explanation: string; steps: UiPlanStep[] } | null {
+  const normalized = text.replace(/\r\n/g, '\n').trim()
+  if (!normalized) return null
+
+  const steps: UiPlanStep[] = []
+  const explanationLines: string[] = []
+
+  for (const line of normalized.split('\n')) {
+    const trimmed = line.trim()
+    if (!trimmed) {
+      if (steps.length === 0) explanationLines.push('')
+      continue
+    }
+
+    const match = trimmed.match(/^[-*]\s+\[([ xX~>|-])\]\s+(.+)$/)
+    if (match) {
+      const marker = (match[1] ?? ' ').toLowerCase()
+      let status: UiPlanStep['status'] = 'pending'
+      if (marker === 'x') status = 'completed'
+      if (marker === '~' || marker === '>' || marker === '-') status = 'inProgress'
+      steps.push({
+        step: match[2]?.trim() ?? '',
+        status,
+      })
+      continue
+    }
+
+    explanationLines.push(trimmed)
+  }
+
+  if (steps.length === 0) return null
+  return {
+    explanation: explanationLines.join('\n').trim(),
+    steps: steps.filter((step) => step.step.length > 0),
+  }
+}
+
+function readPlanData(message: UiMessage): { explanation: string; steps: UiPlanStep[] } | null {
+  if (message.plan && message.plan.steps.length > 0) {
+    return {
+      explanation: message.plan.explanation?.trim() ?? '',
+      steps: message.plan.steps,
+    }
+  }
+  return parsePlanFromMessageText(message.text)
+}
+
 function isCommandMessage(message: UiMessage): boolean {
   return message.messageType === 'commandExecution' && !!message.commandExecution
+}
+
+function isPlanMessage(message: UiMessage): boolean {
+  return message.messageType === 'plan' || message.messageType === 'plan.live'
+}
+
+function readPlanExplanation(message: UiMessage): string {
+  return readPlanData(message)?.explanation ?? ''
+}
+
+function readPlanSteps(message: UiMessage): UiPlanStep[] {
+  return readPlanData(message)?.steps ?? []
+}
+
+function planStepStatusIcon(status: UiPlanStep['status']): string {
+  switch (status) {
+    case 'completed':
+      return '✓'
+    case 'inProgress':
+      return '•'
+    default:
+      return '○'
+  }
 }
 
 function isCommandExpanded(message: UiMessage): boolean {
@@ -598,8 +708,9 @@ type ParsedToolQuestion = {
   id: string
   header: string
   question: string
+  isSecret: boolean
   isOther: boolean
-  options: string[]
+  options: Array<{ label: string; description: string }>
 }
 
 function isFilePath(value: string): boolean {
@@ -1426,14 +1537,18 @@ function readToolQuestions(request: UiServerRequest): ParsedToolQuestion[] {
     const options = Array.isArray(question.options)
       ? question.options
         .map((option) => asRecord(option))
-        .map((option) => option?.label)
-        .filter((option): option is string => typeof option === 'string' && option.length > 0)
+        .map((option) => ({
+          label: typeof option?.label === 'string' ? option.label : '',
+          description: typeof option?.description === 'string' ? option.description : '',
+        }))
+        .filter((option) => option.label.length > 0)
       : []
 
     parsed.push({
       id,
       header: typeof question.header === 'string' ? question.header : '',
       question: typeof question.question === 'string' ? question.question : '',
+      isSecret: question.isSecret === true,
       isOther: question.isOther === true,
       options,
     })
@@ -1447,6 +1562,22 @@ function readQuestionAnswer(requestId: number, questionId: string, fallback: str
   const saved = toolQuestionAnswers.value[key]
   if (typeof saved === 'string' && saved.length > 0) return saved
   return fallback
+}
+
+function onQuestionAnswerInput(requestId: number, questionId: string, event: Event): void {
+  const target = event.target
+  if (!(target instanceof HTMLInputElement)) return
+  const key = toolQuestionKey(requestId, questionId)
+  toolQuestionAnswers.value = {
+    ...toolQuestionAnswers.value,
+    [key]: target.value,
+  }
+}
+
+function readQuestionOptionDescription(requestId: number, question: ParsedToolQuestion): string {
+  const selected = readQuestionAnswer(requestId, question.id, question.options[0]?.label || '')
+  const match = question.options.find((option) => option.label === selected)
+  return match?.description ?? ''
 }
 
 function readQuestionOtherAnswer(requestId: number, questionId: string): string {
@@ -1486,7 +1617,7 @@ function onRespondToolRequestUserInput(request: UiServerRequest): void {
   const answers: Record<string, { answers: string[] }> = {}
 
   for (const question of questions) {
-    const selected = readQuestionAnswer(request.id, question.id, question.options[0] || '')
+    const selected = readQuestionAnswer(request.id, question.id, question.options[0]?.label || '')
     const other = readQuestionOtherAnswer(request.id, question.id).trim()
     const values = [selected, other].map((value) => value.trim()).filter((value) => value.length > 0)
     answers[question.id] = { answers: values }
@@ -1890,6 +2021,10 @@ onBeforeUnmount(() => {
   @apply m-0 text-xs leading-4 text-amber-800;
 }
 
+.request-question-option-description {
+  @apply m-0 text-xs leading-4 text-amber-700;
+}
+
 .request-select {
   @apply h-8 rounded-md border border-amber-300 bg-white px-2 text-sm text-amber-900;
 }
@@ -1976,6 +2111,58 @@ onBeforeUnmount(() => {
 
 .message-text-flow {
   @apply flex flex-col gap-2;
+}
+
+.plan-card {
+  @apply flex max-w-[min(76ch,100%)] flex-col gap-3 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-slate-900;
+}
+
+.plan-card-header {
+  @apply flex items-center justify-between gap-3;
+}
+
+.plan-card-title {
+  @apply m-0 text-sm font-semibold leading-5 text-sky-900;
+}
+
+.plan-card-badge {
+  @apply inline-flex items-center rounded-full bg-sky-200 px-2 py-0.5 text-[11px] font-medium leading-4 text-sky-900;
+}
+
+.plan-card-explanation {
+  @apply m-0 text-sm leading-relaxed whitespace-pre-wrap text-slate-700;
+}
+
+.plan-step-list {
+  @apply m-0 flex list-none flex-col gap-2 p-0;
+}
+
+.plan-step-item {
+  @apply flex items-start gap-2 rounded-xl border border-white/70 bg-white/80 px-3 py-2 text-sm leading-relaxed text-slate-800;
+}
+
+.plan-step-item[data-status='completed'] {
+  @apply border-emerald-200 bg-emerald-50/80;
+}
+
+.plan-step-item[data-status='inProgress'] {
+  @apply border-amber-200 bg-amber-50/80;
+}
+
+.plan-step-status {
+  @apply mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xs font-semibold text-slate-700;
+}
+
+.plan-step-status[data-status='completed'] {
+  @apply bg-emerald-200 text-emerald-900;
+}
+
+.plan-step-status[data-status='inProgress'] {
+  @apply bg-amber-200 text-amber-900;
+}
+
+.plan-step-text {
+  @apply whitespace-pre-wrap;
 }
 
 .message-text {

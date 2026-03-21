@@ -171,6 +171,16 @@
 
         <template v-if="!isDictationRecording">
           <ComposerDropdown
+            class="thread-composer-control thread-composer-control-mode"
+            :model-value="selectedCollaborationMode"
+            :options="collaborationModeOptions"
+            placeholder="Mode"
+            open-direction="up"
+            :disabled="disabled || !activeThreadId || isTurnInProgress"
+            @update:model-value="onCollaborationModeSelect"
+          />
+
+          <ComposerDropdown
             class="thread-composer-control"
             :model-value="selectedModel"
             :options="modelOptions"
@@ -295,7 +305,13 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import type { ReasoningEffort, UiRateLimitSnapshot, UiRateLimitWindow } from '../../types/codex'
+import type {
+  CollaborationModeKind,
+  CollaborationModeOption,
+  ReasoningEffort,
+  UiRateLimitSnapshot,
+  UiRateLimitWindow,
+} from '../../types/codex'
 import { useDictation } from '../../composables/useDictation'
 import { searchComposerFiles, uploadFile, type ComposerFileSuggestion } from '../../api/codexGateway'
 import IconTablerArrowUp from '../icons/IconTablerArrowUp.vue'
@@ -312,6 +328,8 @@ type SkillItem = { name: string; description: string; path: string }
 const props = defineProps<{
   activeThreadId: string
   cwd?: string
+  collaborationModes?: CollaborationModeOption[]
+  selectedCollaborationMode: CollaborationModeKind
   models: string[]
   selectedModel: string
   selectedReasoningEffort: ReasoningEffort | ''
@@ -339,6 +357,7 @@ export type SubmitPayload = {
 const emit = defineEmits<{
   submit: [payload: SubmitPayload]
   interrupt: []
+  'update:selected-collaboration-mode': [mode: CollaborationModeKind]
   'update:selected-model': [modelId: string]
   'update:selected-reasoning-effort': [effort: ReasoningEffort | '']
 }>()
@@ -417,6 +436,14 @@ const reasoningOptions: Array<{ value: ReasoningEffort; label: string }> = [
   { value: 'high', label: 'High' },
   { value: 'xhigh', label: 'Extra high' },
 ]
+const collaborationModeOptions = computed(() => (
+  props.collaborationModes?.length
+    ? props.collaborationModes
+    : [
+      { value: 'default', label: 'Default' },
+      { value: 'plan', label: 'Plan' },
+    ]
+))
 const modelOptions = computed(() =>
   props.models.map((modelId) => ({ value: modelId, label: modelId })),
 )
@@ -581,6 +608,10 @@ function onInterrupt(): void {
 
 function onModelSelect(value: string): void {
   emit('update:selected-model', value)
+}
+
+function onCollaborationModeSelect(value: string): void {
+  emit('update:selected-collaboration-mode', value === 'plan' ? 'plan' : 'default')
 }
 
 function onReasoningEffortSelect(value: string): void {
