@@ -2232,8 +2232,97 @@ onBeforeUnmount(() => {
 .plan-card-markdown :deep(.message-heading),
 .plan-card-markdown :deep(.message-blockquote),
 .plan-card-markdown :deep(.message-list),
-.plan-card-markdown :deep(.message-code-block) {
+.plan-card-markdown :deep(.message-code-block),
+.plan-card-markdown :deep(.message-divider) {
   @apply m-0;
+}
+
+.plan-card-markdown :deep(.message-text) {
+  @apply text-sm leading-relaxed whitespace-pre-wrap text-slate-800;
+}
+
+.plan-card-markdown :deep(.message-heading) {
+  @apply text-slate-900 tracking-tight;
+}
+
+.plan-card-markdown :deep(.message-heading-h1) {
+  @apply text-2xl font-semibold leading-tight;
+}
+
+.plan-card-markdown :deep(.message-heading-h2) {
+  @apply text-xl font-semibold leading-tight;
+}
+
+.plan-card-markdown :deep(.message-heading-h3) {
+  @apply text-lg font-semibold leading-snug;
+}
+
+.plan-card-markdown :deep(.message-heading-h4) {
+  @apply text-base font-semibold leading-snug;
+}
+
+.plan-card-markdown :deep(.message-heading-h5) {
+  @apply text-sm font-semibold leading-snug uppercase tracking-[0.02em];
+}
+
+.plan-card-markdown :deep(.message-heading-h6) {
+  @apply text-xs font-semibold leading-snug uppercase tracking-[0.04em] text-slate-600;
+}
+
+.plan-card-markdown :deep(.message-blockquote) {
+  @apply border-l-4 border-slate-300 pl-4 py-1 text-sm leading-relaxed whitespace-pre-wrap text-slate-700 bg-slate-50/70 rounded-r-lg;
+}
+
+.plan-card-markdown :deep(.message-list) {
+  @apply pl-5 text-sm leading-relaxed text-slate-800 flex flex-col gap-1.5;
+}
+
+.plan-card-markdown :deep(.message-list-unordered) {
+  @apply list-disc;
+}
+
+.plan-card-markdown :deep(.message-list-ordered) {
+  @apply list-decimal;
+}
+
+.plan-card-markdown :deep(.message-list-item) {
+  @apply pl-1;
+}
+
+.plan-card-markdown :deep(.message-list-item-text) {
+  @apply whitespace-pre-wrap;
+}
+
+.plan-card-markdown :deep(.message-task-list) {
+  @apply list-none pl-0;
+}
+
+.plan-card-markdown :deep(.message-task-item) {
+  @apply flex items-start gap-2;
+}
+
+.plan-card-markdown :deep(.message-task-checkbox) {
+  @apply mt-0.5 text-sm leading-none text-slate-500 select-none;
+}
+
+.plan-card-markdown :deep(.message-code-block) {
+  @apply overflow-hidden rounded-xl border border-slate-200 bg-slate-950/95 text-slate-100;
+}
+
+.plan-card-markdown :deep(.message-code-language) {
+  @apply border-b border-slate-800 bg-slate-900/90 px-3 py-2 text-[11px] font-medium uppercase tracking-[0.08em] text-slate-400;
+}
+
+.plan-card-markdown :deep(.message-code-pre) {
+  @apply m-0 overflow-x-auto px-3 py-3 text-[13px] leading-6;
+}
+
+.plan-card-markdown :deep(.message-inline-code) {
+  @apply rounded-md bg-slate-200/80 px-1.5 py-0.5 font-mono text-[0.9em] text-slate-900;
+}
+
+.plan-card-markdown :deep(.message-file-link) {
+  @apply text-sky-700 underline decoration-sky-300 underline-offset-2;
 }
 
 .plan-step-list {
