@@ -2318,7 +2318,7 @@ export function useDesktopState() {
   ) {
     error.value = ''
     const includeSelectedThreadMessages = options.includeSelectedThreadMessages !== false
-    const awaitAncillaryRefreshes = options.awaitAncillaryRefreshes !== false
+    const awaitAncillaryRefreshes = options.awaitAncillaryRefreshes === true
 
     try {
       await loadThreads()
@@ -2333,6 +2333,8 @@ export function useDesktopState() {
       }
       if (awaitAncillaryRefreshes) {
         await ancillaryRefresh
+      } else {
+        void ancillaryRefresh
       }
     } catch (unknownError) {
       error.value = unknownError instanceof Error ? unknownError.message : 'Unknown application error'

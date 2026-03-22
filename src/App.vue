@@ -870,7 +870,6 @@ async function initialize(): Promise<void> {
   startPolling()
   await refreshAll({
     includeSelectedThreadMessages: true,
-    awaitAncillaryRefreshes: false,
   })
   hasInitialized.value = true
   await syncThreadSelectionWithRoute()
