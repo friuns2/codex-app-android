@@ -6,8 +6,8 @@ import { chmodSync, createWriteStream, existsSync as existsSync4, mkdirSync } fr
 import { readFile as readFile4 } from "fs/promises";
 import { homedir as homedir3, networkInterfaces } from "os";
 import { join as join5 } from "path";
-import { spawn as spawn3, spawnSync as spawnSync2 } from "child_process";
-import { createInterface } from "readline/promises";
+import { spawn as spawn3, spawnSync } from "child_process";
+import { createInterface as createInterface2 } from "readline/promises";
 import { fileURLToPath as fileURLToPath2 } from "url";
 import { dirname as dirname3 } from "path";
 import { get as httpsGet } from "https";
@@ -22,14 +22,15 @@ import { writeFile as writeFile3, stat as stat4 } from "fs/promises";
 import express from "express";
 
 // src/server/codexAppServerBridge.ts
-import { spawn as spawn2, spawnSync } from "child_process";
+import { spawn as spawn2 } from "child_process";
 import { randomBytes } from "crypto";
 import { mkdtemp as mkdtemp2, readFile as readFile2, mkdir as mkdir2, stat as stat2 } from "fs/promises";
-import { existsSync as existsSync2 } from "fs";
+import { createReadStream } from "fs";
 import { request as httpsRequest } from "https";
 import { homedir as homedir2 } from "os";
 import { tmpdir as tmpdir2 } from "os";
 import { basename, isAbsolute, join as join2, resolve } from "path";
+import { createInterface } from "readline";
 import { writeFile as writeFile2 } from "fs/promises";
 
 // src/server/skillsRoutes.ts
@@ -1224,60 +1225,6 @@ function getCodexHomeDir2() {
   const codexHome = process.env.CODEX_HOME?.trim();
   return codexHome && codexHome.length > 0 ? codexHome : join2(homedir2(), ".codex");
 }
-function quoteCmdExeArg(value) {
-  const normalized = value.replace(/"/g, '""');
-  if (!/[\s"]/u.test(normalized)) {
-    return normalized;
-  }
-  return `"${normalized}"`;
-}
-function getSpawnInvocation(command, args = []) {
-  if (process.platform === "win32" && /\.(cmd|bat)$/i.test(command)) {
-    return {
-      cmd: "cmd.exe",
-      args: ["/d", "/s", "/c", [quoteCmdExeArg(command), ...args.map((arg) => quoteCmdExeArg(arg))].join(" ")]
-    };
-  }
-  return { cmd: command, args };
-}
-function canRun(command, args = []) {
-  const invocation = getSpawnInvocation(command, args);
-  const result = spawnSync(invocation.cmd, invocation.args, { stdio: "ignore" });
-  return result.status === 0;
-}
-function getUserNpmPrefix() {
-  return join2(homedir2(), ".npm-global");
-}
-function resolveCodexCommand() {
-  if (canRun("codex", ["--version"])) {
-    return "codex";
-  }
-  if (process.platform === "win32") {
-    const windowsCandidates = [
-      process.env.APPDATA ? join2(process.env.APPDATA, "npm", "codex.cmd") : "",
-      join2(homedir2(), ".local", "bin", "codex.cmd"),
-      join2(getUserNpmPrefix(), "bin", "codex.cmd")
-    ].filter(Boolean);
-    for (const candidate2 of windowsCandidates) {
-      if (existsSync2(candidate2) && canRun(candidate2, ["--version"])) {
-        return candidate2;
-      }
-    }
-  }
-  const userCandidate = join2(getUserNpmPrefix(), "bin", "codex");
-  if (existsSync2(userCandidate) && canRun(userCandidate, ["--version"])) {
-    return userCandidate;
-  }
-  const prefix = process.env.PREFIX?.trim();
-  if (!prefix) {
-    return null;
-  }
-  const candidate = join2(prefix, "bin", "codex");
-  if (existsSync2(candidate) && canRun(candidate, ["--version"])) {
-    return candidate;
-  }
-  return null;
-}
 async function runCommand2(command, args, options = {}) {
   await new Promise((resolve2, reject) => {
     const proc = spawn2(command, args, {
@@ -1395,9 +1342,14 @@ function getCodexSessionIndexPath() {
   return join2(getCodexHomeDir2(), "session_index.jsonl");
 }
 var MAX_THREAD_TITLES = 500;
+var EMPTY_THREAD_TITLE_CACHE = { titles: {}, order: [] };
+var sessionIndexThreadTitleCacheState = {
+  fileSignature: null,
+  cache: EMPTY_THREAD_TITLE_CACHE
+};
 function normalizeThreadTitleCache(value) {
   const record = asRecord2(value);
-  if (!record) return { titles: {}, order: [] };
+  if (!record) return EMPTY_THREAD_TITLE_CACHE;
   const rawTitles = asRecord2(record.titles);
   const titles = {};
   if (rawTitles) {
@@ -1469,7 +1421,7 @@ async function readThreadTitleCache() {
     const payload = asRecord2(JSON.parse(raw)) ?? {};
     return normalizeThreadTitleCache(payload["thread-titles"]);
   } catch {
-    return { titles: {}, order: [] };
+    return EMPTY_THREAD_TITLE_CACHE;
   }
 }
 async function writeThreadTitleCache(cache) {
@@ -1484,11 +1436,18 @@ async function writeThreadTitleCache(cache) {
   payload["thread-titles"] = cache;
   await writeFile2(statePath, JSON.stringify(payload), "utf8");
 }
-async function readThreadTitlesFromSessionIndex() {
+function getSessionIndexFileSignature(stats) {
+  return `${String(stats.mtimeMs)}:${String(stats.size)}`;
+}
+async function parseThreadTitlesFromSessionIndex(sessionIndexPath) {
+  const latestById = /* @__PURE__ */ new Map();
+  const input = createReadStream(sessionIndexPath, { encoding: "utf8" });
+  const lines = createInterface({
+    input,
+    crlfDelay: Infinity
+  });
   try {
-    const raw = await readFile2(getCodexSessionIndexPath(), "utf8");
-    const latestById = /* @__PURE__ */ new Map();
-    for (const line of raw.split(/\r?\n/u)) {
+    for await (const line of lines) {
       const trimmed = line.trim();
       if (!trimmed) continue;
       try {
@@ -1501,16 +1460,36 @@ async function readThreadTitlesFromSessionIndex() {
       } catch {
       }
     }
-    const entries = Array.from(latestById.values()).sort((first, second) => second.updatedAtMs - first.updatedAtMs);
-    const titles = {};
-    const order = [];
-    for (const entry of entries) {
-      titles[entry.id] = entry.title;
-      order.push(entry.id);
+  } finally {
+    lines.close();
+    input.close();
+  }
+  const entries = Array.from(latestById.values()).sort((first, second) => second.updatedAtMs - first.updatedAtMs);
+  const titles = {};
+  const order = [];
+  for (const entry of entries) {
+    titles[entry.id] = entry.title;
+    order.push(entry.id);
+  }
+  return trimThreadTitleCache({ titles, order });
+}
+async function readThreadTitlesFromSessionIndex() {
+  const sessionIndexPath = getCodexSessionIndexPath();
+  try {
+    const stats = await stat2(sessionIndexPath);
+    const fileSignature = getSessionIndexFileSignature(stats);
+    if (sessionIndexThreadTitleCacheState.fileSignature === fileSignature) {
+      return sessionIndexThreadTitleCacheState.cache;
     }
-    return trimThreadTitleCache({ titles, order });
+    const cache = await parseThreadTitlesFromSessionIndex(sessionIndexPath);
+    sessionIndexThreadTitleCacheState = { fileSignature, cache };
+    return cache;
   } catch {
-    return { titles: {}, order: [] };
+    sessionIndexThreadTitleCacheState = {
+      fileSignature: "missing",
+      cache: EMPTY_THREAD_TITLE_CACHE
+    };
+    return sessionIndexThreadTitleCacheState.cache;
   }
 }
 async function readMergedThreadTitleCache() {
@@ -1518,7 +1497,7 @@ async function readMergedThreadTitleCache() {
     readThreadTitlesFromSessionIndex(),
     readThreadTitleCache()
   ]);
-  return mergeThreadTitleCaches(sessionIndexCache, persistedCache);
+  return mergeThreadTitleCaches(persistedCache, sessionIndexCache);
 }
 async function readWorkspaceRootsState() {
   const statePath = getCodexGlobalStatePath();
@@ -1682,9 +1661,7 @@ var AppServerProcess = class {
   start() {
     if (this.process) return;
     this.stopping = false;
-    const codexCommand = resolveCodexCommand() ?? "codex";
-    const invocation = getSpawnInvocation(codexCommand, this.appServerArgs);
-    const proc = spawn2(invocation.cmd, invocation.args, { stdio: ["pipe", "pipe", "pipe"] });
+    const proc = spawn2("codex", this.appServerArgs, { stdio: ["pipe", "pipe", "pipe"] });
     this.process = proc;
     proc.stdout.setEncoding("utf8");
     proc.stdout.on("data", (chunk) => {
@@ -1910,9 +1887,7 @@ var MethodCatalog = class {
   }
   async runGenerateSchemaCommand(outDir) {
     await new Promise((resolve2, reject) => {
-      const codexCommand = resolveCodexCommand() ?? "codex";
-      const invocation = getSpawnInvocation(codexCommand, ["app-server", "generate-json-schema", "--out", outDir]);
-      const process2 = spawn2(invocation.cmd, invocation.args, {
+      const process2 = spawn2("codex", ["app-server", "generate-json-schema", "--out", outDir], {
         stdio: ["ignore", "ignore", "pipe"]
       });
       let stderr = "";
@@ -3025,60 +3000,29 @@ async function readCliVersion() {
 function isTermuxRuntime() {
   return Boolean(process.env.TERMUX_VERSION || process.env.PREFIX?.includes("/com.termux/"));
 }
-function quoteCmdExeArg2(value) {
-  const normalized = value.replace(/"/g, '""');
-  if (!/[\s"]/u.test(normalized)) {
-    return normalized;
-  }
-  return `"${normalized}"`;
-}
-function getSpawnInvocation2(command, args = []) {
-  if (process.platform === "win32" && /\.(cmd|bat)$/i.test(command)) {
-    return {
-      cmd: "cmd.exe",
-      args: ["/d", "/s", "/c", [quoteCmdExeArg2(command), ...args.map((arg) => quoteCmdExeArg2(arg))].join(" ")]
-    };
-  }
-  return { cmd: command, args };
-}
-function canRun2(command, args = []) {
-  const invocation = getSpawnInvocation2(command, args);
-  const result = spawnSync2(invocation.cmd, invocation.args, { stdio: "ignore" });
+function canRun(command, args = []) {
+  const result = spawnSync(command, args, { stdio: "ignore" });
   return result.status === 0;
 }
 function runOrFail(command, args, label) {
-  const invocation = getSpawnInvocation2(command, args);
-  const result = spawnSync2(invocation.cmd, invocation.args, { stdio: "inherit" });
+  const result = spawnSync(command, args, { stdio: "inherit" });
   if (result.status !== 0) {
     throw new Error(`${label} failed with exit code ${String(result.status ?? -1)}`);
   }
 }
 function runWithStatus(command, args) {
-  const invocation = getSpawnInvocation2(command, args);
-  const result = spawnSync2(invocation.cmd, invocation.args, { stdio: "inherit" });
+  const result = spawnSync(command, args, { stdio: "inherit" });
   return result.status ?? -1;
 }
-function getUserNpmPrefix2() {
+function getUserNpmPrefix() {
   return join5(homedir3(), ".npm-global");
 }
-function resolveCodexCommand2() {
-  if (canRun2("codex", ["--version"])) {
+function resolveCodexCommand() {
+  if (canRun("codex", ["--version"])) {
     return "codex";
   }
-  if (process.platform === "win32") {
-    const windowsCandidates = [
-      process.env.APPDATA ? join5(process.env.APPDATA, "npm", "codex.cmd") : "",
-      join5(homedir3(), ".local", "bin", "codex.cmd"),
-      join5(getUserNpmPrefix2(), "bin", "codex.cmd")
-    ].filter(Boolean);
-    for (const candidate2 of windowsCandidates) {
-      if (existsSync4(candidate2) && canRun2(candidate2, ["--version"])) {
-        return candidate2;
-      }
-    }
-  }
-  const userCandidate = join5(getUserNpmPrefix2(), "bin", "codex");
-  if (existsSync4(userCandidate) && canRun2(userCandidate, ["--version"])) {
+  const userCandidate = join5(getUserNpmPrefix(), "bin", "codex");
+  if (existsSync4(userCandidate) && canRun(userCandidate, ["--version"])) {
     return userCandidate;
   }
   const prefix = process.env.PREFIX?.trim();
@@ -3086,17 +3030,17 @@ function resolveCodexCommand2() {
     return null;
   }
   const candidate = join5(prefix, "bin", "codex");
-  if (existsSync4(candidate) && canRun2(candidate, ["--version"])) {
+  if (existsSync4(candidate) && canRun(candidate, ["--version"])) {
     return candidate;
   }
   return null;
 }
 function resolveCloudflaredCommand() {
-  if (canRun2("cloudflared", ["--version"])) {
+  if (canRun("cloudflared", ["--version"])) {
     return "cloudflared";
   }
   const localCandidate = join5(homedir3(), ".local", "bin", "cloudflared");
-  if (existsSync4(localCandidate) && canRun2(localCandidate, ["--version"])) {
+  if (existsSync4(localCandidate) && canRun(localCandidate, ["--version"])) {
     return localCandidate;
   }
   return null;
@@ -3169,7 +3113,7 @@ async function shouldInstallCloudflaredInteractively() {
     console.warn("\n[cloudflared] cloudflared is missing and terminal is non-interactive, skipping install.");
     return false;
   }
-  const prompt = createInterface({ input: process.stdin, output: process.stdout });
+  const prompt = createInterface2({ input: process.stdin, output: process.stdout });
   try {
     const answer = await prompt.question("cloudflared is not installed. Install it now to ~/.local/bin? [y/N] ");
     const normalized = answer.trim().toLowerCase();
@@ -3194,7 +3138,7 @@ function hasCodexAuth() {
   return existsSync4(join5(codexHome, "auth.json"));
 }
 function ensureCodexInstalled() {
-  let codexCommand = resolveCodexCommand2();
+  let codexCommand = resolveCodexCommand();
   if (!codexCommand) {
     const installWithFallback = (pkg, label) => {
       const status = runWithStatus("npm", ["install", "-g", pkg]);
@@ -3204,7 +3148,7 @@ function ensureCodexInstalled() {
       if (isTermuxRuntime()) {
         throw new Error(`${label} failed with exit code ${String(status)}`);
       }
-      const userPrefix = getUserNpmPrefix2();
+      const userPrefix = getUserNpmPrefix();
       console.log(`
 Global npm install requires elevated permissions. Retrying with --prefix ${userPrefix}...
 `);
@@ -3214,7 +3158,7 @@ Global npm install requires elevated permissions. Retrying with --prefix ${userP
     if (isTermuxRuntime()) {
       console.log("\nCodex CLI not found. Installing Termux-compatible Codex CLI from npm...\n");
       installWithFallback("@mmmbuto/codex-cli-termux", "Codex CLI install");
-      codexCommand = resolveCodexCommand2();
+      codexCommand = resolveCodexCommand();
       if (!codexCommand) {
         console.log("\nTermux npm package did not expose `codex`. Installing official CLI fallback...\n");
         installWithFallback("@openai/codex", "Codex CLI fallback install");
@@ -3223,12 +3167,12 @@ Global npm install requires elevated permissions. Retrying with --prefix ${userP
       console.log("\nCodex CLI not found. Installing official Codex CLI from npm...\n");
       installWithFallback("@openai/codex", "Codex CLI install");
     }
-    codexCommand = resolveCodexCommand2();
+    codexCommand = resolveCodexCommand();
     if (!codexCommand && !isTermuxRuntime()) {
       throw new Error("Official Codex CLI install completed but binary is still not available in PATH");
     }
     if (!codexCommand && isTermuxRuntime()) {
-      codexCommand = resolveCodexCommand2();
+      codexCommand = resolveCodexCommand();
     }
     if (!codexCommand) {
       throw new Error("Codex CLI install completed but binary is still not available in PATH");
@@ -3348,7 +3292,7 @@ function listenWithFallback(server, startPort) {
 }
 async function startServer(options) {
   const version = await readCliVersion();
-  const codexCommand = ensureCodexInstalled() ?? resolveCodexCommand2();
+  const codexCommand = ensureCodexInstalled() ?? resolveCodexCommand();
   if (!hasCodexAuth() && codexCommand) {
     console.log("\nCodex is not logged in. Starting `codex login`...\n");
     runOrFail(codexCommand, ["login"], "Codex login");

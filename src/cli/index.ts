@@ -31,42 +31,20 @@ function isTermuxRuntime(): boolean {
   return Boolean(process.env.TERMUX_VERSION || process.env.PREFIX?.includes('/com.termux/'))
 }
 
-function quoteCmdExeArg(value: string): string {
-  const normalized = value.replace(/"/g, '""')
-  if (!/[\s"]/u.test(normalized)) {
-    return normalized
-  }
-  return `"${normalized}"`
-}
-
-function getSpawnInvocation(command: string, args: string[] = []): { cmd: string; args: string[] } {
-  if (process.platform === 'win32' && /\.(cmd|bat)$/i.test(command)) {
-    return {
-      cmd: 'cmd.exe',
-      args: ['/d', '/s', '/c', [quoteCmdExeArg(command), ...args.map((arg) => quoteCmdExeArg(arg))].join(' ')],
-    }
-  }
-
-  return { cmd: command, args }
-}
-
 function canRun(command: string, args: string[] = []): boolean {
-  const invocation = getSpawnInvocation(command, args)
-  const result = spawnSync(invocation.cmd, invocation.args, { stdio: 'ignore' })
+  const result = spawnSync(command, args, { stdio: 'ignore' })
   return result.status === 0
 }
 
 function runOrFail(command: string, args: string[], label: string): void {
-  const invocation = getSpawnInvocation(command, args)
-  const result = spawnSync(invocation.cmd, invocation.args, { stdio: 'inherit' })
+  const result = spawnSync(command, args, { stdio: 'inherit' })
   if (result.status !== 0) {
     throw new Error(`${label} failed with exit code ${String(result.status ?? -1)}`)
   }
 }
 
 function runWithStatus(command: string, args: string[]): number {
-  const invocation = getSpawnInvocation(command, args)
-  const result = spawnSync(invocation.cmd, invocation.args, { stdio: 'inherit' })
+  const result = spawnSync(command, args, { stdio: 'inherit' })
   return result.status ?? -1
 }
 
@@ -77,20 +55,6 @@ function getUserNpmPrefix(): string {
 function resolveCodexCommand(): string | null {
   if (canRun('codex', ['--version'])) {
     return 'codex'
-  }
-
-  if (process.platform === 'win32') {
-    const windowsCandidates = [
-      process.env.APPDATA ? join(process.env.APPDATA, 'npm', 'codex.cmd') : '',
-      join(homedir(), '.local', 'bin', 'codex.cmd'),
-      join(getUserNpmPrefix(), 'bin', 'codex.cmd'),
-    ].filter(Boolean)
-
-    for (const candidate of windowsCandidates) {
-      if (existsSync(candidate) && canRun(candidate, ['--version'])) {
-        return candidate
-      }
-    }
   }
 
   const userCandidate = join(getUserNpmPrefix(), 'bin', 'codex')

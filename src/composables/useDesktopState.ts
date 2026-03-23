@@ -214,7 +214,8 @@ function mergeProjectOrder(previousOrder: string[], incomingGroups: UiProjectGro
 function orderGroupsByProjectOrder(incoming: UiProjectGroup[], projectOrder: string[]): UiProjectGroup[] {
   const incomingByName = new Map(incoming.map((group) => [group.projectName, group]))
   const ordered: UiProjectGroup[] = projectOrder
-    .map((projectName) => incomingByName.get(projectName) ?? { projectName, threads: [] })
+    .map((projectName) => incomingByName.get(projectName) ?? null)
+    .filter((group): group is UiProjectGroup => group !== null && group.threads.length > 0)
 
   for (const group of incoming) {
     if (!projectOrder.includes(group.projectName)) {

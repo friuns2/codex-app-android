@@ -1,12 +1,13 @@
-import { spawn, spawnSync, type ChildProcessWithoutNullStreams } from 'node:child_process'
+import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
 import { randomBytes } from 'node:crypto'
 import { mkdtemp, readFile, readdir, rm, mkdir, stat, cp, lstat, readlink, symlink } from 'node:fs/promises'
-import { existsSync } from 'node:fs'
+import { createReadStream, existsSync } from 'node:fs'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { request as httpsRequest } from 'node:https'
 import { homedir } from 'node:os'
 import { tmpdir } from 'node:os'
 import { basename, isAbsolute, join, resolve } from 'node:path'
+import { createInterface } from 'node:readline'
 import { writeFile } from 'node:fs/promises'
 import { handleSkillsRoutes, initializeSkillsSyncOnStartup } from './skillsRoutes.js'
 
@@ -190,72 +191,6 @@ function getCodexHomeDir(): string {
   return codexHome && codexHome.length > 0 ? codexHome : join(homedir(), '.codex')
 }
 
-function quoteCmdExeArg(value: string): string {
-  const normalized = value.replace(/"/g, '""')
-  if (!/[\s"]/u.test(normalized)) {
-    return normalized
-  }
-  return `"${normalized}"`
-}
-
-function getSpawnInvocation(command: string, args: string[] = []): { cmd: string; args: string[] } {
-  if (process.platform === 'win32' && /\.(cmd|bat)$/i.test(command)) {
-    return {
-      cmd: 'cmd.exe',
-      args: ['/d', '/s', '/c', [quoteCmdExeArg(command), ...args.map((arg) => quoteCmdExeArg(arg))].join(' ')],
-    }
-  }
-
-  return { cmd: command, args }
-}
-
-function canRun(command: string, args: string[] = []): boolean {
-  const invocation = getSpawnInvocation(command, args)
-  const result = spawnSync(invocation.cmd, invocation.args, { stdio: 'ignore' })
-  return result.status === 0
-}
-
-function getUserNpmPrefix(): string {
-  return join(homedir(), '.npm-global')
-}
-
-function resolveCodexCommand(): string | null {
-  if (canRun('codex', ['--version'])) {
-    return 'codex'
-  }
-
-  if (process.platform === 'win32') {
-    const windowsCandidates = [
-      process.env.APPDATA ? join(process.env.APPDATA, 'npm', 'codex.cmd') : '',
-      join(homedir(), '.local', 'bin', 'codex.cmd'),
-      join(getUserNpmPrefix(), 'bin', 'codex.cmd'),
-    ].filter(Boolean)
-
-    for (const candidate of windowsCandidates) {
-      if (existsSync(candidate) && canRun(candidate, ['--version'])) {
-        return candidate
-      }
-    }
-  }
-
-  const userCandidate = join(getUserNpmPrefix(), 'bin', 'codex')
-  if (existsSync(userCandidate) && canRun(userCandidate, ['--version'])) {
-    return userCandidate
-  }
-
-  const prefix = process.env.PREFIX?.trim()
-  if (!prefix) {
-    return null
-  }
-
-  const candidate = join(prefix, 'bin', 'codex')
-  if (existsSync(candidate) && canRun(candidate, ['--version'])) {
-    return candidate
-  }
-
-  return null
-}
-
 function getSkillsInstallDir(): string {
   return join(getCodexHomeDir(), 'skills')
 }
@@ -418,10 +353,21 @@ function getCodexSessionIndexPath(): string {
 
 type ThreadTitleCache = { titles: Record<string, string>; order: string[] }
 const MAX_THREAD_TITLES = 500
+const EMPTY_THREAD_TITLE_CACHE: ThreadTitleCache = { titles: {}, order: [] }
+
+type SessionIndexThreadTitleCacheState = {
+  fileSignature: string | null
+  cache: ThreadTitleCache
+}
+
+let sessionIndexThreadTitleCacheState: SessionIndexThreadTitleCacheState = {
+  fileSignature: null,
+  cache: EMPTY_THREAD_TITLE_CACHE,
+}
 
 function normalizeThreadTitleCache(value: unknown): ThreadTitleCache {
   const record = asRecord(value)
-  if (!record) return { titles: {}, order: [] }
+  if (!record) return EMPTY_THREAD_TITLE_CACHE
   const rawTitles = asRecord(record.titles)
   const titles: Record<string, string> = {}
   if (rawTitles) {
@@ -512,7 +458,7 @@ async function readThreadTitleCache(): Promise<ThreadTitleCache> {
     const payload = asRecord(JSON.parse(raw)) ?? {}
     return normalizeThreadTitleCache(payload['thread-titles'])
   } catch {
-    return { titles: {}, order: [] }
+    return EMPTY_THREAD_TITLE_CACHE
   }
 }
 
@@ -529,12 +475,20 @@ async function writeThreadTitleCache(cache: ThreadTitleCache): Promise<void> {
   await writeFile(statePath, JSON.stringify(payload), 'utf8')
 }
 
-async function readThreadTitlesFromSessionIndex(): Promise<ThreadTitleCache> {
-  try {
-    const raw = await readFile(getCodexSessionIndexPath(), 'utf8')
-    const latestById = new Map<string, SessionIndexThreadTitle>()
+function getSessionIndexFileSignature(stats: { mtimeMs: number; size: number }): string {
+  return `${String(stats.mtimeMs)}:${String(stats.size)}`
+}
 
-    for (const line of raw.split(/\r?\n/u)) {
+async function parseThreadTitlesFromSessionIndex(sessionIndexPath: string): Promise<ThreadTitleCache> {
+  const latestById = new Map<string, SessionIndexThreadTitle>()
+  const input = createReadStream(sessionIndexPath, { encoding: 'utf8' })
+  const lines = createInterface({
+    input,
+    crlfDelay: Infinity,
+  })
+
+  try {
+    for await (const line of lines) {
       const trimmed = line.trim()
       if (!trimmed) continue
 
@@ -550,18 +504,41 @@ async function readThreadTitlesFromSessionIndex(): Promise<ThreadTitleCache> {
         // Skip malformed lines and keep scanning the rest of the index.
       }
     }
+  } finally {
+    lines.close()
+    input.close()
+  }
 
-    const entries = Array.from(latestById.values()).sort((first, second) => second.updatedAtMs - first.updatedAtMs)
-    const titles: Record<string, string> = {}
-    const order: string[] = []
-    for (const entry of entries) {
-      titles[entry.id] = entry.title
-      order.push(entry.id)
+  const entries = Array.from(latestById.values()).sort((first, second) => second.updatedAtMs - first.updatedAtMs)
+  const titles: Record<string, string> = {}
+  const order: string[] = []
+  for (const entry of entries) {
+    titles[entry.id] = entry.title
+    order.push(entry.id)
+  }
+
+  return trimThreadTitleCache({ titles, order })
+}
+
+async function readThreadTitlesFromSessionIndex(): Promise<ThreadTitleCache> {
+  const sessionIndexPath = getCodexSessionIndexPath()
+
+  try {
+    const stats = await stat(sessionIndexPath)
+    const fileSignature = getSessionIndexFileSignature(stats)
+    if (sessionIndexThreadTitleCacheState.fileSignature === fileSignature) {
+      return sessionIndexThreadTitleCacheState.cache
     }
 
-    return trimThreadTitleCache({ titles, order })
+    const cache = await parseThreadTitlesFromSessionIndex(sessionIndexPath)
+    sessionIndexThreadTitleCacheState = { fileSignature, cache }
+    return cache
   } catch {
-    return { titles: {}, order: [] }
+    sessionIndexThreadTitleCacheState = {
+      fileSignature: 'missing',
+      cache: EMPTY_THREAD_TITLE_CACHE,
+    }
+    return sessionIndexThreadTitleCacheState.cache
   }
 }
 
@@ -570,7 +547,7 @@ async function readMergedThreadTitleCache(): Promise<ThreadTitleCache> {
     readThreadTitlesFromSessionIndex(),
     readThreadTitleCache(),
   ])
-  return mergeThreadTitleCaches(sessionIndexCache, persistedCache)
+  return mergeThreadTitleCaches(persistedCache, sessionIndexCache)
 }
 
 async function readWorkspaceRootsState(): Promise<WorkspaceRootsState> {
@@ -744,9 +721,7 @@ class AppServerProcess {
     if (this.process) return
 
     this.stopping = false
-    const codexCommand = resolveCodexCommand() ?? 'codex'
-    const invocation = getSpawnInvocation(codexCommand, this.appServerArgs)
-    const proc = spawn(invocation.cmd, invocation.args, { stdio: ['pipe', 'pipe', 'pipe'] })
+    const proc = spawn('codex', this.appServerArgs, { stdio: ['pipe', 'pipe', 'pipe'] })
     this.process = proc
 
     proc.stdout.setEncoding('utf8')
@@ -1026,9 +1001,7 @@ class MethodCatalog {
 
   private async runGenerateSchemaCommand(outDir: string): Promise<void> {
     await new Promise<void>((resolve, reject) => {
-      const codexCommand = resolveCodexCommand() ?? 'codex'
-      const invocation = getSpawnInvocation(codexCommand, ['app-server', 'generate-json-schema', '--out', outDir])
-      const process = spawn(invocation.cmd, invocation.args, {
+      const process = spawn('codex', ['app-server', 'generate-json-schema', '--out', outDir], {
         stdio: ['ignore', 'ignore', 'pipe'],
       })
 
