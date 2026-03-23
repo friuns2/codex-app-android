@@ -321,6 +321,7 @@ import type {
   UiRateLimitWindow,
 } from '../../types/codex'
 import { useDictation } from '../../composables/useDictation'
+import { useMobile } from '../../composables/useMobile'
 import { searchComposerFiles, uploadFile, type ComposerFileSuggestion } from '../../api/codexGateway'
 import IconTablerArrowUp from '../icons/IconTablerArrowUp.vue'
 import IconTablerFilePencil from '../icons/IconTablerFilePencil.vue'
@@ -390,6 +391,7 @@ const selectedImages = ref<SelectedImage[]>([])
 const selectedSkills = ref<SkillItem[]>([])
 const fileAttachments = ref<FileAttachment[]>([])
 const folderUploadGroups = ref<FolderUploadGroup[]>([])
+const { isMobile } = useMobile()
 
 const dictationFeedback = ref('')
 const {
@@ -503,8 +505,10 @@ const placeholderText = computed(() =>
       ? 'Loading models for plan mode...'
       : 'Type a message... (@ for files, / for skills)',
 )
-const quotaSummaryText = computed(() => buildQuotaSummaryText(props.codexQuota ?? null))
-const quotaWeeklyRefreshText = computed(() => buildQuotaWeeklyRefreshText(props.codexQuota ?? null))
+const quotaSummaryText = computed(() => buildQuotaSummaryText(props.codexQuota ?? null, isMobile.value))
+const quotaWeeklyRefreshText = computed(() => (
+  isMobile.value ? '' : buildQuotaWeeklyRefreshText(props.codexQuota ?? null)
+))
 const quotaTooltipText = computed(() => buildQuotaTooltipText(props.codexQuota ?? null))
 
 function formatPlanType(planType: string | null | undefined): string {
@@ -547,6 +551,14 @@ function formatResetDate(resetsAt: number | null): string {
   }).format(new Date(resetsAt * 1000))
 }
 
+function formatResetDateCompact(resetsAt: number | null): string {
+  if (typeof resetsAt !== 'number' || !Number.isFinite(resetsAt)) return ''
+  return new Intl.DateTimeFormat(undefined, {
+    month: 'short',
+    day: 'numeric',
+  }).format(new Date(resetsAt * 1000))
+}
+
 function pickWeeklyQuotaWindow(quota: UiRateLimitSnapshot): UiRateLimitWindow | null {
   const windows = [quota.primary, quota.secondary].filter((window): window is UiRateLimitWindow => window !== null)
   const exactWeekly = windows.find((window) => window.windowMinutes === 7 * 24 * 60)
@@ -565,7 +577,7 @@ function formatWindowSummary(window: UiRateLimitWindow): string {
   return span ? `${remainingPercent}% left / ${span}` : `${remainingPercent}% left`
 }
 
-function buildQuotaSummaryText(quota: UiRateLimitSnapshot | null): string {
+function buildQuotaSummaryText(quota: UiRateLimitSnapshot | null, includeCompactWeeklyRefresh = false): string {
   if (!quota) return ''
 
   const segments: string[] = []
@@ -573,6 +585,14 @@ function buildQuotaSummaryText(quota: UiRateLimitSnapshot | null): string {
   if (plan) segments.push(plan)
   if (quota.primary) segments.push(formatWindowSummary(quota.primary))
   if (quota.secondary) segments.push(formatWindowSummary(quota.secondary))
+
+  if (includeCompactWeeklyRefresh) {
+    const weeklyWindow = pickWeeklyQuotaWindow(quota)
+    const weeklyRefreshDate = formatResetDateCompact(weeklyWindow?.resetsAt ?? null)
+    if (weeklyRefreshDate) {
+      segments.push(`wk ${weeklyRefreshDate}`)
+    }
+  }
 
   if (segments.length === 0 && quota.credits?.unlimited) {
     segments.push('Unlimited credits')
@@ -1244,15 +1264,15 @@ watch(
 }
 
 .thread-composer-rate-limit-row {
-  @apply flex flex-wrap items-center gap-x-2 gap-y-1;
+  @apply flex min-w-0 items-center gap-x-1.5 gap-y-1 sm:flex-wrap;
 }
 
 .thread-composer-rate-limit-label {
-  @apply font-medium text-zinc-700;
+  @apply shrink-0 font-medium text-zinc-700;
 }
 
 .thread-composer-rate-limit-value {
-  @apply break-words;
+  @apply min-w-0 truncate sm:whitespace-normal sm:break-words;
 }
 
 .thread-composer-rate-limit-refresh {
