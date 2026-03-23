@@ -28,11 +28,14 @@ import {
   type RpcNotification,
   type SkillInfo,
 } from '../api/codexGateway'
+import type { ThreadItem } from '../api/appServerDtos'
+import { normalizeThreadItemV2 } from '../api/normalizers/v2'
 import type {
   CommandExecutionData,
   ReasoningEffort,
   SpeedMode,
   ThreadScrollState,
+  UiFileChangeData,
   UiLiveOverlay,
   UiMessage,
   UiProjectGroup,
@@ -278,6 +281,36 @@ function areCommandExecutionsEqual(first?: CommandExecutionData, second?: Comman
   return first.status === second.status && first.aggregatedOutput === second.aggregatedOutput && first.exitCode === second.exitCode
 }
 
+function areFileAttachmentsEqual(
+  first?: Array<{ label: string; path: string }>,
+  second?: Array<{ label: string; path: string }>,
+): boolean {
+  const left = Array.isArray(first) ? first : []
+  const right = Array.isArray(second) ? second : []
+  if (left.length !== right.length) return false
+  for (let index = 0; index < left.length; index += 1) {
+    if (left[index].label !== right[index].label || left[index].path !== right[index].path) {
+      return false
+    }
+  }
+  return true
+}
+
+function areFileChangeDataEqual(first?: UiFileChangeData, second?: UiFileChangeData): boolean {
+  if (!first && !second) return true
+  if (!first || !second) return false
+  return (
+    first.path === second.path &&
+    first.kind === second.kind &&
+    first.status === second.status &&
+    first.diff === second.diff &&
+    first.movePath === second.movePath &&
+    first.linesAdded === second.linesAdded &&
+    first.linesRemoved === second.linesRemoved &&
+    first.openLine === second.openLine
+  )
+}
+
 function isUnsupportedChatGptModelError(error: unknown): boolean {
   if (!(error instanceof Error)) return false
   const message = error.message.toLowerCase()
@@ -293,10 +326,12 @@ function areMessageFieldsEqual(first: UiMessage, second: UiMessage): boolean {
     first.role === second.role &&
     first.text === second.text &&
     areStringArraysEqual(first.images, second.images) &&
+    areFileAttachmentsEqual(first.fileAttachments, second.fileAttachments) &&
     first.messageType === second.messageType &&
     first.rawPayload === second.rawPayload &&
     first.isUnhandled === second.isUnhandled &&
     areCommandExecutionsEqual(first.commandExecution, second.commandExecution) &&
+    areFileChangeDataEqual(first.fileChange, second.fileChange) &&
     first.turnIndex === second.turnIndex
   )
 }
@@ -1809,6 +1844,18 @@ export function useDesktopState() {
     }
   }
 
+  function readFileChangeMessages(notification: RpcNotification): UiMessage[] {
+    if (notification.method !== 'item/started' && notification.method !== 'item/completed') {
+      return []
+    }
+
+    const params = asRecord(notification.params)
+    const item = asRecord(params?.item)
+    if (!item || item.type !== 'fileChange') return []
+
+    return normalizeThreadItemV2(item as unknown as ThreadItem)
+  }
+
   function upsertLiveCommand(threadId: string, msg: UiMessage): void {
     const previous = liveCommandsByThreadId.value[threadId] ?? []
     const next = upsertMessage(previous, msg)
@@ -2031,6 +2078,13 @@ export function useDesktopState() {
     const commandCompleted = readCommandExecutionCompleted(notification)
     if (commandCompleted) {
       upsertLiveCommand(notificationThreadId, commandCompleted)
+    }
+
+    const fileChangeMessages = readFileChangeMessages(notification)
+    if (fileChangeMessages.length > 0) {
+      for (const message of fileChangeMessages) {
+        upsertLiveCommand(notificationThreadId, message)
+      }
     }
 
     if (isAgentContentEvent(notification)) {
