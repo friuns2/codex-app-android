@@ -7,4 +7,8 @@ export type { Turn } from '../../documentation/app-server-schemas/typescript/v2/
 export type { UserInput } from '../../documentation/app-server-schemas/typescript/v2/UserInput'
 export type { ModelListResponse } from '../../documentation/app-server-schemas/typescript/v2/ModelListResponse'
 export type { ConfigReadResponse } from '../../documentation/app-server-schemas/typescript/v2/ConfigReadResponse'
+export type { GetAccountRateLimitsResponse } from '../../documentation/app-server-schemas/typescript/v2/GetAccountRateLimitsResponse'
+export type { RateLimitSnapshot } from '../../documentation/app-server-schemas/typescript/v2/RateLimitSnapshot'
+export type { RateLimitWindow } from '../../documentation/app-server-schemas/typescript/v2/RateLimitWindow'
+export type { CreditsSnapshot } from '../../documentation/app-server-schemas/typescript/v2/CreditsSnapshot'
 export type { ReasoningEffort } from '../../documentation/app-server-schemas/typescript/ReasoningEffort'

@@ -120,6 +120,27 @@ export type UiLiveOverlay = {
   errorText: string
 }
 
+export type UiCreditsSnapshot = {
+  hasCredits: boolean
+  unlimited: boolean
+  balance: string | null
+}
+
+export type UiRateLimitWindow = {
+  usedPercent: number
+  windowDurationMins: number | null
+  resetsAt: number | null
+}
+
+export type UiRateLimitSnapshot = {
+  limitId: string | null
+  limitName: string | null
+  primary: UiRateLimitWindow | null
+  secondary: UiRateLimitWindow | null
+  credits: UiCreditsSnapshot | null
+  planType: string | null
+}
+
 export type UiProjectGroup = {
   projectName: string
   threads: UiThread[]

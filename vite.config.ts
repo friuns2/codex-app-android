@@ -3,6 +3,7 @@ import vue from "@vitejs/plugin-vue";
 import { createCodexBridgeMiddleware } from "./src/server/codexAppServerBridge";
 import { createDirectoryListingHtml, createTextEditorHtml, decodeBrowsePath, isTextEditableFile, normalizeLocalPath } from "./src/server/localBrowseUi";
 import tailwindcss from "@tailwindcss/vite";
+import { spawnSync } from "node:child_process";
 import { createReadStream } from "node:fs";
 import { stat, writeFile } from "node:fs/promises";
 import { basename, extname, isAbsolute } from "node:path";
@@ -40,6 +41,37 @@ function getWorktreeName(): string {
   if (worktreesIndex >= 0 && worktreesIndex + 1 < segments.length) {
     return segments[worktreesIndex + 1];
   }
+
+  const gitDir = spawnSync("git", ["rev-parse", "--path-format=absolute", "--git-dir"], {
+    cwd: process.cwd(),
+    encoding: "utf8",
+  });
+  if (gitDir.status === 0) {
+    const resolvedGitDir = gitDir.stdout.trim().replace(/\\/g, "/");
+    const worktreeMarker = "/.git/worktrees/";
+    const markerIndex = resolvedGitDir.indexOf(worktreeMarker);
+    if (markerIndex >= 0) {
+      const worktreeSegments = resolvedGitDir.slice(markerIndex + worktreeMarker.length).split("/").filter(Boolean);
+      if (worktreeSegments.length > 0) {
+        return worktreeSegments[0] ?? "unknown";
+      }
+    }
+  }
+
+  const gitCommonDir = spawnSync("git", ["rev-parse", "--path-format=absolute", "--git-common-dir"], {
+    cwd: process.cwd(),
+    encoding: "utf8",
+  });
+  if (gitCommonDir.status === 0) {
+    const resolvedGitCommonDir = gitCommonDir.stdout.trim().replace(/\\/g, "/");
+    if (resolvedGitCommonDir.endsWith("/.git")) {
+      const commonDirSegments = resolvedGitCommonDir.split("/").filter(Boolean);
+      if (commonDirSegments.length >= 2) {
+        return commonDirSegments[commonDirSegments.length - 2] ?? "unknown";
+      }
+    }
+  }
+
   return segments[segments.length - 1] ?? "unknown";
 }
 

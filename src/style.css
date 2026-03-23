@@ -60,6 +60,10 @@
   @apply border-zinc-700;
 }
 
+:root.dark .sidebar-settings-rate-limits {
+  @apply border-zinc-700;
+}
+
 :root.dark .sidebar-settings-value {
   @apply text-zinc-400 bg-zinc-700;
 }
@@ -195,6 +199,26 @@
 
 :root.dark .build-badge {
   @apply border-zinc-700 bg-zinc-800/95 text-zinc-400;
+}
+
+:root.dark .rate-limit-card {
+  @apply border-zinc-700 bg-zinc-800/95;
+}
+
+:root.dark .rate-limit-card-title {
+  @apply text-zinc-500;
+}
+
+:root.dark .rate-limit-card-plan {
+  @apply bg-zinc-700 text-zinc-300;
+}
+
+:root.dark .rate-limit-card-metric {
+  @apply bg-amber-900/40 text-amber-200;
+}
+
+:root.dark .rate-limit-card-footer {
+  @apply text-zinc-400;
 }
 
 :root.dark .thread-composer-attach-menu {

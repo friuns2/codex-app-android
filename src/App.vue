@@ -103,6 +103,9 @@
                   @update:model-value="onDictationLanguageChange"
                 />
               </div>
+              <div class="sidebar-settings-rate-limits">
+                <RateLimitStatus :snapshots="accountRateLimitSnapshots" />
+              </div>
             </div>
           </Transition>
           <button class="sidebar-settings-button" type="button" @click="isSettingsOpen = !isSettingsOpen">
@@ -230,6 +233,7 @@ import ContentHeader from './components/content/ContentHeader.vue'
 import ThreadConversation from './components/content/ThreadConversation.vue'
 import ThreadComposer from './components/content/ThreadComposer.vue'
 import QueuedMessages from './components/content/QueuedMessages.vue'
+import RateLimitStatus from './components/content/RateLimitStatus.vue'
 import ComposerDropdown from './components/content/ComposerDropdown.vue'
 import ComposerRuntimeDropdown from './components/content/ComposerRuntimeDropdown.vue'
 import SkillsHub from './components/content/SkillsHub.vue'
@@ -367,6 +371,7 @@ const {
   selectedModelId,
   selectedReasoningEffort,
   installedSkills,
+  accountRateLimitSnapshots,
   messages,
   isLoadingThreads,
   isLoadingMessages,
@@ -1471,6 +1476,10 @@ async function submitFirstMessageForNewThread(
 .settings-panel-leave-to {
   opacity: 0;
   transform: translateY(8px);
+}
+
+.sidebar-settings-rate-limits {
+  @apply border-t border-zinc-200 px-2 pt-2;
 }
 
 .build-badge {

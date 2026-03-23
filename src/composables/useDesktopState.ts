@@ -1,6 +1,7 @@
 import { computed, ref } from 'vue'
 import {
   archiveThread,
+  getAccountRateLimits,
   renameThread,
   getAvailableModelIds,
   getCurrentModelConfig,
@@ -31,6 +32,7 @@ import type {
   UiLiveOverlay,
   UiMessage,
   UiProjectGroup,
+  UiRateLimitSnapshot,
   UiServerRequest,
   UiServerRequestReply,
   UiThread,
@@ -46,6 +48,7 @@ const SELECTED_THREAD_STORAGE_KEY = 'codex-web-local.selected-thread-id.v1'
 const PROJECT_ORDER_STORAGE_KEY = 'codex-web-local.project-order.v1'
 const PROJECT_DISPLAY_NAME_STORAGE_KEY = 'codex-web-local.project-display-name.v1'
 const EVENT_SYNC_DEBOUNCE_MS = 220
+const RATE_LIMIT_REFRESH_DEBOUNCE_MS = 500
 const REASONING_EFFORT_OPTIONS: ReasoningEffort[] = ['none', 'minimal', 'low', 'medium', 'high', 'xhigh']
 const GLOBAL_SERVER_REQUEST_SCOPE = '__global__'
 const MODEL_FALLBACK_ID = 'gpt-5.2-codex'
@@ -653,6 +656,7 @@ export function useDesktopState() {
   const threadTitleById = ref<Record<string, string>>({})
 
   const installedSkills = ref<SkillInfo[]>([])
+  const accountRateLimitSnapshots = ref<UiRateLimitSnapshot[]>([])
 
   const isLoadingThreads = ref(false)
   const isLoadingMessages = ref(false)
@@ -664,6 +668,8 @@ export function useDesktopState() {
   const hasLoadedThreads = ref(false)
   let stopNotificationStream: (() => void) | null = null
   let eventSyncTimer: number | null = null
+  let rateLimitRefreshTimer: number | null = null
+  let rateLimitRefreshPromise: Promise<void> | null = null
   let pendingThreadsRefresh = false
   const pendingThreadMessageRefresh = new Set<string>()
   let hasHydratedWorkspaceRootsState = false
@@ -809,6 +815,7 @@ export function useDesktopState() {
         [threadId]: true,
       }
 
+      scheduleRateLimitRefresh()
       pendingThreadMessageRefresh.add(threadId)
       pendingThreadsRefresh = true
       await syncFromNotifications()
@@ -865,6 +872,41 @@ export function useDesktopState() {
     } catch {
       // Keep chat UI usable even if model metadata is temporarily unavailable.
     }
+  }
+
+  async function refreshRateLimits(): Promise<void> {
+    if (rateLimitRefreshPromise) {
+      await rateLimitRefreshPromise
+      return
+    }
+
+    rateLimitRefreshPromise = (async () => {
+      try {
+        accountRateLimitSnapshots.value = normalizeRateLimitSnapshotsPayload(await getAccountRateLimits())
+      } catch {
+        // Keep the last known rate-limit state if the endpoint is temporarily unavailable.
+      } finally {
+        rateLimitRefreshPromise = null
+      }
+    })()
+
+    await rateLimitRefreshPromise
+  }
+
+  function scheduleRateLimitRefresh(): void {
+    if (typeof window === 'undefined') {
+      void refreshRateLimits()
+      return
+    }
+
+    if (rateLimitRefreshTimer !== null) {
+      window.clearTimeout(rateLimitRefreshTimer)
+    }
+
+    rateLimitRefreshTimer = window.setTimeout(() => {
+      rateLimitRefreshTimer = null
+      void refreshRateLimits()
+    }, RATE_LIMIT_REFRESH_DEBOUNCE_MS)
   }
 
   function applyCachedTitlesToGroups(groups: UiProjectGroup[]): UiProjectGroup[] {
@@ -1177,6 +1219,68 @@ export function useDesktopState() {
 
   function readNumber(value: unknown): number | null {
     return typeof value === 'number' && Number.isFinite(value) ? value : null
+  }
+
+  function getRateLimitSnapshotKey(snapshot: UiRateLimitSnapshot): string {
+    return snapshot.limitId?.trim() || snapshot.limitName?.trim() || '__default__'
+  }
+
+  function normalizeRateLimitWindow(value: unknown): UiRateLimitSnapshot['primary'] {
+    const record = asRecord(value)
+    if (!record) return null
+
+    return {
+      usedPercent: clamp(readNumber(record.usedPercent) ?? 0, 0, 100),
+      windowDurationMins: readNumber(record.windowDurationMins),
+      resetsAt: readNumber(record.resetsAt),
+    }
+  }
+
+  function normalizeRateLimitSnapshot(value: unknown): UiRateLimitSnapshot | null {
+    const record = asRecord(value)
+    if (!record) return null
+
+    const credits = asRecord(record.credits)
+    return {
+      limitId: readString(record.limitId) || null,
+      limitName: readString(record.limitName) || null,
+      primary: normalizeRateLimitWindow(record.primary),
+      secondary: normalizeRateLimitWindow(record.secondary),
+      credits: credits
+        ? {
+            hasCredits: credits.hasCredits === true,
+            unlimited: credits.unlimited === true,
+            balance: readString(credits.balance) || null,
+          }
+        : null,
+      planType: readString(record.planType) || null,
+    }
+  }
+
+  function normalizeRateLimitSnapshotsPayload(value: unknown): UiRateLimitSnapshot[] {
+    const record = asRecord(value)
+    if (!record) return []
+
+    const next: UiRateLimitSnapshot[] = []
+    const seen = new Set<string>()
+    const pushSnapshot = (snapshot: UiRateLimitSnapshot | null): void => {
+      if (!snapshot) return
+      const key = getRateLimitSnapshotKey(snapshot)
+      if (seen.has(key)) return
+      seen.add(key)
+      next.push(snapshot)
+    }
+
+    pushSnapshot(normalizeRateLimitSnapshot(record.rateLimits))
+
+    const byLimitId = asRecord(record.rateLimitsByLimitId)
+    if (byLimitId) {
+      for (const snapshot of Object.values(byLimitId)) {
+        pushSnapshot(normalizeRateLimitSnapshot(snapshot))
+      }
+    }
+
+    return next
   }
 
   function extractThreadIdFromNotification(notification: RpcNotification): string {
@@ -1654,6 +1758,10 @@ export function useDesktopState() {
       return
     }
 
+    if (notification.method === 'account/rateLimits/updated') {
+      scheduleRateLimitRefresh()
+    }
+
     if (notification.method === 'thread/name/updated') {
       const params = asRecord(notification.params)
       const threadId = readString(params?.threadId)
@@ -2060,6 +2168,7 @@ export function useDesktopState() {
       await loadThreads()
       await Promise.all([
         refreshModelPreferences(),
+        refreshRateLimits(),
         refreshSkills(),
       ])
       await loadMessages(selectedThreadId.value)
@@ -2649,6 +2758,10 @@ export function useDesktopState() {
       window.clearTimeout(eventSyncTimer)
       eventSyncTimer = null
     }
+    if (rateLimitRefreshTimer !== null && typeof window !== 'undefined') {
+      window.clearTimeout(rateLimitRefreshTimer)
+      rateLimitRefreshTimer = null
+    }
     activeReasoningItemId = ''
     shouldAutoScrollOnNextAgentEvent = false
     persistedMessagesByThreadId.value = {}
@@ -2702,6 +2815,7 @@ export function useDesktopState() {
     selectedModelId,
     selectedReasoningEffort,
     installedSkills,
+    accountRateLimitSnapshots,
     messages,
     isLoadingThreads,
     isLoadingMessages,
