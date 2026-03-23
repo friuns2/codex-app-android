@@ -417,6 +417,14 @@ async function persistLaunchProject(projectPath: string): Promise<void> {
   await writeFile(statePath, JSON.stringify(payload), 'utf8')
 }
 
+async function addProjectOnly(projectPath: string): Promise<void> {
+  const trimmed = projectPath.trim()
+  if (!trimmed) {
+    throw new Error('Missing project path')
+  }
+  await persistLaunchProject(trimmed)
+}
+
 async function startServer(options: { port: string; password: string | boolean; tunnel: boolean; projectPath?: string }) {
   const version = await readCliVersion()
   const projectPath = options.projectPath?.trim() ?? ''
@@ -532,7 +540,20 @@ program
     projectPath: string | undefined,
     opts: { port: string; password: string | boolean; tunnel: boolean; openProject?: string },
   ) => {
-    const launchProject = (opts.openProject ?? '').trim() || (projectPath ?? '').trim()
+    const rawArgv = process.argv.slice(2)
+    const openProjectFlagIndex = rawArgv.findIndex((arg) => arg === '--open-project' || arg.startsWith('--open-project='))
+    let openProjectOnly = (opts.openProject ?? '').trim()
+    if (!openProjectOnly && openProjectFlagIndex >= 0 && projectPath?.trim()) {
+      // Commander may map "--open-project ." to the positional arg in this command layout.
+      openProjectOnly = projectPath.trim()
+    }
+    if (openProjectOnly.length > 0) {
+      await addProjectOnly(openProjectOnly)
+      console.log(`Added project: ${openProjectOnly}`)
+      return
+    }
+
+    const launchProject = (projectPath ?? '').trim()
     await startServer({ ...opts, projectPath: launchProject })
   })
 

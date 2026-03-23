@@ -35,6 +35,7 @@
   ],
   "scripts": {
     "dev": "vite",
+    "dev:open": "npm run build:cli && sh -c 'npm run dev & VPID=$!; node dist-cli/index.js --open-project \"${1:-.}\"; wait $VPID' --",
     "build:frontend": "vue-tsc --noEmit && vite build",
     "build:cli": "tsup",
     "build": "npm run build:frontend && npm run build:cli",
