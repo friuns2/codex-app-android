@@ -122,13 +122,13 @@
               :class="{ 'file-change-row-expanded': isFileChangeExpanded(message) }"
               @click="toggleFileChangeExpand(message)"
             >
-              <span class="file-change-chevron" :class="{ 'file-change-chevron-open': isFileChangeExpanded(message) }">></span>
               <span class="file-change-verb">{{ fileChangeSummaryVerb(message) }}</span>
-              <code class="file-change-path" :title="message.fileChange?.path || message.text">{{ fileChangeDisplayPath(message) }}</code>
+              <code class="file-change-path" :title="message.fileChange?.path || message.text">{{ fileChangeSummaryPath(message) }}</code>
               <span v-if="fileChangeHasStats(message)" class="file-change-stats">
                 <span v-if="fileChangeLinesAdded(message) > 0" class="file-change-stats-added">+{{ fileChangeLinesAdded(message) }}</span>
                 <span v-if="fileChangeLinesRemoved(message) > 0" class="file-change-stats-removed">-{{ fileChangeLinesRemoved(message) }}</span>
               </span>
+              <span class="file-change-chevron" :class="{ 'file-change-chevron-open': isFileChangeExpanded(message) }">></span>
             </button>
             <div class="file-change-output-wrap" :class="{ 'file-change-output-visible': isFileChangeExpanded(message) }">
               <div class="file-change-output-inner">
@@ -446,6 +446,8 @@ function fileChangeSummaryVerb(message: UiMessage): string {
 function fileChangeExpandedTitle(message: UiMessage): string {
   const change = readFileChangeData(message)
   if (!change) return 'File change'
+  if (change.status === 'failed') return 'Failed file change'
+  if (change.status === 'declined') return 'Declined file change'
   if (change.kind === 'add') return 'Created file'
   if (change.kind === 'delete') return 'Deleted file'
   return 'Edited file'
@@ -453,6 +455,13 @@ function fileChangeExpandedTitle(message: UiMessage): string {
 
 function fileChangeDisplayPath(message: UiMessage): string {
   return readFileChangeData(message)?.path || message.text || '(file)'
+}
+
+function fileChangeSummaryPath(message: UiMessage): string {
+  const fullPath = fileChangeDisplayPath(message)
+  const normalized = fullPath.replace(/\\/gu, '/')
+  const leaf = normalized.split('/').filter(Boolean).at(-1)
+  return leaf || fullPath
 }
 
 function fileChangeLinesAdded(message: UiMessage): number {
@@ -468,7 +477,9 @@ function fileChangeHasStats(message: UiMessage): boolean {
 }
 
 function fileChangeBrowseTarget(message: UiMessage): string {
-  return readFileChangeData(message)?.path || ''
+  const change = readFileChangeData(message)
+  if (!change) return ''
+  return change.openLine !== null ? `${change.path}:${String(change.openLine)}` : change.path
 }
 
 function fileChangeHasBrowseTarget(message: UiMessage): boolean {
@@ -1898,15 +1909,15 @@ onBeforeUnmount(() => {
 }
 
 .file-change-row {
-  @apply w-full flex items-center gap-2 px-3 py-1.5 rounded-lg border border-zinc-200 bg-zinc-50 cursor-pointer transition text-left hover:bg-zinc-100;
+  @apply w-full flex items-center gap-1.5 px-0 py-0.5 bg-transparent border-none rounded-none cursor-pointer transition text-left;
 }
 
 .file-change-row-expanded {
-  @apply rounded-b-none border-b-0;
+  @apply text-slate-900;
 }
 
 .file-change-chevron {
-  @apply text-[10px] text-zinc-400 transition-transform duration-150 flex-shrink-0;
+  @apply ml-1 text-[11px] text-zinc-400 transition-transform duration-150 flex-shrink-0;
 }
 
 .file-change-chevron-open {
@@ -1914,15 +1925,15 @@ onBeforeUnmount(() => {
 }
 
 .file-change-verb {
-  @apply text-xs font-medium text-zinc-600 flex-shrink-0;
+  @apply text-sm leading-relaxed font-medium text-slate-800 flex-shrink-0;
 }
 
 .file-change-path {
-  @apply flex-1 min-w-0 truncate text-xs font-mono text-zinc-700;
+  @apply flex-1 min-w-0 truncate text-sm leading-relaxed font-medium text-[#0969da];
 }
 
 .file-change-stats {
-  @apply flex items-center gap-1.5 flex-shrink-0 text-[11px] font-medium;
+  @apply flex items-center gap-1.5 flex-shrink-0 text-sm leading-relaxed font-medium;
 }
 
 .file-change-stats-added {
@@ -1933,19 +1944,31 @@ onBeforeUnmount(() => {
   @apply text-rose-600;
 }
 
+.file-change-row:hover .file-change-path {
+  @apply underline underline-offset-2;
+}
+
 .file-change-output-wrap {
-  @apply rounded-b-lg border border-zinc-200 border-t-0 bg-white/90;
+  @apply ml-4 border-l border-transparent;
   display: grid;
   grid-template-rows: 0fr;
-  transition: grid-template-rows 220ms ease-out;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+  transition: grid-template-rows 220ms ease-out, opacity 140ms ease-out, border-color 140ms ease-out;
 }
 
 .file-change-output-visible {
   grid-template-rows: 1fr;
+  border-color: #e4e4e7;
+  opacity: 1;
+  pointer-events: auto;
+  visibility: visible;
 }
 
 .file-change-output-inner {
-  @apply overflow-hidden min-h-0 flex flex-col gap-2 px-3 py-2.5;
+  @apply overflow-hidden min-h-0 flex flex-col gap-2 pl-4 pr-0 py-1.5;
 }
 
 .file-change-meta {
@@ -1966,5 +1989,35 @@ onBeforeUnmount(() => {
 
 .file-change-output {
   @apply m-0 rounded-md border border-zinc-200 bg-zinc-950 px-3 py-2 text-xs font-mono text-zinc-100 whitespace-pre-wrap break-words max-h-80 overflow-y-auto;
+}
+
+:global(:root.dark) .file-change-chevron {
+  @apply text-zinc-500;
+}
+
+:global(:root.dark) .file-change-verb {
+  @apply text-zinc-200;
+}
+
+:global(:root.dark) .file-change-path {
+  @apply text-blue-400;
+}
+
+:global(:root.dark) .file-change-row:hover .file-change-path {
+  @apply text-blue-300;
+}
+
+:global(:root.dark) .file-change-output-visible {
+  border-color: #3f3f46;
+}
+
+:global(:root.dark) .file-change-meta,
+:global(:root.dark) .file-change-meta-title,
+:global(:root.dark) .file-change-meta-text {
+  @apply text-zinc-400;
+}
+
+:global(:root.dark) .file-change-output {
+  @apply border-zinc-700 bg-zinc-950 text-zinc-100;
 }
 </style>

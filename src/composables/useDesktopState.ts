@@ -408,6 +408,31 @@ function removeRedundantLiveAgentMessages(previous: UiMessage[], incoming: UiMes
   return next.length === previous.length ? previous : next
 }
 
+function mergePersistedMessagesWithLiveCommands(
+  persisted: UiMessage[],
+  liveCommands: UiMessage[],
+): UiMessage[] {
+  if (liveCommands.length === 0) return persisted
+
+  const liveById = new Map(liveCommands.map((message) => [message.id, message]))
+  let changed = false
+
+  const merged = persisted.map((message) => {
+    const live = liveById.get(message.id)
+    if (!live) return message
+    changed = true
+    return {
+      ...message,
+      ...live,
+      turnIndex: message.turnIndex,
+    }
+  })
+
+  const appended = liveCommands.filter((message) => !persisted.some((persistedMessage) => persistedMessage.id === message.id))
+  if (!changed && appended.length === 0) return persisted
+  return [...merged, ...appended]
+}
+
 function upsertMessage(previous: UiMessage[], nextMessage: UiMessage): UiMessage[] {
   const existingIndex = previous.findIndex((message) => message.id === nextMessage.id)
   if (existingIndex < 0) {
@@ -762,10 +787,15 @@ export function useDesktopState() {
     if (!threadId) return null
 
     const activity = turnActivityByThreadId.value[threadId]
+    const liveCommands = liveCommandsByThreadId.value[threadId] ?? []
     const reasoningText = (liveReasoningTextByThreadId.value[threadId] ?? '').trim()
     const errorText = (turnErrorByThreadId.value[threadId]?.message ?? '').trim()
+    const shouldHideOverlayInFavorOfInlineRows =
+      liveCommands.length > 0 &&
+      reasoningText.length === 0 &&
+      errorText.length === 0
 
-    if (!activity && !reasoningText && !errorText) return null
+    if ((!activity && !reasoningText && !errorText) || shouldHideOverlayInFavorOfInlineRows) return null
     return {
       activityLabel: activity?.label || 'Thinking',
       activityDetails: activity?.details ?? [],
@@ -780,7 +810,8 @@ export function useDesktopState() {
     const persisted = persistedMessagesByThreadId.value[threadId] ?? []
     const liveAgent = liveAgentMessagesByThreadId.value[threadId] ?? []
     const liveCommands = liveCommandsByThreadId.value[threadId] ?? []
-    const combined = [...persisted, ...liveCommands, ...liveAgent]
+    const mergedPersisted = mergePersistedMessagesWithLiveCommands(persisted, liveCommands)
+    const combined = [...mergedPersisted, ...liveAgent]
 
     const summary = turnSummaryByThreadId.value[threadId]
     if (!summary) return combined
@@ -1581,6 +1612,26 @@ export function useDesktopState() {
           },
         }
       }
+      if (itemType === 'filechange') {
+        const changes = Array.isArray(item?.changes) ? item.changes : []
+        const details: string[] = []
+        for (const change of changes) {
+          const row = asRecord(change)
+          const path = readString(row?.path)
+          if (!path) continue
+          const display = path.split(/[\\/]/u).filter(Boolean).at(-1) || path
+          if (!display || details.includes(display)) continue
+          details.push(display)
+          if (details.length >= 3) break
+        }
+        return {
+          threadId,
+          activity: {
+            label: 'Editing files',
+            details,
+          },
+        }
+      }
     }
 
     if (notification.method === 'item/commandExecution/outputDelta') {
@@ -1866,6 +1917,7 @@ export function useDesktopState() {
   function removeLiveCommandsPersistedIn(threadId: string, persistedMessages: UiMessage[]): void {
     const current = liveCommandsByThreadId.value[threadId]
     if (!current || current.length === 0) return
+    if (inProgressById.value[threadId] === true || activeTurnIdByThreadId.value[threadId]) return
     const persistedIds = new Set(persistedMessages.map((m) => m.id))
     const next = current.filter((m) => !persistedIds.has(m.id))
     if (next.length === current.length) return
@@ -2103,9 +2155,6 @@ export function useDesktopState() {
       activeReasoningItemId = ''
       shouldAutoScrollOnNextAgentEvent = false
       clearLiveReasoningForThread(notificationThreadId)
-      if (liveCommandsByThreadId.value[notificationThreadId]) {
-        liveCommandsByThreadId.value = omitKey(liveCommandsByThreadId.value, notificationThreadId)
-      }
       const completedThreadId = extractThreadIdFromNotification(notification)
       if (completedThreadId) {
         setThreadInProgress(completedThreadId, false)
