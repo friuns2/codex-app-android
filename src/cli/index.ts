@@ -51,11 +51,6 @@ function isTermuxRuntime(): boolean {
   return Boolean(process.env.TERMUX_VERSION || process.env.PREFIX?.includes('/com.termux/'))
 }
 
-function canRun(command: string, args: string[] = []): boolean {
-  const result = canRunCommand(command, args)
-  return result
-}
-
 function runOrFail(command: string, args: string[], label: string): void {
   const result = spawnSyncCommand(command, args, { stdio: 'inherit' })
   if (result.status !== 0) {
@@ -69,11 +64,11 @@ function runWithStatus(command: string, args: string[]): number {
 }
 
 function resolveCloudflaredCommand(): string | null {
-  if (canRun('cloudflared', ['--version'])) {
+  if (canRunCommand('cloudflared', ['--version'])) {
     return 'cloudflared'
   }
   const localCandidate = join(homedir(), '.local', 'bin', 'cloudflared')
-  if (existsSync(localCandidate) && canRun(localCandidate, ['--version'])) {
+  if (existsSync(localCandidate) && canRunCommand(localCandidate, ['--version'])) {
     return localCandidate
   }
   return null
@@ -213,7 +208,7 @@ function ensureCodexInstalled(): string | null {
       const userPrefix = getUserNpmPrefix()
       console.log(`\nGlobal npm install requires elevated permissions. Retrying with --prefix ${userPrefix}...\n`)
       runOrFail('npm', ['install', '-g', '--prefix', userPrefix, pkg], `${label} (user prefix)`)
-      process.env.PATH = `${join(userPrefix, 'bin')}:${process.env.PATH ?? ''}`
+      process.env.PATH = prependPathEntry(process.env.PATH ?? '', getNpmGlobalBinDir(userPrefix))
     }
 
     if (isTermuxRuntime()) {
@@ -448,6 +443,9 @@ async function startServer(options: { port: string; password: string | boolean; 
     }
   }
   const codexCommand = ensureCodexInstalled() ?? resolveCodexCommand()
+  if (codexCommand) {
+    process.env.CODEXUI_CODEX_COMMAND = codexCommand
+  }
   if (!hasCodexAuth() && codexCommand) {
     console.log('\nCodex is not logged in. Starting `codex login`...\n')
     runOrFail(codexCommand, ['login'], 'Codex login')
@@ -535,6 +533,7 @@ async function startServer(options: { port: string; password: string | boolean; 
 
 async function runLogin() {
   const codexCommand = ensureCodexInstalled() ?? 'codex'
+  process.env.CODEXUI_CODEX_COMMAND = codexCommand
   console.log('\nStarting `codex login`...\n')
   runOrFail(codexCommand, ['login'], 'Codex login')
 }

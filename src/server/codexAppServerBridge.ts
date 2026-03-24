@@ -810,6 +810,14 @@ class AppServerProcess {
     'sandbox_mode="danger-full-access"',
   ]
 
+  private getCodexCommand(): string {
+    const codexCommand = resolveCodexCommand()
+    if (!codexCommand) {
+      throw new Error('Codex CLI is not available')
+    }
+    return codexCommand
+  }
+
   private start(): void {
     if (this.process) return
 
@@ -1094,6 +1102,11 @@ class MethodCatalog {
   private notificationCache: string[] | null = null
 
   private async runGenerateSchemaCommand(outDir: string): Promise<void> {
+    const codexCommand = resolveCodexCommand()
+    if (!codexCommand) {
+      throw new Error('Codex CLI is not available')
+    }
+
     await new Promise<void>((resolve, reject) => {
       const invocation = getSpawnInvocation(resolveCodexCommand() ?? 'codex', ['app-server', 'generate-json-schema', '--out', outDir])
       const process = spawn(invocation.command, invocation.args, {
