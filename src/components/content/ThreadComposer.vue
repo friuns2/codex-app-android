@@ -1374,7 +1374,7 @@ watch(
 }
 
 .thread-composer-plan-toggle.is-active {
-  @apply border-sky-300 bg-sky-100 text-sky-900;
+  @apply border-zinc-200 bg-white text-zinc-700;
 }
 
 .thread-composer-plan-toggle-label {
