@@ -434,6 +434,7 @@ type MessageBlock =
 let scrollRestoreFrame = 0
 let bottomLockFrame = 0
 let bottomLockFramesLeft = 0
+let pendingSavedScrollRestore = true
 const trackedPendingImages = new WeakSet<HTMLImageElement>()
 const failedMarkdownImageKeys = ref<Set<string>>(new Set())
 
@@ -1293,14 +1294,23 @@ function bindPendingImageHandlers(): void {
   }
 }
 
-async function scheduleScrollRestore(): Promise<void> {
+async function scheduleScrollRestore(options: { restoreSavedState?: boolean } = {}): Promise<void> {
+  const shouldRestoreSavedState = options.restoreSavedState ?? pendingSavedScrollRestore
   await nextTick()
   if (scrollRestoreFrame) {
     cancelAnimationFrame(scrollRestoreFrame)
   }
   scrollRestoreFrame = requestAnimationFrame(() => {
     scrollRestoreFrame = 0
-    applySavedScrollState()
+    const container = conversationListRef.value
+    if (shouldRestoreSavedState) {
+      applySavedScrollState()
+      pendingSavedScrollRestore = false
+    } else if (shouldLockToBottom()) {
+      enforceBottomState()
+    } else if (container) {
+      emitScrollState(container)
+    }
     bindPendingImageHandlers()
     scheduleBottomLock()
   })
@@ -1343,16 +1353,18 @@ watch(
   () => props.isLoading,
   async (loading) => {
     if (loading) return
-    await scheduleScrollRestore()
+    await scheduleScrollRestore({ restoreSavedState: true })
   },
 )
 
 watch(
   () => props.activeThreadId,
-  () => {
+  async () => {
+    pendingSavedScrollRestore = true
     localScrollState.value = null
     modalImageUrl.value = ''
     failedMarkdownImageKeys.value = new Set()
+    await scheduleScrollRestore({ restoreSavedState: true })
   },
   { flush: 'post' },
 )
