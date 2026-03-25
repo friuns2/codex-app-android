@@ -408,13 +408,14 @@ function removeRedundantLiveAgentMessages(previous: UiMessage[], incoming: UiMes
   return next.length === previous.length ? previous : next
 }
 
-function mergePersistedMessagesWithLiveCommands(
+function mergePersistedMessagesWithLiveItems(
   persisted: UiMessage[],
-  liveCommands: UiMessage[],
+  liveItems: UiMessage[],
+  liveOrder: string[],
 ): UiMessage[] {
-  if (liveCommands.length === 0) return persisted
+  if (liveItems.length === 0 && liveOrder.length === 0) return persisted
 
-  const liveById = new Map(liveCommands.map((message) => [message.id, message]))
+  const liveById = new Map(liveItems.map((message) => [message.id, message]))
   let changed = false
 
   const merged = persisted.map((message) => {
@@ -428,9 +429,99 @@ function mergePersistedMessagesWithLiveCommands(
     }
   })
 
-  const appended = liveCommands.filter((message) => !persisted.some((persistedMessage) => persistedMessage.id === message.id))
-  if (!changed && appended.length === 0) return persisted
-  return [...merged, ...appended]
+  const currentTurnIndex = persisted.reduce<number>(
+    (max, message) => (typeof message.turnIndex === 'number' ? Math.max(max, message.turnIndex) : max),
+    -1,
+  )
+  const currentTurnStartIndex =
+    currentTurnIndex >= 0
+      ? merged.findIndex((message) => message.turnIndex === currentTurnIndex)
+      : -1
+
+  if (currentTurnStartIndex < 0 || liveOrder.length === 0) {
+    const persistedIds = new Set(persisted.map((message) => message.id))
+    const appendedIds = liveOrder.filter((id) => liveById.has(id) && !persistedIds.has(id))
+    const appendedIdSet = new Set(appendedIds)
+    const appended = [
+      ...appendedIds.map((id) => liveById.get(id)!).filter(Boolean),
+      ...liveItems.filter((message) => !persistedIds.has(message.id) && !appendedIdSet.has(message.id)),
+    ]
+    if (!changed && appended.length === 0) return persisted
+    return [...merged, ...appended]
+  }
+
+  const beforeCurrentTurn = merged.slice(0, currentTurnStartIndex)
+  const currentTurnPersisted = merged.slice(currentTurnStartIndex)
+  const currentTurnPersistedById = new Map(currentTurnPersisted.map((message) => [message.id, message]))
+  const orderedLiveIds: string[] = []
+  const seenLiveIds = new Set<string>()
+
+  for (const id of liveOrder) {
+    if (seenLiveIds.has(id)) continue
+    if (!liveById.has(id) && !currentTurnPersistedById.has(id)) continue
+    seenLiveIds.add(id)
+    orderedLiveIds.push(id)
+  }
+
+  const nextCurrentTurn = [...currentTurnPersisted]
+  const resolveMessageById = (id: string): UiMessage | null => liveById.get(id) ?? currentTurnPersistedById.get(id) ?? null
+  const orderedIdSet = new Set(orderedLiveIds)
+  const orderedSlotIndexes: number[] = []
+
+  nextCurrentTurn.forEach((message, index) => {
+    if (orderedIdSet.has(message.id)) {
+      orderedSlotIndexes.push(index)
+    }
+  })
+
+  const placedIds = new Set<string>()
+  for (let slotIndex = 0; slotIndex < orderedSlotIndexes.length; slotIndex += 1) {
+    const id = orderedLiveIds[slotIndex]
+    const message = id ? resolveMessageById(id) : null
+    if (!id || !message) continue
+    nextCurrentTurn[orderedSlotIndexes[slotIndex]] = message
+    placedIds.add(id)
+  }
+
+  const currentTurnIndexById = new Map(nextCurrentTurn.map((message, index) => [message.id, index]))
+  for (let liveIndex = 0; liveIndex < orderedLiveIds.length; liveIndex += 1) {
+    const id = orderedLiveIds[liveIndex]
+    if (placedIds.has(id) || currentTurnIndexById.has(id)) continue
+
+    const message = resolveMessageById(id)
+    if (!message) continue
+
+    let insertAt = nextCurrentTurn.length
+
+    for (let previousIndex = liveIndex - 1; previousIndex >= 0; previousIndex -= 1) {
+      const previousTurnIndex = currentTurnIndexById.get(orderedLiveIds[previousIndex])
+      if (typeof previousTurnIndex !== 'number') continue
+      insertAt = previousTurnIndex + 1
+      break
+    }
+
+    if (insertAt === nextCurrentTurn.length) {
+      for (let nextIndex = liveIndex + 1; nextIndex < orderedLiveIds.length; nextIndex += 1) {
+        const nextTurnIndex = currentTurnIndexById.get(orderedLiveIds[nextIndex])
+        if (typeof nextTurnIndex !== 'number') continue
+        insertAt = nextTurnIndex
+        break
+      }
+    }
+
+    nextCurrentTurn.splice(insertAt, 0, message)
+    for (let turnIndex = insertAt; turnIndex < nextCurrentTurn.length; turnIndex += 1) {
+      currentTurnIndexById.set(nextCurrentTurn[turnIndex].id, turnIndex)
+    }
+  }
+
+  for (const message of liveItems) {
+    if (currentTurnIndexById.has(message.id)) continue
+    currentTurnIndexById.set(message.id, nextCurrentTurn.length)
+    nextCurrentTurn.push(message)
+  }
+
+  return [...beforeCurrentTurn, ...nextCurrentTurn]
 }
 
 function upsertMessage(previous: UiMessage[], nextMessage: UiMessage): UiMessage[] {
@@ -705,6 +796,7 @@ export function useDesktopState() {
   const liveAgentMessagesByThreadId = ref<Record<string, UiMessage[]>>({})
   const liveReasoningTextByThreadId = ref<Record<string, string>>({})
   const liveCommandsByThreadId = ref<Record<string, UiMessage[]>>({})
+  const liveItemOrderByThreadId = ref<Record<string, string[]>>({})
   const inProgressById = ref<Record<string, boolean>>({})
   type FileAttachment = { label: string; path: string; fsPath: string }
   type QueuedMessage = { id: string; text: string; imageUrls: string[]; skills: Array<{ name: string; path: string }>; fileAttachments: FileAttachment[] }
@@ -816,8 +908,8 @@ export function useDesktopState() {
     const persisted = persistedMessagesByThreadId.value[threadId] ?? []
     const liveAgent = liveAgentMessagesByThreadId.value[threadId] ?? []
     const liveCommands = liveCommandsByThreadId.value[threadId] ?? []
-    const mergedPersisted = mergePersistedMessagesWithLiveCommands(persisted, liveCommands)
-    const combined = [...mergedPersisted, ...liveAgent]
+    const liveOrder = liveItemOrderByThreadId.value[threadId] ?? []
+    const combined = mergePersistedMessagesWithLiveItems(persisted, [...liveCommands, ...liveAgent], liveOrder)
 
     const summary = turnSummaryByThreadId.value[threadId]
     if (!summary) return combined
@@ -921,9 +1013,7 @@ export function useDesktopState() {
         setPersistedMessagesForThread(threadId, rolledBackMessages)
         setLiveAgentMessagesForThread(threadId, [])
         clearLiveReasoningForThread(threadId)
-        if (liveCommandsByThreadId.value[threadId]) {
-          liveCommandsByThreadId.value = omitKey(liveCommandsByThreadId.value, threadId)
-        }
+        setLiveCommandsForThread(threadId, [])
       } catch {
         // If rollback fails, continue with retry rather than dropping the turn.
       }
@@ -1165,6 +1255,7 @@ export function useDesktopState() {
     liveAgentMessagesByThreadId.value = pruneThreadStateMap(liveAgentMessagesByThreadId.value, activeThreadIds)
     liveReasoningTextByThreadId.value = pruneThreadStateMap(liveReasoningTextByThreadId.value, activeThreadIds)
     liveCommandsByThreadId.value = pruneThreadStateMap(liveCommandsByThreadId.value, activeThreadIds)
+    liveItemOrderByThreadId.value = pruneThreadStateMap(liveItemOrderByThreadId.value, activeThreadIds)
     turnSummaryByThreadId.value = pruneThreadStateMap(turnSummaryByThreadId.value, activeThreadIds)
     turnActivityByThreadId.value = pruneThreadStateMap(turnActivityByThreadId.value, activeThreadIds)
     turnErrorByThreadId.value = pruneThreadStateMap(turnErrorByThreadId.value, activeThreadIds)
@@ -1331,6 +1422,16 @@ export function useDesktopState() {
     }
   }
 
+  function recordLiveItemOrder(threadId: string, messageId: string): void {
+    if (!threadId || !messageId) return
+    const previous = liveItemOrderByThreadId.value[threadId] ?? []
+    if (previous.includes(messageId)) return
+    liveItemOrderByThreadId.value = {
+      ...liveItemOrderByThreadId.value,
+      [threadId]: [...previous, messageId],
+    }
+  }
+
   function setLiveAgentMessagesForThread(threadId: string, nextMessages: UiMessage[]): void {
     const previous = liveAgentMessagesByThreadId.value[threadId] ?? []
     if (areMessageArraysEqual(previous, nextMessages)) return
@@ -1341,9 +1442,23 @@ export function useDesktopState() {
   }
 
   function upsertLiveAgentMessage(threadId: string, nextMessage: UiMessage): void {
+    recordLiveItemOrder(threadId, nextMessage.id)
     const previous = liveAgentMessagesByThreadId.value[threadId] ?? []
     const next = upsertMessage(previous, nextMessage)
     setLiveAgentMessagesForThread(threadId, next)
+  }
+
+  function setLiveCommandsForThread(threadId: string, nextMessages: UiMessage[]): void {
+    const previous = liveCommandsByThreadId.value[threadId] ?? []
+    if (areMessageArraysEqual(previous, nextMessages)) return
+    if (nextMessages.length === 0) {
+      liveCommandsByThreadId.value = omitKey(liveCommandsByThreadId.value, threadId)
+    } else {
+      liveCommandsByThreadId.value = {
+        ...liveCommandsByThreadId.value,
+        [threadId]: nextMessages,
+      }
+    }
   }
 
   function setLiveReasoningText(threadId: string, text: string): void {
@@ -1917,10 +2032,11 @@ export function useDesktopState() {
   }
 
   function upsertLiveCommand(threadId: string, msg: UiMessage): void {
+    recordLiveItemOrder(threadId, msg.id)
     const previous = liveCommandsByThreadId.value[threadId] ?? []
     const next = upsertMessage(previous, msg)
     if (next === previous) return
-    liveCommandsByThreadId.value = { ...liveCommandsByThreadId.value, [threadId]: next }
+    setLiveCommandsForThread(threadId, next)
   }
 
   function removeLiveCommandsPersistedIn(threadId: string, persistedMessages: UiMessage[]): void {
@@ -1930,11 +2046,7 @@ export function useDesktopState() {
     const persistedIds = new Set(persistedMessages.map((m) => m.id))
     const next = current.filter((m) => !persistedIds.has(m.id))
     if (next.length === current.length) return
-    if (next.length === 0) {
-      liveCommandsByThreadId.value = omitKey(liveCommandsByThreadId.value, threadId)
-    } else {
-      liveCommandsByThreadId.value = { ...liveCommandsByThreadId.value, [threadId]: next }
-    }
+    setLiveCommandsForThread(threadId, next)
   }
 
   function isAgentContentEvent(notification: RpcNotification): boolean {
@@ -2719,9 +2831,7 @@ export function useDesktopState() {
       setPersistedMessagesForThread(threadId, nextMessages)
       setLiveAgentMessagesForThread(threadId, [])
       clearLiveReasoningForThread(threadId)
-      if (liveCommandsByThreadId.value[threadId]) {
-        liveCommandsByThreadId.value = omitKey(liveCommandsByThreadId.value, threadId)
-      }
+      setLiveCommandsForThread(threadId, [])
       setTurnSummaryForThread(threadId, null)
       setTurnActivityForThread(threadId, null)
       setTurnErrorForThread(threadId, null)
@@ -2996,6 +3106,7 @@ export function useDesktopState() {
     liveAgentMessagesByThreadId.value = {}
     liveReasoningTextByThreadId.value = {}
     liveCommandsByThreadId.value = {}
+    liveItemOrderByThreadId.value = {}
     turnActivityByThreadId.value = {}
     turnSummaryByThreadId.value = {}
     turnErrorByThreadId.value = {}
