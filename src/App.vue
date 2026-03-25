@@ -91,7 +91,7 @@
                 <span class="sidebar-settings-toggle" :class="{ 'is-on': dictationAutoSend }" />
               </button>
               <button class="sidebar-settings-row" type="button" @click="toggleWorktreeGitAutomation">
-                <span class="sidebar-settings-label">Worktree Git automation</span>
+                <span class="sidebar-settings-label">Worktree rollback</span>
                 <span class="sidebar-settings-toggle" :class="{ 'is-on': worktreeGitAutomationEnabled }" />
               </button>
               <div class="sidebar-settings-row sidebar-settings-row--select">
