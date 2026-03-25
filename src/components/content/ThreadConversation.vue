@@ -1339,11 +1339,9 @@ watch(
   () => props.liveOverlay,
   async (overlay) => {
     if (!overlay) {
-      liveOverlayErrorAnchorMessageId.value = ''
       await scheduleScrollRestore()
       return
     }
-    captureLiveOverlayErrorAnchor()
     await scheduleScrollRestore()
   },
   { deep: true },
