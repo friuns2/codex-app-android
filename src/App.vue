@@ -812,7 +812,7 @@ function onSelectTrendingProjectTip(project: GithubTrendingProject): void {
   const composer = homeThreadComposerRef.value
   if (!composer) return
   composer.hydrateDraft({
-    text: `Clone and run github repo ${project.url}`,
+    text: `Clone this GitHub repo and run it: ${project.url}\nThen explain what this repo does in very simple words a 5th grader can understand.`,
     imageUrls: [],
     fileAttachments: [],
     skills: [],
