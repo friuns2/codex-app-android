@@ -51,6 +51,24 @@ function isTermuxRuntime(): boolean {
   return Boolean(process.env.TERMUX_VERSION || process.env.PREFIX?.includes('/com.termux/'))
 }
 
+function getNpmGlobalBinDir(prefix: string): string {
+  return process.platform === 'win32' ? prefix : join(prefix, 'bin')
+}
+
+function prependPathEntry(existingPath: string, entry: string): string {
+  const normalizedEntry = entry.trim()
+  if (!normalizedEntry) return existingPath
+
+  const separator = process.platform === 'win32' ? ';' : ':'
+  const parts = existingPath
+    .split(separator)
+    .map((value) => value.trim())
+    .filter(Boolean)
+    .filter((value) => value !== normalizedEntry)
+
+  return [normalizedEntry, ...parts].join(separator)
+}
+
 function runOrFail(command: string, args: string[], label: string): void {
   const result = spawnSyncCommand(command, args, { stdio: 'inherit' })
   if (result.status !== 0) {
