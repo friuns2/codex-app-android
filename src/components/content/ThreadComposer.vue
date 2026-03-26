@@ -592,24 +592,59 @@ function getDraftStorageKey(threadId: string): string {
   return `${DRAFT_STORAGE_PREFIX}${threadId}`
 }
 
-function loadPersistedDraftForThread(threadId: string): string {
-  if (typeof window === 'undefined') return ''
+function loadPersistedDraftForThread(threadId: string): ComposerDraftPayload | null {
+  if (typeof window === 'undefined') return null
   const normalizedThreadId = threadId.trim()
-  if (!normalizedThreadId) return ''
+  if (!normalizedThreadId) return null
   try {
-    return window.localStorage.getItem(getDraftStorageKey(normalizedThreadId)) ?? ''
+    const raw = window.localStorage.getItem(getDraftStorageKey(normalizedThreadId))
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as Partial<ComposerDraftPayload> | string
+    if (typeof parsed === 'string') {
+      return {
+        text: parsed,
+        imageUrls: [],
+        fileAttachments: [],
+        skills: [],
+      }
+    }
+    return {
+      text: typeof parsed.text === 'string' ? parsed.text : '',
+      imageUrls: Array.isArray(parsed.imageUrls)
+        ? parsed.imageUrls.filter((url): url is string => typeof url === 'string')
+        : [],
+      fileAttachments: Array.isArray(parsed.fileAttachments)
+        ? parsed.fileAttachments.filter((attachment): attachment is FileAttachment => (
+          Boolean(attachment)
+          && typeof attachment.label === 'string'
+          && typeof attachment.path === 'string'
+          && typeof attachment.fsPath === 'string'
+        ))
+        : [],
+      skills: Array.isArray(parsed.skills)
+        ? parsed.skills.filter((skill): skill is { name: string; path: string } => (
+          Boolean(skill)
+          && typeof skill.name === 'string'
+          && typeof skill.path === 'string'
+        ))
+        : [],
+    }
   } catch {
-    return ''
+    return null
   }
 }
 
-function persistDraftForThread(threadId: string, text: string): void {
+function persistDraftForThread(threadId: string, payload: ComposerDraftPayload): void {
   if (typeof window === 'undefined') return
   const normalizedThreadId = threadId.trim()
   if (!normalizedThreadId) return
   try {
-    if (text.length > 0) {
-      window.localStorage.setItem(getDraftStorageKey(normalizedThreadId), text)
+    const hasContent = payload.text.trim().length > 0
+      || payload.imageUrls.length > 0
+      || payload.fileAttachments.length > 0
+      || payload.skills.length > 0
+    if (hasContent) {
+      window.localStorage.setItem(getDraftStorageKey(normalizedThreadId), JSON.stringify(payload))
       return
     }
     window.localStorage.removeItem(getDraftStorageKey(normalizedThreadId))
@@ -619,7 +654,21 @@ function persistDraftForThread(threadId: string, text: string): void {
 }
 
 function clearPersistedDraftForThread(threadId: string): void {
-  persistDraftForThread(threadId, '')
+  persistDraftForThread(threadId, {
+    text: '',
+    imageUrls: [],
+    fileAttachments: [],
+    skills: [],
+  })
+}
+
+function getCurrentDraftPayload(): ComposerDraftPayload {
+  return {
+    text: draft.value,
+    imageUrls: selectedImages.value.map((image) => image.url),
+    fileAttachments: fileAttachments.value.map((attachment) => ({ ...attachment })),
+    skills: selectedSkills.value.map((skill) => ({ name: skill.name, path: skill.path })),
+  }
 }
 
 function onInterrupt(): void {
@@ -1081,12 +1130,12 @@ watch(
   (nextThreadId) => {
     cancelDictation()
     if (lastActiveThreadId) {
-      persistDraftForThread(lastActiveThreadId, draft.value)
+      persistDraftForThread(lastActiveThreadId, getCurrentDraftPayload())
     }
     clearDraftState()
     const restored = loadPersistedDraftForThread(nextThreadId)
     if (restored) {
-      draft.value = restored
+      replaceDraftState(restored)
       onInputChange()
     }
     lastActiveThreadId = nextThreadId.trim()
@@ -1094,13 +1143,10 @@ watch(
   { immediate: true },
 )
 
-watch(
-  draft,
-  (value) => {
-    if (!lastActiveThreadId) return
-    persistDraftForThread(lastActiveThreadId, value)
-  },
-)
+watch([draft, selectedImages, fileAttachments, selectedSkills], () => {
+  if (!lastActiveThreadId) return
+  persistDraftForThread(lastActiveThreadId, getCurrentDraftPayload())
+}, { deep: true })
 
 watch(
   () => props.cwd,
