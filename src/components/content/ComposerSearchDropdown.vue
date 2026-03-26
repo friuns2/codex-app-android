@@ -12,6 +12,7 @@
 
     <div
       v-if="isOpen"
+      ref="menuRef"
       class="search-dropdown-menu-wrap"
       :class="{
         'search-dropdown-menu-wrap-up': openDirection === 'up',
@@ -78,6 +79,7 @@ const emit = defineEmits<{
 }>()
 
 const rootRef = ref<HTMLElement | null>(null)
+const menuRef = ref<HTMLElement | null>(null)
 const searchRef = ref<HTMLInputElement | null>(null)
 const isOpen = ref(false)
 const searchQuery = ref('')
@@ -105,13 +107,32 @@ const filtered = computed(() => {
   )
 })
 
+function positionMenuForMobile(): void {
+  const menu = menuRef.value
+  const root = rootRef.value
+  if (!menu || !root || window.innerWidth >= 640) return
+  const rect = root.getBoundingClientRect()
+  if (openDirection.value === 'up') {
+    menu.style.setProperty('bottom', `${window.innerHeight - rect.top + 8}px`, 'important')
+    menu.style.setProperty('top', 'auto', 'important')
+  } else {
+    menu.style.setProperty('top', `${rect.bottom + 8}px`, 'important')
+    menu.style.setProperty('bottom', 'auto', 'important')
+  }
+}
+
 function onToggle(): void {
   if (props.disabled) return
   isOpen.value = !isOpen.value
   if (isOpen.value) {
     searchQuery.value = ''
     highlightIdx.value = 0
-    nextTick(() => searchRef.value?.focus())
+    nextTick(() => {
+      nextTick(() => {
+        positionMenuForMobile()
+      })
+      searchRef.value?.focus()
+    })
   }
 }
 
@@ -169,7 +190,7 @@ onBeforeUnmount(() => window.removeEventListener('pointerdown', onDocumentPointe
 }
 
 .search-dropdown-menu-wrap {
-  @apply absolute left-0 z-50 w-64 max-sm:w-56 max-sm:left-auto max-sm:right-0;
+  @apply absolute left-0 z-50 w-64;
 }
 
 .search-dropdown-menu-wrap-down {
@@ -178,6 +199,23 @@ onBeforeUnmount(() => window.removeEventListener('pointerdown', onDocumentPointe
 
 .search-dropdown-menu-wrap-up {
   @apply bottom-[calc(100%+8px)];
+}
+
+@media (max-width: 639px) {
+  .search-dropdown-menu-wrap {
+    position: fixed;
+    left: 0.5rem;
+    right: 0.5rem;
+    width: auto;
+  }
+
+  .search-dropdown-menu-wrap-up {
+    bottom: auto !important;
+  }
+
+  .search-dropdown-menu-wrap-down {
+    top: auto !important;
+  }
 }
 
 .search-dropdown-search-wrap {
@@ -213,7 +251,7 @@ onBeforeUnmount(() => window.removeEventListener('pointerdown', onDocumentPointe
 }
 
 .search-dropdown-option-desc {
-  @apply text-xs text-zinc-400 truncate max-w-32;
+  @apply text-xs text-zinc-400 truncate max-w-32 max-sm:max-w-none max-sm:flex-1;
 }
 
 .search-dropdown-empty {
