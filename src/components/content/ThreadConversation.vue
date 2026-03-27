@@ -108,6 +108,24 @@
         <div v-else class="message-row" :data-role="message.role" :data-message-type="message.messageType || ''">
           <div class="message-stack" :data-role="message.role">
             <article class="message-body" :data-role="message.role">
+              <div
+                v-if="showCopyResponseButton(message)"
+                class="message-toolbar"
+                :data-role="message.role"
+              >
+                <button
+                  type="button"
+                  class="message-copy-button"
+                  :data-copied="copiedMessageId === message.id"
+                  :aria-label="copiedMessageId === message.id ? 'Response copied' : 'Copy response'"
+                  :title="copiedMessageId === message.id ? 'Response copied' : 'Copy response'"
+                  @click="copyResponse(message)"
+                >
+                  <IconTablerCopy class="icon-svg message-copy-icon" />
+                  <span class="message-copy-label">{{ copiedMessageId === message.id ? 'Copied' : 'Copy' }}</span>
+                </button>
+              </div>
+
               <ul
                 v-if="message.images && message.images.length > 0"
                 class="message-image-list"
@@ -507,6 +525,7 @@
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import type { ThreadScrollState, UiLiveOverlay, UiMessage, UiPlanStep, UiServerRequest } from '../../types/codex'
 import IconTablerArrowUp from '../icons/IconTablerArrowUp.vue'
+import IconTablerCopy from '../icons/IconTablerCopy.vue'
 import IconTablerX from '../icons/IconTablerX.vue'
 
 const expandedCommandIds = ref<Set<string>>(new Set())
@@ -567,6 +586,12 @@ function isCommandMessage(message: UiMessage): boolean {
 
 function isPlanMessage(message: UiMessage): boolean {
   return message.messageType === 'plan' || message.messageType === 'plan.live'
+}
+
+function isCopyableAssistantMessage(message: UiMessage): boolean {
+  return message.role === 'assistant'
+    && !isCommandMessage(message)
+    && message.messageType !== 'worked'
 }
 
 const activeCommandMessageId = computed(() => {
@@ -786,6 +811,7 @@ const conversationListRef = ref<HTMLElement | null>(null)
 const bottomAnchorRef = ref<HTMLElement | null>(null)
 const liveOverlayReasoningRef = ref<HTMLElement | null>(null)
 const modalImageUrl = ref('')
+const copiedMessageId = ref('')
 const toolQuestionAnswers = ref<Record<string, string>>({})
 const toolQuestionOtherAnswers = ref<Record<string, string>>({})
 const autoFollowOutput = ref(props.scrollState?.isAtBottom !== false)
@@ -820,6 +846,7 @@ type MessageBlock =
 let scrollRestoreFrame = 0
 let bottomLockFrame = 0
 let bottomLockFramesLeft = 0
+let copiedMessageResetTimer: ReturnType<typeof setTimeout> | null = null
 const trackedPendingImages = new WeakSet<HTMLImageElement>()
 const failedMarkdownImageKeys = ref<Set<string>>(new Set())
 
@@ -1006,6 +1033,117 @@ function headingClass(level: number): string {
     default:
       return 'message-heading-h6'
   }
+}
+
+function planStepCopyMarker(status: UiPlanStep['status']): string {
+  switch (status) {
+    case 'completed':
+      return '[x]'
+    case 'inProgress':
+      return '[~]'
+    default:
+      return '[ ]'
+  }
+}
+
+function buildPlanCopyText(message: UiMessage): string {
+  const planData = readPlanData(message)
+  if (!planData) return ''
+
+  const sections: string[] = []
+  if (planData.explanation?.trim()) {
+    sections.push(planData.explanation.trim())
+  }
+
+  if (planData.steps.length > 0) {
+    sections.push(planData.steps.map((step) => `- ${planStepCopyMarker(step.status)} ${step.step}`.trim()).join('\n'))
+  }
+
+  return sections.join('\n\n').trim()
+}
+
+function buildCopyableMessageContent(message: UiMessage): string {
+  const sections: string[] = []
+  const textContent = message.text.trim() || buildPlanCopyText(message)
+  if (textContent) {
+    sections.push(textContent)
+  }
+
+  const attachmentLines = (message.fileAttachments ?? [])
+    .map((attachment) => attachment.path.trim())
+    .filter((pathValue) => pathValue.length > 0)
+  if (attachmentLines.length > 0) {
+    sections.push(`Files:\n${attachmentLines.join('\n')}`)
+  }
+
+  const imageLines = (message.images ?? [])
+    .map((imageUrl) => imageUrl.trim())
+    .filter((imageUrl) => imageUrl.length > 0)
+  if (imageLines.length > 0) {
+    sections.push(`Images:\n${imageLines.join('\n')}`)
+  }
+
+  return sections.join('\n\n').trim()
+}
+
+function showCopyResponseButton(message: UiMessage): boolean {
+  return isCopyableAssistantMessage(message) && buildCopyableMessageContent(message).length > 0
+}
+
+function copyTextWithSelectionFallback(text: string): boolean {
+  if (typeof document === 'undefined') return false
+
+  const textarea = document.createElement('textarea')
+  textarea.value = text
+  textarea.setAttribute('readonly', 'true')
+  textarea.style.position = 'fixed'
+  textarea.style.left = '-9999px'
+  textarea.style.opacity = '0'
+  textarea.style.pointerEvents = 'none'
+  document.body.appendChild(textarea)
+  textarea.focus()
+  textarea.select()
+  textarea.setSelectionRange(0, text.length)
+
+  try {
+    return document.execCommand('copy')
+  } catch {
+    return false
+  } finally {
+    document.body.removeChild(textarea)
+  }
+}
+
+async function copyResponse(message: UiMessage): Promise<void> {
+  const content = buildCopyableMessageContent(message)
+  if (!content) return
+
+  let copied = false
+  if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(content)
+      copied = true
+    } catch {
+      copied = false
+    }
+  }
+
+  if (!copied) {
+    copied = copyTextWithSelectionFallback(content)
+  }
+
+  if (!copied) return
+
+  copiedMessageId.value = message.id
+  if (copiedMessageResetTimer) {
+    clearTimeout(copiedMessageResetTimer)
+  }
+  copiedMessageResetTimer = setTimeout(() => {
+    if (copiedMessageId.value === message.id) {
+      copiedMessageId.value = ''
+    }
+    copiedMessageResetTimer = null
+  }, 1800)
 }
 
 function splitPlainTextByLinks(text: string): InlineSegment[] {
@@ -2336,6 +2474,9 @@ onBeforeUnmount(() => {
   if (bottomLockFrame) {
     cancelAnimationFrame(bottomLockFrame)
   }
+  if (copiedMessageResetTimer) {
+    clearTimeout(copiedMessageResetTimer)
+  }
 })
 </script>
 
@@ -2491,6 +2632,26 @@ onBeforeUnmount(() => {
 .message-body[data-role='user'] {
   @apply ml-auto items-end;
   align-self: flex-end;
+}
+
+.message-toolbar {
+  @apply mb-1 flex justify-end;
+}
+
+.message-copy-button {
+  @apply inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white/90 px-2 py-1 text-[11px] font-medium leading-none text-slate-500 transition hover:border-slate-300 hover:bg-white hover:text-slate-900;
+}
+
+.message-copy-button[data-copied='true'] {
+  @apply border-emerald-200 bg-emerald-50 text-emerald-700;
+}
+
+.message-copy-icon {
+  @apply text-[13px];
+}
+
+.message-copy-label {
+  @apply leading-none;
 }
 
 .message-image-list {

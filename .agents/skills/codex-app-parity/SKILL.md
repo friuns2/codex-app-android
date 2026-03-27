@@ -219,6 +219,11 @@ After each feature implementation session that uses this skill:
 - App-server RPC for rename uses method `thread/name/set` with params `{ threadId, name }` (not `threadName`).
 - `thread/name/updated` realtime notification carries `{ threadId, threadName }`, so parity implementations should handle both request/response naming differences (`name` on write, `threadName` on notification).
 
+## Findings: Local Parity Fallback (2026-03-27)
+
+- In this workspace, `/Applications/Codex.app/Contents/Resources/app.asar` was not present, so Codex.app-first inspection could not run.
+- For user-visible changes under this constraint, use the skill's fallback path explicitly: preserve existing repository interaction patterns, keep the UX conservative, and call out the parity blocker in the completion report.
+
 ## Findings: Settings Account Labels (2026-03-24)
 
 - No equivalent multi-account switcher UI was found in the installed Codex.app bundle for Settings/account list behavior, so parity work should follow the existing local Settings visual language instead of inventing a separate header menu.

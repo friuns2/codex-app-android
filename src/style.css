@@ -414,6 +414,14 @@
   @apply bg-zinc-700;
 }
 
+:root.dark .message-copy-button {
+  @apply border-zinc-700 bg-zinc-800/90 text-zinc-300 hover:border-zinc-600 hover:bg-zinc-800 hover:text-zinc-100;
+}
+
+:root.dark .message-copy-button[data-copied='true'] {
+  @apply border-emerald-500/40 bg-emerald-500/10 text-emerald-200;
+}
+
 :root.dark .message-inline-code {
   @apply border-zinc-600 bg-zinc-700/60 text-zinc-200;
 }
