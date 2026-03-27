@@ -100,6 +100,7 @@
                       'is-confirming-remove': isRemoveConfirmationActive(account),
                     }"
                     :title="buildAccountTitle(account)"
+                    @mouseleave="onAccountCardPointerLeave(account.accountId)"
                   >
                     <div class="sidebar-settings-account-main">
                       <p class="sidebar-settings-account-email">{{ account.email || 'Account' }}</p>
@@ -639,6 +640,13 @@ function getAccountRemoveLabel(account: UiAccountEntry): string {
   if (removingAccountId.value === account.accountId) return 'Removing…'
   if (isRemoveConfirmationActive(account)) return 'Click again to remove'
   return 'Remove'
+}
+
+function onAccountCardPointerLeave(accountId: string): void {
+  if (removingAccountId.value === accountId) return
+  if (confirmingRemoveAccountId.value === accountId) {
+    confirmingRemoveAccountId.value = ''
+  }
 }
 
 function pickWeeklyQuotaWindow(account: UiAccountEntry) {
