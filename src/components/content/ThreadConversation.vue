@@ -108,24 +108,6 @@
         <div v-else class="message-row" :data-role="message.role" :data-message-type="message.messageType || ''">
           <div class="message-stack" :data-role="message.role">
             <article class="message-body" :data-role="message.role">
-              <div
-                v-if="showCopyResponseButton(message)"
-                class="message-toolbar"
-                :data-role="message.role"
-              >
-                <button
-                  type="button"
-                  class="message-copy-button"
-                  :data-copied="copiedResponseAnchorId === message.id"
-                  :aria-label="copiedResponseAnchorId === message.id ? 'Response copied' : 'Copy response'"
-                  :title="copiedResponseAnchorId === message.id ? 'Response copied' : 'Copy response'"
-                  @click="copyResponse(message.id)"
-                >
-                  <IconTablerCopy class="icon-svg message-copy-icon" />
-                  <span class="message-copy-label">{{ copiedResponseAnchorId === message.id ? 'Copied' : 'Copy' }}</span>
-                </button>
-              </div>
-
               <ul
                 v-if="message.images && message.images.length > 0"
                 class="message-image-list"
@@ -382,6 +364,24 @@
                   </template>
                 </div>
               </article>
+
+              <div
+                v-if="showCopyResponseButton(message)"
+                class="message-toolbar"
+                :data-role="message.role"
+              >
+                <button
+                  type="button"
+                  class="message-copy-button"
+                  :data-copied="copiedResponseAnchorId === message.id"
+                  :aria-label="copiedResponseAnchorId === message.id ? 'Response copied' : 'Copy response'"
+                  :title="copiedResponseAnchorId === message.id ? 'Response copied' : 'Copy response'"
+                  @click="copyResponse(message.id)"
+                >
+                  <IconTablerCopy class="icon-svg message-copy-icon" />
+                  <span class="message-copy-label">{{ copiedResponseAnchorId === message.id ? 'Copied' : 'Copy' }}</span>
+                </button>
+              </div>
             </article>
 
           </div>
@@ -2702,11 +2702,11 @@ onBeforeUnmount(() => {
 }
 
 .message-toolbar {
-  @apply mb-1 flex justify-end;
+  @apply mt-1 self-end;
 }
 
 .message-copy-button {
-  @apply inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white/90 px-2 py-1 text-[11px] font-medium leading-none text-slate-500 transition hover:border-slate-300 hover:bg-white hover:text-slate-900;
+  @apply inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white/90 px-1.5 py-0.75 text-[10px] font-medium leading-none text-slate-500 transition hover:border-slate-300 hover:bg-white hover:text-slate-900;
 }
 
 .message-copy-button[data-copied='true'] {
@@ -2714,7 +2714,7 @@ onBeforeUnmount(() => {
 }
 
 .message-copy-icon {
-  @apply text-[13px];
+  @apply text-[11px];
 }
 
 .message-copy-label {
