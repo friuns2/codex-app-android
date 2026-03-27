@@ -155,6 +155,32 @@
             >
               Take photo
             </button>
+            <template v-if="isTurnInProgress">
+              <div class="thread-composer-attach-separator" />
+              <div class="thread-composer-attach-mode">
+                <span class="thread-composer-attach-mode-label">In-progress send</span>
+                <div class="thread-composer-attach-mode-buttons">
+                  <button
+                    class="thread-composer-attach-mode-button"
+                    :class="{ 'is-active': activeInProgressMode === 'steer' }"
+                    type="button"
+                    :disabled="isInteractionDisabled"
+                    @click="setActiveInProgressMode('steer')"
+                  >
+                    Steer
+                  </button>
+                  <button
+                    class="thread-composer-attach-mode-button"
+                    :class="{ 'is-active': activeInProgressMode === 'queue' }"
+                    type="button"
+                    :disabled="isInteractionDisabled"
+                    @click="setActiveInProgressMode('queue')"
+                  >
+                    Queue
+                  </button>
+                </div>
+              </div>
+            </template>
             <div class="thread-composer-attach-separator" />
             <button
               v-if="isFastModeSupported"
@@ -249,27 +275,6 @@
             />
             <IconTablerMicrophone v-else class="thread-composer-mic-icon" />
           </button>
-
-          <div v-if="isTurnInProgress && hasSubmitContent" class="thread-composer-in-progress-mode">
-            <button
-              class="thread-composer-in-progress-mode-button"
-              :class="{ 'is-active': activeInProgressMode === 'steer' }"
-              type="button"
-              :disabled="isInteractionDisabled"
-              @click="setActiveInProgressMode('steer')"
-            >
-              Steer
-            </button>
-            <button
-              class="thread-composer-in-progress-mode-button"
-              :class="{ 'is-active': activeInProgressMode === 'queue' }"
-              type="button"
-              :disabled="isInteractionDisabled"
-              @click="setActiveInProgressMode('queue')"
-            >
-              Queue
-            </button>
-          </div>
 
           <button
             v-if="isTurnInProgress && !hasSubmitContent"
@@ -1393,6 +1398,26 @@ watch(
   @apply my-1 h-px bg-zinc-100;
 }
 
+.thread-composer-attach-mode {
+  @apply px-3 py-2 flex items-center justify-between gap-2;
+}
+
+.thread-composer-attach-mode-label {
+  @apply text-sm text-zinc-800;
+}
+
+.thread-composer-attach-mode-buttons {
+  @apply inline-flex items-center rounded-full border border-zinc-200 bg-white p-0.5;
+}
+
+.thread-composer-attach-mode-button {
+  @apply rounded-full border-0 bg-transparent px-2 py-1 text-xs text-zinc-600 transition hover:text-zinc-800 disabled:cursor-not-allowed disabled:text-zinc-400;
+}
+
+.thread-composer-attach-mode-button.is-active {
+  @apply bg-zinc-900 text-white hover:text-white;
+}
+
 .thread-composer-attach-setting {
   @apply flex w-full items-center justify-between gap-3 rounded-lg border-0 bg-transparent px-3 py-2 text-left transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:text-zinc-400;
 }
@@ -1448,18 +1473,6 @@ watch(
 
 .thread-composer-actions--recording {
   @apply ml-0 flex-1;
-}
-
-.thread-composer-in-progress-mode {
-  @apply inline-flex items-center rounded-full border border-zinc-200 bg-white p-0.5;
-}
-
-.thread-composer-in-progress-mode-button {
-  @apply rounded-full border-0 bg-transparent px-2 py-1 text-xs text-zinc-600 transition hover:text-zinc-800 disabled:cursor-not-allowed disabled:text-zinc-400;
-}
-
-.thread-composer-in-progress-mode-button.is-active {
-  @apply bg-zinc-900 text-white hover:text-white;
 }
 
 .thread-composer-mic {
