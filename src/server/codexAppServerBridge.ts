@@ -70,6 +70,15 @@ type ThreadSearchIndex = {
   docsById: Map<string, ThreadSearchDocument>
 }
 
+type GithubTrendingItem = {
+  id: number
+  fullName: string
+  url: string
+  description: string
+  language: string
+  stars: number
+}
+
 function asRecord(value: unknown): Record<string, unknown> | null {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
     ? (value as Record<string, unknown>)
@@ -160,6 +169,67 @@ function scoreFileCandidate(path: string, query: string): number {
   if (lowerPath.includes(`/${lowerQuery}`)) return 3
   if (lowerPath.includes(lowerQuery)) return 4
   return 10
+}
+
+function decodeHtmlEntities(value: string): string {
+  return value
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&#x2F;/gi, '/')
+}
+
+function stripHtml(value: string): string {
+  return decodeHtmlEntities(value.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim())
+}
+
+function parseGithubTrendingHtml(html: string, limit: number): GithubTrendingItem[] {
+  const rows = html.match(/<article[\s\S]*?<\/article>/g) ?? []
+  const items: GithubTrendingItem[] = []
+  let seq = Date.now()
+  for (const row of rows) {
+    const repoBlockMatch = row.match(/<h2[\s\S]*?<\/h2>/)
+    const hrefMatch = repoBlockMatch?.[0]?.match(/href="\/([A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+)"/)
+    if (!hrefMatch) continue
+    const fullName = hrefMatch[1] ?? ''
+    if (!fullName || items.some((item) => item.fullName === fullName)) continue
+    const descriptionMatch =
+      row.match(/<p[^>]*class="[^"]*col-9[^"]*"[^>]*>([\s\S]*?)<\/p>/)
+      ?? row.match(/<p[^>]*class="[^"]*color-fg-muted[^"]*"[^>]*>([\s\S]*?)<\/p>/)
+      ?? row.match(/<p[^>]*>([\s\S]*?)<\/p>/)
+    const languageMatch = row.match(/programmingLanguage[^>]*>\s*([\s\S]*?)\s*<\/span>/)
+    const starsMatch = row.match(/href="\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\/stargazers"[\s\S]*?>([\s\S]*?)<\/a>/)
+    const starsText = stripHtml(starsMatch?.[1] ?? '').replace(/,/g, '')
+    const stars = Number.parseInt(starsText, 10)
+    items.push({
+      id: seq,
+      fullName,
+      url: `https://github.com/${fullName}`,
+      description: stripHtml(descriptionMatch?.[1] ?? ''),
+      language: stripHtml(languageMatch?.[1] ?? ''),
+      stars: Number.isFinite(stars) ? stars : 0,
+    })
+    seq += 1
+    if (items.length >= limit) break
+  }
+  return items
+}
+
+async function fetchGithubTrending(since: 'daily' | 'weekly' | 'monthly', limit: number): Promise<GithubTrendingItem[]> {
+  const endpoint = `https://github.com/trending?since=${since}`
+  const response = await fetch(endpoint, {
+    headers: {
+      'User-Agent': 'codex-web-local',
+      Accept: 'text/html',
+    },
+  })
+  if (!response.ok) {
+    throw new Error(`GitHub trending fetch failed (${response.status})`)
+  }
+  const html = await response.text()
+  return parseGithubTrendingHtml(html, limit)
 }
 
 async function listFilesWithRipgrep(cwd: string): Promise<string[]> {
@@ -1442,6 +1512,21 @@ export function createCodexBridgeMiddleware(): CodexBridgeMiddleware {
 
       if (req.method === 'GET' && url.pathname === '/codex-api/home-directory') {
         setJson(res, 200, { data: { path: homedir() } })
+        return
+      }
+
+      if (req.method === 'GET' && url.pathname === '/codex-api/github-trending') {
+        const sinceRaw = (url.searchParams.get('since') ?? '').trim().toLowerCase()
+        const since: 'daily' | 'weekly' | 'monthly' =
+          sinceRaw === 'weekly' ? 'weekly' : sinceRaw === 'monthly' ? 'monthly' : 'daily'
+        const limitRaw = Number.parseInt((url.searchParams.get('limit') ?? '6').trim(), 10)
+        const limit = Number.isFinite(limitRaw) ? Math.max(1, Math.min(10, limitRaw)) : 6
+        try {
+          const data = await fetchGithubTrending(since, limit)
+          setJson(res, 200, { data })
+        } catch (error) {
+          setJson(res, 502, { error: getErrorMessage(error, 'Failed to fetch GitHub trending') })
+        }
         return
       }
 
