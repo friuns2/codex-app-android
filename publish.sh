@@ -52,14 +52,34 @@ elif [[ "$remote_commit" != "$base_commit" ]]; then
   exit 1
 fi
 
-if [[ -z "$(git status --short)" ]]; then
-  echo "no uncommitted changes to publish" >&2
-  exit 1
-fi
-
 package_name=$(node -p "require('./package.json').name")
 current_version=$(node -p "require('./package.json').version")
 published_version=$(npm view "$package_name" dist-tags.latest 2>/dev/null || true)
+
+has_unpublished_commits=0
+if [[ "$local_commit" != "$remote_commit" ]]; then
+  has_unpublished_commits=1
+fi
+
+should_publish_clean_tree=0
+if [[ -n "$published_version" ]] && node -e "
+const parse = (v) => v.split('.').map((n) => Number(n));
+const gt = (a, b) => {
+  for (let i = 0; i < 3; i += 1) {
+    if (a[i] > b[i]) return true;
+    if (a[i] < b[i]) return false;
+  }
+  return false;
+};
+process.exit(gt(parse(process.argv[1]), parse(process.argv[2])) ? 0 : 1);
+" "$current_version" "$published_version"; then
+  should_publish_clean_tree=1
+fi
+
+if [[ "$has_local_changes" -eq 0 && "$has_unpublished_commits" -eq 0 && "$should_publish_clean_tree" -eq 0 ]]; then
+  echo "no local changes or newer version to publish" >&2
+  exit 1
+fi
 
 next_version=$(node -e "
 const parse = (v) => v.split('.').map((n) => Number(n));
