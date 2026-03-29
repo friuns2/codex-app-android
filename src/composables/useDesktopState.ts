@@ -2259,8 +2259,8 @@ export function useDesktopState() {
 
   async function refreshSkills(): Promise<void> {
     try {
-      const cwds = sourceGroups.value.flatMap((g) => g.threads.map((t) => t.cwd)).filter(Boolean)
-      installedSkills.value = await getSkillsList(cwds.length > 0 ? [...new Set(cwds)] : undefined)
+      const selectedCwd = selectedThread.value?.cwd?.trim() ?? ''
+      installedSkills.value = await getSkillsList(selectedCwd ? [selectedCwd] : undefined)
     } catch {
       // keep previous skills on failure
     }
@@ -2286,7 +2286,10 @@ export function useDesktopState() {
     setSelectedThreadId(threadId)
 
     try {
-      await loadMessages(threadId)
+      await Promise.all([
+        loadMessages(threadId),
+        refreshSkills(),
+      ])
     } catch (unknownError) {
       error.value = unknownError instanceof Error ? unknownError.message : 'Unknown application error'
     }

@@ -277,3 +277,48 @@ This file tracks manual regression and feature verification steps.
 
 #### Rollback/Cleanup
 - Re-apply PR #16 commits if the reverted behavior is not desired.
+
+### Feature: Thread load capped to latest 10 turns
+
+#### Prerequisites
+- App is running from this repository.
+- At least one thread exists with more than 10 turns/messages.
+
+#### Steps
+1. Open a long thread that previously caused UI lag during initial load.
+2. While the thread is loading, immediately click another thread in the sidebar.
+3. Return to the long thread.
+4. Count visible loaded history blocks and confirm only the newest portion is shown.
+5. Call `/codex-api/rpc` with method `thread/read` for the same thread and inspect `result.thread.turns.length`.
+6. Call `/codex-api/rpc` with method `thread/resume` for the same thread and inspect `result.thread.turns.length`.
+
+#### Expected Results
+- Initial thread load renders only the most recent 10 turns.
+- UI remains responsive during thread load.
+- You can switch to another thread without the UI freezing.
+- `thread/read` and `thread/resume` RPC responses contain at most 10 turns.
+
+#### Rollback/Cleanup
+- No cleanup required.
+
+### Feature: Skills list request scoped to active thread cwd
+
+#### Prerequisites
+- App is running from this repository.
+- Browser DevTools Network tab is open.
+- At least two threads exist with different `cwd` values.
+
+#### Steps
+1. Reload the app and wait for initial data load.
+2. In Network tab, inspect `/codex-api/rpc` requests with method `skills/list`.
+3. Verify request params contain `cwds` with only the currently selected thread cwd.
+4. Switch to another thread with a different cwd.
+5. Inspect the next `skills/list` request and verify `cwds` now contains only the new selected thread cwd.
+
+#### Expected Results
+- `skills/list` no longer sends every thread cwd in one request.
+- Each `skills/list` call includes at most one cwd for the active thread context.
+- Skills list still updates when changing selected thread.
+
+#### Rollback/Cleanup
+- No cleanup required.
