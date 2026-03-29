@@ -83,7 +83,7 @@ type GithubTrendingItem = {
   stars: number
 }
 
-const THREAD_RESPONSE_TURN_LIMIT = 1
+const THREAD_RESPONSE_TURN_LIMIT = 10
 const THREAD_METHODS_WITH_TURNS = new Set(['thread/read', 'thread/resume', 'thread/fork', 'thread/rollback'])
 
 function asRecord(value: unknown): Record<string, unknown> | null {
