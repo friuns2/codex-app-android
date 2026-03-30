@@ -28,12 +28,14 @@ import {
   type RpcNotification,
   type SkillInfo,
 } from '../api/codexGateway'
+import { normalizeFileChangeStatus, toUiFileChanges } from '../api/normalizers/v2'
 import type {
   CollaborationModeKind,
   CollaborationModeOption,
   CommandExecutionData,
   ReasoningEffort,
   ThreadScrollState,
+  UiFileChange,
   UiLiveOverlay,
   UiMessage,
   UiPlanData,
@@ -356,6 +358,8 @@ function areMessageFieldsEqual(first: UiMessage, second: UiMessage): boolean {
     first.role === second.role &&
     first.text === second.text &&
     areStringArraysEqual(first.images, second.images) &&
+    areUiFileChangesEqual(first.fileChanges, second.fileChanges) &&
+    first.fileChangeStatus === second.fileChangeStatus &&
     first.messageType === second.messageType &&
     first.rawPayload === second.rawPayload &&
     first.isUnhandled === second.isUnhandled &&
@@ -409,6 +413,27 @@ function mergeMessages(
   const merged = [...mergedFromPrevious, ...appended]
 
   return areMessageArraysEqual(previous, merged) ? previous : merged
+}
+
+function areUiFileChangesEqual(first?: UiFileChange[], second?: UiFileChange[]): boolean {
+  if (!first && !second) return true
+  if (!first || !second) return false
+  if (first.length !== second.length) return false
+  for (let index = 0; index < first.length; index += 1) {
+    const firstChange = first[index]
+    const secondChange = second[index]
+    if (
+      firstChange.path !== secondChange.path ||
+      firstChange.operation !== secondChange.operation ||
+      firstChange.movedToPath !== secondChange.movedToPath ||
+      firstChange.diff !== secondChange.diff ||
+      firstChange.addedLineCount !== secondChange.addedLineCount ||
+      firstChange.removedLineCount !== secondChange.removedLineCount
+    ) {
+      return false
+    }
+  }
+  return true
 }
 
 function normalizeMessageText(value: string): string {
@@ -730,6 +755,7 @@ export function useDesktopState() {
   const liveAgentMessagesByThreadId = ref<Record<string, UiMessage[]>>({})
   const liveReasoningTextByThreadId = ref<Record<string, string>>({})
   const liveCommandsByThreadId = ref<Record<string, UiMessage[]>>({})
+  const liveFileChangeMessagesByThreadId = ref<Record<string, UiMessage[]>>({})
   const inProgressById = ref<Record<string, boolean>>({})
   type FileAttachment = { label: string; path: string; fsPath: string }
   type QueuedMessage = {
@@ -843,7 +869,8 @@ export function useDesktopState() {
     const livePlan = livePlanMessagesByThreadId.value[threadId] ?? []
     const liveAgent = liveAgentMessagesByThreadId.value[threadId] ?? []
     const liveCommands = liveCommandsByThreadId.value[threadId] ?? []
-    const combined = [...persisted, ...livePlan, ...liveCommands, ...liveAgent]
+    const liveFileChanges = liveFileChangeMessagesByThreadId.value[threadId] ?? []
+    const combined = [...persisted, ...livePlan, ...liveCommands, ...liveFileChanges, ...liveAgent]
 
     const summary = turnSummaryByThreadId.value[threadId]
     if (!summary) return combined
@@ -1131,6 +1158,7 @@ export function useDesktopState() {
     liveAgentMessagesByThreadId.value = pruneThreadStateMap(liveAgentMessagesByThreadId.value, activeThreadIds)
     liveReasoningTextByThreadId.value = pruneThreadStateMap(liveReasoningTextByThreadId.value, activeThreadIds)
     liveCommandsByThreadId.value = pruneThreadStateMap(liveCommandsByThreadId.value, activeThreadIds)
+    liveFileChangeMessagesByThreadId.value = pruneThreadStateMap(liveFileChangeMessagesByThreadId.value, activeThreadIds)
     turnSummaryByThreadId.value = pruneThreadStateMap(turnSummaryByThreadId.value, activeThreadIds)
     turnActivityByThreadId.value = pruneThreadStateMap(turnActivityByThreadId.value, activeThreadIds)
     turnErrorByThreadId.value = pruneThreadStateMap(turnErrorByThreadId.value, activeThreadIds)
@@ -1327,6 +1355,15 @@ export function useDesktopState() {
     }
   }
 
+  function setLiveFileChangeMessagesForThread(threadId: string, nextMessages: UiMessage[]): void {
+    const previous = liveFileChangeMessagesByThreadId.value[threadId] ?? []
+    if (areMessageArraysEqual(previous, nextMessages)) return
+    liveFileChangeMessagesByThreadId.value = {
+      ...liveFileChangeMessagesByThreadId.value,
+      [threadId]: nextMessages,
+    }
+  }
+
   function setLivePlanMessagesForThread(threadId: string, nextMessages: UiMessage[]): void {
     const previous = livePlanMessagesByThreadId.value[threadId] ?? []
     if (areMessageArraysEqual(previous, nextMessages)) return
@@ -1346,6 +1383,12 @@ export function useDesktopState() {
     const previous = liveAgentMessagesByThreadId.value[threadId] ?? []
     const next = upsertMessage(previous, nextMessage)
     setLiveAgentMessagesForThread(threadId, next)
+  }
+
+  function upsertLiveFileChangeMessage(threadId: string, nextMessage: UiMessage): void {
+    const previous = liveFileChangeMessagesByThreadId.value[threadId] ?? []
+    const next = upsertMessage(previous, nextMessage)
+    setLiveFileChangeMessagesForThread(threadId, next)
   }
 
   function setLiveReasoningText(threadId: string, text: string): void {
@@ -1380,6 +1423,12 @@ export function useDesktopState() {
     if (!threadId) return
     if (!(threadId in livePlanMessagesByThreadId.value)) return
     livePlanMessagesByThreadId.value = omitKey(livePlanMessagesByThreadId.value, threadId)
+  }
+
+  function clearLiveFileChangesForThread(threadId: string): void {
+    if (!threadId) return
+    if (!(threadId in liveFileChangeMessagesByThreadId.value)) return
+    liveFileChangeMessagesByThreadId.value = omitKey(liveFileChangeMessagesByThreadId.value, threadId)
   }
 
   function clearCompletedTurnLiveState(threadId: string): void {
@@ -1700,6 +1749,18 @@ export function useDesktopState() {
           },
         }
       }
+      if (itemType === 'filechange') {
+        const changes = Array.isArray(item?.changes) ? item.changes : []
+        const firstChange = changes[0] as Record<string, unknown> | undefined
+        const path = readString(firstChange?.path)
+        return {
+          threadId,
+          activity: {
+            label: 'Applying changes',
+            details: path ? [path] : [],
+          },
+        }
+      }
     }
 
     if (notification.method === 'item/commandExecution/outputDelta') {
@@ -1707,6 +1768,16 @@ export function useDesktopState() {
         threadId,
         activity: {
           label: 'Running command',
+          details: [],
+        },
+      }
+    }
+
+    if (notification.method === 'item/fileChange/outputDelta') {
+      return {
+        threadId,
+        activity: {
+          label: 'Applying changes',
           details: [],
         },
       }
@@ -1963,6 +2034,28 @@ export function useDesktopState() {
     }
   }
 
+  function readCompletedFileChange(notification: RpcNotification): UiMessage | null {
+    if (notification.method !== 'item/completed') return null
+    const params = asRecord(notification.params)
+    const item = asRecord(params?.item)
+    if (!item || item.type !== 'fileChange') return null
+    const id = readString(item.id)
+    if (!id) return null
+
+    const fileChanges = toUiFileChanges(item.changes)
+    const fileChangeStatus = normalizeFileChangeStatus(item.status)
+    if (fileChanges.length === 0 || fileChangeStatus !== 'completed') return null
+
+    return {
+      id,
+      role: 'system',
+      text: '',
+      messageType: 'fileChange',
+      fileChangeStatus,
+      fileChanges,
+    }
+  }
+
   function upsertLiveCommand(threadId: string, msg: UiMessage): void {
     const previous = liveCommandsByThreadId.value[threadId] ?? []
     const next = upsertMessage(previous, msg)
@@ -1980,6 +2073,19 @@ export function useDesktopState() {
       liveCommandsByThreadId.value = omitKey(liveCommandsByThreadId.value, threadId)
     } else {
       liveCommandsByThreadId.value = { ...liveCommandsByThreadId.value, [threadId]: next }
+    }
+  }
+
+  function removeLiveFileChangesPersistedIn(threadId: string, persistedMessages: UiMessage[]): void {
+    const current = liveFileChangeMessagesByThreadId.value[threadId]
+    if (!current || current.length === 0) return
+    const persistedIds = new Set(persistedMessages.map((message) => message.id))
+    const next = current.filter((message) => !persistedIds.has(message.id))
+    if (next.length === current.length) return
+    if (next.length === 0) {
+      liveFileChangeMessagesByThreadId.value = omitKey(liveFileChangeMessagesByThreadId.value, threadId)
+    } else {
+      liveFileChangeMessagesByThreadId.value = { ...liveFileChangeMessagesByThreadId.value, [threadId]: next }
     }
   }
 
@@ -2039,6 +2145,7 @@ export function useDesktopState() {
         [startedTurn.threadId]: startedTurn.turnId,
       }
       clearLivePlansForThread(startedTurn.threadId)
+      clearLiveFileChangesForThread(startedTurn.threadId)
       setTurnSummaryForThread(startedTurn.threadId, null)
       setTurnErrorForThread(startedTurn.threadId, null)
       setThreadInProgress(startedTurn.threadId, true)
@@ -2204,6 +2311,11 @@ export function useDesktopState() {
     const commandCompleted = readCommandExecutionCompleted(notification)
     if (commandCompleted) {
       upsertLiveCommand(notificationThreadId, commandCompleted)
+    }
+
+    const completedFileChange = readCompletedFileChange(notification)
+    if (completedFileChange) {
+      upsertLiveFileChangeMessage(notificationThreadId, completedFileChange)
     }
 
     if (isAgentContentEvent(notification)) {
@@ -2402,6 +2514,7 @@ export function useDesktopState() {
       const nextLiveAgent = removeRedundantLiveAgentMessages(previousLiveAgent, nextMessages)
       setLiveAgentMessagesForThread(threadId, nextLiveAgent)
       removeLiveCommandsPersistedIn(threadId, nextMessages)
+      removeLiveFileChangesPersistedIn(threadId, nextMessages)
 
       loadedMessagesByThreadId.value = {
         ...loadedMessagesByThreadId.value,
@@ -3238,6 +3351,7 @@ export function useDesktopState() {
     liveAgentMessagesByThreadId.value = {}
     liveReasoningTextByThreadId.value = {}
     liveCommandsByThreadId.value = {}
+    liveFileChangeMessagesByThreadId.value = {}
     turnActivityByThreadId.value = {}
     turnSummaryByThreadId.value = {}
     turnErrorByThreadId.value = {}

@@ -12,7 +12,7 @@
     <ul v-else ref="conversationListRef" class="conversation-list" @scroll="onConversationScroll">
       <template v-for="message in messages" :key="message.id">
       <li
-        v-if="!hiddenGroupedCommandIds.has(message.id)"
+        v-if="!hiddenGroupedCommandIds.has(message.id) && !hiddenFileChangeMessageIds.has(message.id)"
         class="conversation-item"
         :data-role="message.role"
         :data-message-type="message.messageType || ''"
@@ -102,6 +102,58 @@
                 </div>
               </div>
             </template>
+          </div>
+        </div>
+
+        <div
+          v-else-if="isFileChangeMessage(message)"
+          class="message-row"
+          :data-role="message.role"
+          :data-message-type="message.messageType || ''"
+        >
+          <div class="message-stack" :data-role="message.role">
+            <article class="message-body" :data-role="message.role">
+              <section v-if="readStandaloneFileChangeSummary(message)" class="file-change-card">
+                <div class="file-change-card-header">
+                  <p class="file-change-card-title">Modified files</p>
+                  <span class="file-change-card-count">
+                    {{ formatFileChangeCountLabel(readStandaloneFileChangeSummary(message)?.changes.length ?? 0) }}
+                  </span>
+                </div>
+                <ul class="file-change-list">
+                  <li
+                    v-for="change in readStandaloneFileChangeSummary(message)?.changes ?? []"
+                    :key="`file-change:${message.id}:${change.path}:${change.movedToPath || ''}`"
+                    class="file-change-item"
+                  >
+                    <span class="file-change-badge" :data-operation="fileChangeOperationTone(change)">
+                      {{ fileChangeOperationLabel(change) }}
+                    </span>
+                    <a
+                      class="message-file-link file-change-path"
+                      :href="toBrowseUrl(change.path)"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      :title="change.path"
+                    >
+                      {{ displayFileChangePath(change.path) }}
+                    </a>
+                    <span v-if="change.movedToPath" class="file-change-arrow">→</span>
+                    <a
+                      v-if="change.movedToPath"
+                      class="message-file-link file-change-path"
+                      :href="toBrowseUrl(change.movedToPath)"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      :title="change.movedToPath"
+                    >
+                      {{ displayFileChangePath(change.movedToPath) }}
+                    </a>
+                    <span v-if="formatFileChangeDelta(change)" class="file-change-delta">{{ formatFileChangeDelta(change) }}</span>
+                  </li>
+                </ul>
+              </section>
+            </article>
           </div>
         </div>
 
@@ -449,6 +501,47 @@
                 </div>
               </article>
 
+              <section v-if="readAnchoredFileChangeSummary(message)" class="file-change-card file-change-card-inline">
+                <div class="file-change-card-header">
+                  <p class="file-change-card-title">Modified files</p>
+                  <span class="file-change-card-count">
+                    {{ formatFileChangeCountLabel(readAnchoredFileChangeSummary(message)?.changes.length ?? 0) }}
+                  </span>
+                </div>
+                <ul class="file-change-list">
+                  <li
+                    v-for="change in readAnchoredFileChangeSummary(message)?.changes ?? []"
+                    :key="`file-change:inline:${message.id}:${change.path}:${change.movedToPath || ''}`"
+                    class="file-change-item"
+                  >
+                    <span class="file-change-badge" :data-operation="fileChangeOperationTone(change)">
+                      {{ fileChangeOperationLabel(change) }}
+                    </span>
+                    <a
+                      class="message-file-link file-change-path"
+                      :href="toBrowseUrl(change.path)"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      :title="change.path"
+                    >
+                      {{ displayFileChangePath(change.path) }}
+                    </a>
+                    <span v-if="change.movedToPath" class="file-change-arrow">→</span>
+                    <a
+                      v-if="change.movedToPath"
+                      class="message-file-link file-change-path"
+                      :href="toBrowseUrl(change.movedToPath)"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      :title="change.movedToPath"
+                    >
+                      {{ displayFileChangePath(change.movedToPath) }}
+                    </a>
+                    <span v-if="formatFileChangeDelta(change)" class="file-change-delta">{{ formatFileChangeDelta(change) }}</span>
+                  </li>
+                </ul>
+              </section>
+
               <div
                 v-if="showCopyResponseButton(message)"
                 class="message-toolbar"
@@ -619,7 +712,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import hljs from 'highlight.js/lib/common'
-import type { ThreadScrollState, UiLiveOverlay, UiMessage, UiPlanStep, UiServerRequest } from '../../types/codex'
+import type { ThreadScrollState, UiFileChange, UiLiveOverlay, UiMessage, UiPlanStep, UiServerRequest } from '../../types/codex'
 import IconTablerArrowUp from '../icons/IconTablerArrowUp.vue'
 import IconTablerCopy from '../icons/IconTablerCopy.vue'
 import IconTablerGitFork from '../icons/IconTablerGitFork.vue'
@@ -683,6 +776,13 @@ function isCommandMessage(message: UiMessage): boolean {
 
 function isPlanMessage(message: UiMessage): boolean {
   return message.messageType === 'plan' || message.messageType === 'plan.live'
+}
+
+function isFileChangeMessage(message: UiMessage): boolean {
+  return message.messageType === 'fileChange'
+    && message.fileChangeStatus === 'completed'
+    && Array.isArray(message.fileChanges)
+    && message.fileChanges.length > 0
 }
 
 function isCopyableAssistantMessage(message: UiMessage): boolean {
@@ -979,6 +1079,10 @@ type ParsedToolQuestion = {
   isOther: boolean
   options: Array<{ label: string; description: string }>
 }
+type TurnFileChangeSummary = {
+  changes: UiFileChange[]
+  sourceMessageIds: string[]
+}
 
 function isFilePath(value: string): boolean {
   if (!value || /\s/u.test(value)) return false
@@ -1237,6 +1341,13 @@ const copyableResponseContentByAnchorId = computed<Record<string, string>>(() =>
     if (!content) continue
     next[response.anchorMessageId] = content
   }
+
+  for (const [anchorMessageId, summary] of Object.entries(anchoredFileChangeSummaryByAnchorId.value)) {
+    const fileChangeCopy = buildFileChangeCopyText(summary)
+    if (!fileChangeCopy) continue
+    const existing = next[anchorMessageId]?.trim()
+    next[anchorMessageId] = existing ? `${existing}\n\n${fileChangeCopy}` : fileChangeCopy
+  }
   return next
 })
 
@@ -1273,6 +1384,171 @@ function showCopyResponseButton(message: UiMessage): boolean {
 
 function showForkResponseButton(message: UiMessage): boolean {
   return typeof forkableTurnIndexByAnchorId.value[message.id] === 'number'
+}
+
+function mergeFileChangeEntry(first: UiFileChange, second: UiFileChange): UiFileChange {
+  const operation = first.operation === 'add' || second.operation === 'add'
+    ? 'add'
+    : first.operation === 'delete' || second.operation === 'delete'
+      ? 'delete'
+      : 'update'
+  return {
+    path: second.path || first.path,
+    operation,
+    movedToPath: second.movedToPath ?? first.movedToPath ?? null,
+    diff: second.diff || first.diff,
+    addedLineCount: first.addedLineCount + second.addedLineCount,
+    removedLineCount: first.removedLineCount + second.removedLineCount,
+  }
+}
+
+function compareFileChanges(first: UiFileChange, second: UiFileChange): number {
+  const firstRank = first.operation === 'add' ? 0 : first.operation === 'update' ? 1 : 2
+  const secondRank = second.operation === 'add' ? 0 : second.operation === 'update' ? 1 : 2
+  if (firstRank !== secondRank) return firstRank - secondRank
+  const firstPath = `${first.path}\u0000${first.movedToPath ?? ''}`
+  const secondPath = `${second.path}\u0000${second.movedToPath ?? ''}`
+  return firstPath.localeCompare(secondPath)
+}
+
+function aggregateFileChanges(changes: UiFileChange[]): UiFileChange[] {
+  const byPath = new Map<string, UiFileChange>()
+  for (const change of changes) {
+    const key = `${change.path}\u0000${change.movedToPath ?? ''}`
+    const previous = byPath.get(key)
+    byPath.set(key, previous ? mergeFileChangeEntry(previous, change) : { ...change })
+  }
+  return Array.from(byPath.values()).sort(compareFileChanges)
+}
+
+const anchoredFileChangeSummaryByAnchorId = computed<Record<string, TurnFileChangeSummary>>(() => {
+  const assistantAnchorIdByTurnKey = new Map<string, string>()
+  const fileChangeMessagesByTurnKey = new Map<string, UiMessage[]>()
+
+  for (const message of props.messages) {
+    if (isCopyableAssistantMessage(message) && typeof message.turnIndex === 'number') {
+      assistantAnchorIdByTurnKey.set(`turn:${message.turnIndex}`, message.id)
+    }
+
+    if (!isFileChangeMessage(message)) continue
+    const turnKey = typeof message.turnIndex === 'number' ? `turn:${message.turnIndex}` : `message:${message.id}`
+    const current = fileChangeMessagesByTurnKey.get(turnKey)
+    if (current) current.push(message)
+    else fileChangeMessagesByTurnKey.set(turnKey, [message])
+  }
+
+  const summaries: Record<string, TurnFileChangeSummary> = {}
+  for (const [turnKey, messages] of fileChangeMessagesByTurnKey.entries()) {
+    const anchorId = assistantAnchorIdByTurnKey.get(turnKey)
+    if (!anchorId) continue
+    summaries[anchorId] = {
+      changes: aggregateFileChanges(messages.flatMap((message) => message.fileChanges ?? [])),
+      sourceMessageIds: messages.map((message) => message.id),
+    }
+  }
+
+  return summaries
+})
+
+const standaloneFileChangeSummaryByMessageId = computed<Record<string, TurnFileChangeSummary>>(() => {
+  const assistantAnchorIdByTurnKey = new Map<string, string>()
+  const fileChangeMessagesByTurnKey = new Map<string, UiMessage[]>()
+
+  for (const message of props.messages) {
+    if (isCopyableAssistantMessage(message) && typeof message.turnIndex === 'number') {
+      assistantAnchorIdByTurnKey.set(`turn:${message.turnIndex}`, message.id)
+    }
+
+    if (!isFileChangeMessage(message)) continue
+    const turnKey = typeof message.turnIndex === 'number' ? `turn:${message.turnIndex}` : `message:${message.id}`
+    const current = fileChangeMessagesByTurnKey.get(turnKey)
+    if (current) current.push(message)
+    else fileChangeMessagesByTurnKey.set(turnKey, [message])
+  }
+
+  const summaries: Record<string, TurnFileChangeSummary> = {}
+  for (const [turnKey, messages] of fileChangeMessagesByTurnKey.entries()) {
+    if (assistantAnchorIdByTurnKey.has(turnKey)) continue
+    const visibleMessage = messages[messages.length - 1]
+    if (!visibleMessage) continue
+    summaries[visibleMessage.id] = {
+      changes: aggregateFileChanges(messages.flatMap((message) => message.fileChanges ?? [])),
+      sourceMessageIds: messages.map((message) => message.id),
+    }
+  }
+
+  return summaries
+})
+
+const hiddenFileChangeMessageIds = computed(() => {
+  const next = new Set<string>()
+  for (const summary of Object.values(anchoredFileChangeSummaryByAnchorId.value)) {
+    for (const messageId of summary.sourceMessageIds) {
+      next.add(messageId)
+    }
+  }
+  for (const [messageId, summary] of Object.entries(standaloneFileChangeSummaryByMessageId.value)) {
+    for (const sourceMessageId of summary.sourceMessageIds) {
+      if (sourceMessageId !== messageId) {
+        next.add(sourceMessageId)
+      }
+    }
+  }
+  return next
+})
+
+function readAnchoredFileChangeSummary(message: UiMessage): TurnFileChangeSummary | null {
+  return anchoredFileChangeSummaryByAnchorId.value[message.id] ?? null
+}
+
+function readStandaloneFileChangeSummary(message: UiMessage): TurnFileChangeSummary | null {
+  return standaloneFileChangeSummaryByMessageId.value[message.id] ?? null
+}
+
+function fileChangeOperationLabel(change: UiFileChange): string {
+  if (change.operation === 'update' && change.movedToPath) {
+    return change.addedLineCount > 0 || change.removedLineCount > 0 ? 'Moved + edited' : 'Moved'
+  }
+  if (change.operation === 'add') return 'Added'
+  if (change.operation === 'delete') return 'Deleted'
+  return 'Edited'
+}
+
+function fileChangeOperationTone(change: UiFileChange): 'add' | 'delete' | 'update' | 'move' {
+  if (change.operation === 'update' && change.movedToPath) return 'move'
+  return change.operation
+}
+
+function formatFileChangeDelta(change: UiFileChange): string {
+  const parts: string[] = []
+  if (change.addedLineCount > 0) parts.push(`+${change.addedLineCount}`)
+  if (change.removedLineCount > 0) parts.push(`-${change.removedLineCount}`)
+  return parts.join(' ')
+}
+
+function formatFileChangeCountLabel(count: number): string {
+  return count === 1 ? '1 file' : `${count} files`
+}
+
+function displayFileChangePath(pathValue: string): string {
+  const resolved = resolveRelativePath(pathValue, props.cwd)
+  const normalizedCwd = normalizePathDots(normalizePathSeparators(props.cwd.trim()))
+  const normalizedResolved = normalizePathDots(normalizePathSeparators(resolved))
+  if (normalizedCwd && normalizedResolved.startsWith(`${normalizedCwd}/`)) {
+    return normalizedResolved.slice(normalizedCwd.length + 1)
+  }
+  return pathValue
+}
+
+function buildFileChangeCopyText(summary: TurnFileChangeSummary | null): string {
+  if (!summary || summary.changes.length === 0) return ''
+  const lines = summary.changes.map((change) => {
+    const pathLabel = displayFileChangePath(change.path)
+    const movedLabel = change.movedToPath ? ` -> ${displayFileChangePath(change.movedToPath)}` : ''
+    const delta = formatFileChangeDelta(change)
+    return `- ${fileChangeOperationLabel(change)}: ${pathLabel}${movedLabel}${delta ? ` (${delta})` : ''}`
+  })
+  return `Modified files:\n${lines.join('\n')}`.trim()
 }
 
 function copyTextWithSelectionFallback(text: string): boolean {
@@ -3591,5 +3867,65 @@ onBeforeUnmount(() => {
 
 .cmd-output.cmd-output-condensed {
   max-height: 9rem;
+}
+
+.file-change-card {
+  @apply mt-3 rounded-2xl border border-zinc-200 bg-white/90 px-4 py-3 shadow-sm;
+}
+
+.file-change-card-inline {
+  @apply mt-4;
+}
+
+.file-change-card-header {
+  @apply flex items-center justify-between gap-3;
+}
+
+.file-change-card-title {
+  @apply m-0 text-sm font-semibold text-zinc-900;
+}
+
+.file-change-card-count {
+  @apply inline-flex items-center rounded-full bg-zinc-100 px-2.5 py-1 text-[11px] font-medium text-zinc-600;
+}
+
+.file-change-list {
+  @apply mt-3 flex list-none flex-col gap-2 p-0;
+}
+
+.file-change-item {
+  @apply flex flex-wrap items-center gap-2 text-sm text-zinc-700;
+}
+
+.file-change-badge {
+  @apply inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.08em];
+}
+
+.file-change-badge[data-operation='add'] {
+  @apply bg-emerald-50 text-emerald-700;
+}
+
+.file-change-badge[data-operation='update'] {
+  @apply bg-sky-50 text-sky-700;
+}
+
+.file-change-badge[data-operation='delete'] {
+  @apply bg-rose-50 text-rose-700;
+}
+
+.file-change-badge[data-operation='move'] {
+  @apply bg-amber-50 text-amber-700;
+}
+
+.file-change-path {
+  @apply break-all font-mono text-[13px];
+}
+
+.file-change-arrow {
+  @apply text-zinc-400;
+}
+
+.file-change-delta {
+  @apply ml-auto rounded-full bg-zinc-100 px-2.5 py-1 text-[11px] font-medium text-zinc-600;
 }
 </style>

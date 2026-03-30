@@ -81,6 +81,16 @@ export type CommandExecutionData = {
 }
 
 export type UiFileAttachment = { label: string; path: string }
+export type UiFileChangeOperation = 'add' | 'delete' | 'update'
+export type UiFileChangeStatus = 'inProgress' | 'completed' | 'failed' | 'declined'
+export type UiFileChange = {
+  path: string
+  operation: UiFileChangeOperation
+  movedToPath?: string | null
+  diff: string
+  addedLineCount: number
+  removedLineCount: number
+}
 
 export type UiPlanStepStatus = 'pending' | 'inProgress' | 'completed'
 
@@ -101,6 +111,8 @@ export type UiMessage = {
   text: string
   images?: string[]
   fileAttachments?: UiFileAttachment[]
+  fileChanges?: UiFileChange[]
+  fileChangeStatus?: UiFileChangeStatus
   messageType?: string
   rawPayload?: string
   isUnhandled?: boolean

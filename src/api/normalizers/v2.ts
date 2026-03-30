@@ -8,6 +8,8 @@ import type {
 } from '../appServerDtos'
 import type {
   CommandExecutionData,
+  UiFileChange,
+  UiFileChangeStatus,
   UiFileAttachment,
   UiMessage,
   UiPlanData,
@@ -148,6 +150,75 @@ function parsePlanText(value: string): UiPlanData | null {
   }
 }
 
+function countContentLines(value: string): number {
+  if (!value) return 0
+  const normalized = value.replace(/\r\n/g, '\n')
+  const trimmed = normalized.endsWith('\n') ? normalized.slice(0, -1) : normalized
+  if (!trimmed) return 0
+  return trimmed.split('\n').length
+}
+
+function countUnifiedDiffLines(value: string): { addedLineCount: number; removedLineCount: number } {
+  let addedLineCount = 0
+  let removedLineCount = 0
+
+  for (const line of value.replace(/\r\n/g, '\n').split('\n')) {
+    if (!line) continue
+    if (line.startsWith('+++') || line.startsWith('---') || line.startsWith('@@')) continue
+    if (line.startsWith('+')) {
+      addedLineCount += 1
+      continue
+    }
+    if (line.startsWith('-')) {
+      removedLineCount += 1
+    }
+  }
+
+  return { addedLineCount, removedLineCount }
+}
+
+export function normalizeFileChangeStatus(value: unknown): UiFileChangeStatus {
+  if (value === 'failed' || value === 'declined' || value === 'completed') return value
+  return 'inProgress'
+}
+
+export function toUiFileChanges(changes: unknown): UiFileChange[] {
+  const rows = Array.isArray(changes) ? changes : []
+  const normalized: UiFileChange[] = []
+
+  for (const row of rows) {
+    const change = row as Record<string, unknown>
+    const path = typeof change.path === 'string' ? change.path : ''
+    const diff = typeof change.diff === 'string' ? change.diff : ''
+    const kind = change.kind as Record<string, unknown> | undefined
+    const operationType = kind?.type
+    if (!path || (operationType !== 'add' && operationType !== 'delete' && operationType !== 'update')) {
+      continue
+    }
+
+    const movedToPath =
+      operationType === 'update' && typeof kind?.move_path === 'string'
+        ? kind.move_path
+        : null
+
+    const counts = operationType === 'update'
+      ? countUnifiedDiffLines(diff)
+      : operationType === 'add'
+        ? { addedLineCount: countContentLines(diff), removedLineCount: 0 }
+        : { addedLineCount: 0, removedLineCount: countContentLines(diff) }
+
+    normalized.push({
+      path,
+      operation: operationType,
+      movedToPath,
+      diff,
+      ...counts,
+    })
+  }
+
+  return normalized
+}
+
 function toUiMessages(item: ThreadItem): UiMessage[] {
   if (item.type === 'agentMessage') {
     return [
@@ -215,6 +286,24 @@ function toUiMessages(item: ThreadItem): UiMessage[] {
         text: cmd,
         messageType: 'commandExecution',
         commandExecution: { command: cmd, cwd, status, aggregatedOutput, exitCode },
+      },
+    ]
+  }
+
+  if (item.type === 'fileChange') {
+    const fileChanges = toUiFileChanges(item.changes)
+    const fileChangeStatus = normalizeFileChangeStatus(item.status)
+    if (fileChanges.length === 0 || fileChangeStatus !== 'completed') {
+      return []
+    }
+    return [
+      {
+        id: item.id,
+        role: 'system',
+        text: '',
+        messageType: 'fileChange',
+        fileChangeStatus,
+        fileChanges,
       },
     ]
   }
