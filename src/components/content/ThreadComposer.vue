@@ -852,6 +852,14 @@ function readClipboardFiles(data: DataTransfer | null): File[] {
   return Array.from(data.files ?? []).map(ensureFileHasName)
 }
 
+function clipboardHasPasteableText(data: DataTransfer | null): boolean {
+  if (!data) return false
+  if (typeof data.getData === 'function' && data.getData('text/plain').length > 0) {
+    return true
+  }
+  return Array.from(data.items ?? []).some((item) => item.kind === 'string')
+}
+
 function addFiles(files: FileList | File[] | null): void {
   if (!files || files.length === 0) return
   const generation = draftGeneration.value
@@ -965,9 +973,12 @@ function onInputChange(): void {
 
 function onInputPaste(event: ClipboardEvent): void {
   if (isInteractionDisabled.value) return
-  const files = readClipboardFiles(event.clipboardData)
+  const clipboardData = event.clipboardData
+  const files = readClipboardFiles(clipboardData)
   if (files.length === 0) return
-  event.preventDefault()
+  if (!clipboardHasPasteableText(clipboardData)) {
+    event.preventDefault()
+  }
   addFiles(files)
 }
 

@@ -355,3 +355,29 @@ This file tracks manual regression and feature verification steps.
 
 #### Rollback/Cleanup
 - Revert `docs/index.html` to previous commit if needed.
+
+---
+
+### Feature: Browser composer image paste support
+
+#### Prerequisites
+- App is running from this repository.
+- A browser session is open to the app with an active thread selected.
+- An image is available in the system clipboard.
+
+#### Steps
+1. Copy an image or screenshot to the system clipboard.
+2. Focus the composer textarea for an existing thread.
+3. Paste with `Ctrl+V` / `Cmd+V`.
+4. Verify an image attachment chip/preview appears in the composer.
+5. Send the message and verify the pasted image is included in the user turn.
+6. Copy mixed clipboard content that includes both text and an image, if your OS/browser supports it.
+7. Paste into the composer again.
+
+#### Expected Results
+- Pasting an image adds it to the composer attachments without opening the file picker.
+- Sending after paste includes the image in the submitted turn.
+- For mixed clipboard payloads, any pasteable text still appears in the textarea while the image is also attached.
+
+#### Rollback/Cleanup
+- Remove any test draft text or image attachments from the composer.
