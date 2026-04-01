@@ -104,6 +104,7 @@
           :disabled="isInteractionDisabled"
           @input="onInputChange"
           @keydown="onInputKeydown"
+          @paste="onInputPaste"
         />
         <ComposerSkillPicker
           :skills="skillOptions"
@@ -821,7 +822,37 @@ function isImageFile(file: File): boolean {
   return /\.(png|jpe?g|gif|webp)$/i.test(file.name)
 }
 
-function addFiles(files: FileList | null): void {
+function ensureFileHasName(file: File): File {
+  if (file.name.trim()) return file
+  const rawExtension = file.type.split('/')[1]?.trim().toLowerCase() ?? ''
+  const normalizedExtension = rawExtension.split('+')[0] || (file.type.startsWith('image/') ? 'png' : '')
+  const fallbackName = normalizedExtension
+    ? `${file.type.startsWith('image/') ? 'pasted-image' : 'pasted-file'}.${normalizedExtension}`
+    : (file.type.startsWith('image/') ? 'pasted-image' : 'pasted-file')
+  try {
+    // Clipboard screenshots are often unnamed; assign a stable name before upload/preview.
+    return new File([file], fallbackName, {
+      type: file.type,
+      lastModified: file.lastModified || Date.now(),
+    })
+  } catch {
+    return file
+  }
+}
+
+function readClipboardFiles(data: DataTransfer | null): File[] {
+  if (!data) return []
+  const items = Array.from(data.items ?? [])
+  const files = items
+    .filter((item) => item.kind === 'file')
+    .map((item) => item.getAsFile())
+    .filter((file): file is File => file instanceof File)
+    .map(ensureFileHasName)
+  if (files.length > 0) return files
+  return Array.from(data.files ?? []).map(ensureFileHasName)
+}
+
+function addFiles(files: FileList | File[] | null): void {
   if (!files || files.length === 0) return
   const generation = draftGeneration.value
   for (const file of Array.from(files)) {
@@ -930,6 +961,14 @@ function onInputChange(): void {
     isSlashMenuOpen.value = shouldShowSlashMenu
   }
   updateFileMentionState()
+}
+
+function onInputPaste(event: ClipboardEvent): void {
+  if (isInteractionDisabled.value) return
+  const files = readClipboardFiles(event.clipboardData)
+  if (files.length === 0) return
+  event.preventDefault()
+  addFiles(files)
 }
 
 function onInputKeydown(event: KeyboardEvent): void {
