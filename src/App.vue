@@ -248,8 +248,16 @@
             </div>
           </template>
           <template v-else>
-            <div class="content-grid" :class="{ 'has-review-pane': isReviewPaneOpen && !isMobile }">
-              <div class="content-thread-column">
+            <div class="content-grid">
+              <ReviewPane
+                v-if="isReviewPaneOpen && selectedThreadId && composerCwd"
+                :thread-id="selectedThreadId"
+                :cwd="composerCwd"
+                :is-thread-in-progress="isSelectedThreadInProgress"
+                @close="isReviewPaneOpen = false"
+              />
+
+              <template v-else>
                 <div class="content-thread">
                   <ThreadConversation ref="threadConversationRef" :messages="filteredMessages" :is-loading="isLoadingMessages"
                     :active-thread-id="composerThreadContextId" :cwd="composerCwd" :scroll-state="selectedThreadScrollState"
@@ -283,15 +291,7 @@
                     @submit="onSubmitThreadMessage" @update:selected-model="onSelectModel"
                     @update:selected-reasoning-effort="onSelectReasoningEffort" @interrupt="onInterruptTurn" />
                 </div>
-              </div>
-
-              <ReviewPane
-                v-if="isReviewPaneOpen && selectedThreadId && composerCwd"
-                :thread-id="selectedThreadId"
-                :cwd="composerCwd"
-                :is-thread-in-progress="isSelectedThreadInProgress"
-                @close="isReviewPaneOpen = false"
-              />
+              </template>
             </div>
           </template>
         </section>
@@ -1656,14 +1656,6 @@ async function submitFirstMessageForNewThread(
 
 .content-grid {
   @apply flex-1 min-h-0 flex flex-col gap-3;
-}
-
-.content-grid.has-review-pane {
-  @apply md:grid md:grid-cols-[minmax(0,1fr)_34rem] md:items-stretch;
-}
-
-.content-thread-column {
-  @apply flex min-h-0 flex-1 flex-col gap-3;
 }
 
 .content-thread {
