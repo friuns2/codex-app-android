@@ -216,6 +216,28 @@ This file tracks manual regression and feature verification steps.
 #### Rollback/Cleanup
 - Return appearance and runtime selection to the previous user preference.
 
+### Feature: Provider-backed models appear in the model picker
+
+#### Prerequisites
+- App is running from this repository.
+- Codex is configured with a non-default `model_provider` that exposes an OpenAI-compatible `/models` endpoint.
+- The configured provider can be reached from the host running codexUI.
+
+#### Steps
+1. From the same browser session, request `GET /codex-api/provider-models` and confirm the response is JSON.
+2. Verify the response contains the active `providerId` and a non-empty `data` array of model ids.
+3. Open or refresh a thread in the UI and open the model picker in the composer.
+4. Confirm the provider-backed model ids from `/codex-api/provider-models` appear in the picker alongside the built-in Codex model list.
+5. Stop the upstream provider or block access to it, then refresh the UI and reopen the model picker.
+
+#### Expected Results
+- `/codex-api/provider-models` returns `{ source: "provider", providerId, data }` for the active provider.
+- Provider-backed models appear once each in the model picker and remain selectable.
+- When the provider endpoint is unavailable, the UI still loads and the model picker falls back to the built-in model list without hanging indefinitely.
+
+#### Rollback/Cleanup
+- Restore provider connectivity if it was intentionally interrupted for the failure-path check.
+
 ### Feature: pnpm dev script installs dependencies and starts Vite
 
 #### Prerequisites
