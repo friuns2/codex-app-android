@@ -1210,7 +1210,7 @@ onBeforeUnmount(() => {
 
 .review-pane-content,
 .review-pane-findings {
-  @apply min-h-0 flex-1 overflow-hidden;
+  @apply min-h-0 flex-1 flex flex-col overflow-hidden;
 }
 
 .review-pane-bulk-actions {
@@ -1334,7 +1334,8 @@ onBeforeUnmount(() => {
 }
 
 .review-pane-diff {
-  @apply min-h-0 overflow-y-auto px-3 py-3;
+  @apply min-h-0 flex-1 overflow-y-auto px-3 py-3;
+  -webkit-overflow-scrolling: touch;
 }
 
 .review-pane-file-header,
@@ -1444,7 +1445,8 @@ onBeforeUnmount(() => {
 }
 
 .review-pane-findings-list {
-  @apply flex h-full flex-col gap-2.5 overflow-y-auto px-3 py-3;
+  @apply flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto px-3 py-3;
+  -webkit-overflow-scrolling: touch;
 }
 
 .review-pane-finding {
@@ -1613,7 +1615,7 @@ onBeforeUnmount(() => {
   }
 
   .review-pane-main {
-    @apply block;
+    @apply flex h-full min-h-0 flex-col;
   }
 
   .review-pane-resizer {
