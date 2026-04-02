@@ -1729,7 +1729,7 @@ async function submitFirstMessageForNewThread(
 }
 
 .sidebar-settings-button-version {
-  @apply ml-auto min-w-0 truncate text-right;
+  @apply ml-auto min-w-0 truncate text-right text-xs;
 }
 
 .sidebar-settings-icon {
