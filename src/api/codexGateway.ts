@@ -371,14 +371,22 @@ async function fetchThreadFileChangeFallback(threadId: string): Promise<ThreadFi
 function mergeRecoveredFileChangeMessages(messages: UiMessage[], fallbackEntries: ThreadFileChangeFallbackEntry[]): UiMessage[] {
   if (fallbackEntries.length === 0) return messages
 
-  const existingTurnIndices = new Set(
-    messages
-      .filter((message) => message.messageType === 'fileChange' && typeof message.turnIndex === 'number')
-      .map((message) => message.turnIndex as number),
-  )
+  const localTurnIndexByTurnId = new Map<string, number>()
+  const coveredTurnIds = new Set<string>()
+
+  for (const message of messages) {
+    const tid = typeof message.turnId === 'string' && message.turnId.length > 0 ? message.turnId : undefined
+    const tIdx = typeof message.turnIndex === 'number' ? message.turnIndex : undefined
+    if (tid && tIdx !== undefined) localTurnIndexByTurnId.set(tid, tIdx)
+
+    const hasFileData =
+      message.messageType === 'fileChange' ||
+      (Array.isArray(message.fileChanges) && message.fileChanges.length > 0)
+    if (hasFileData && tid) coveredTurnIds.add(tid)
+  }
 
   const extraMessages = fallbackEntries
-    .filter((entry) => !existingTurnIndices.has(entry.turnIndex))
+    .filter((entry) => localTurnIndexByTurnId.has(entry.turnId) && !coveredTurnIds.has(entry.turnId))
     .map<UiMessage>((entry) => ({
       id: `session-file-change:${entry.turnId}`,
       role: 'system',
@@ -387,7 +395,7 @@ function mergeRecoveredFileChangeMessages(messages: UiMessage[], fallbackEntries
       fileChangeStatus: 'completed',
       fileChanges: entry.fileChanges,
       turnId: entry.turnId,
-      turnIndex: entry.turnIndex,
+      turnIndex: localTurnIndexByTurnId.get(entry.turnId) ?? entry.turnIndex,
     }))
 
   if (extraMessages.length === 0) return messages
@@ -418,14 +426,6 @@ function mergeRecoveredFileChangeMessages(messages: UiMessage[], fallbackEntries
 
     merged.push(...extras)
     insertedTurnIndices.add(turnIndex)
-  }
-
-  const remainingExtras = extraMessages
-    .filter((message) => typeof message.turnIndex === 'number' && !insertedTurnIndices.has(message.turnIndex))
-    .sort((first, second) => (first.turnIndex ?? 0) - (second.turnIndex ?? 0))
-
-  if (remainingExtras.length > 0) {
-    merged.push(...remainingExtras)
   }
 
   return merged
