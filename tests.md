@@ -753,11 +753,13 @@ This file tracks manual regression and feature verification steps.
 1. Send a message that includes Markdown file links whose targets contain parentheses, for example: `[/root/New Project (1)/codexui/src/App.vue:426](/root/New Project (1)/codexui/src/App.vue:426)`.
 2. Send a message that includes a Markdown web link with parentheses in the URL path, for example: `[docs](https://example.com/path_(v1)/intro)`.
 3. Send a message that includes a Markdown image link whose target contains parentheses, for example: `![sample](/root/New Project (1)/codexui/output/playwright/sample_(1).png)`.
-4. Verify rendering in the chat transcript for all three messages.
+4. Send a message using a percent-encoded absolute path target, for example: `[/root/New Project (1)/codexui/AGENTS.md](/root/New%20Project%20(1)/codexui/AGENTS.md)`.
+5. Verify rendering in the chat transcript for all messages and click both file links.
 
 #### Expected Results
 - Markdown links render as clickable anchors instead of raw bracket text when the target contains parentheses.
 - File links open through the app file-browse URL behavior.
+- Percent-encoded file path targets do not become double-encoded (for example `%20` remains `%20`, not `%2520`), and linked files open successfully.
 - HTTP/HTTPS links open as external links.
 - Markdown images with parentheses in their target render as images.
 

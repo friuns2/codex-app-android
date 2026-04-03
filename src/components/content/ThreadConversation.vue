@@ -1327,7 +1327,7 @@ type DiffViewerLine = {
 }
 
 function isFilePath(value: string): boolean {
-  if (!value || /\s/u.test(value)) return false
+  if (!value) return false
   if (value.endsWith('/') || value.endsWith('\\')) return false
   if (/^[A-Za-z][A-Za-z0-9+.-]*:\/\//u.test(value)) return false
 
@@ -1362,6 +1362,15 @@ function normalizeFileUrlToPath(pathValue: string): string {
     stripped = stripped.slice(1)
   }
   return stripped
+}
+
+function decodePathLikeValue(pathValue: string): string {
+  if (!pathValue.includes('%')) return pathValue
+  try {
+    return decodeURI(pathValue)
+  } catch {
+    return pathValue
+  }
 }
 
 function inferHomeFromCwd(cwd: string): string {
@@ -1444,6 +1453,7 @@ function parseFileReference(value: string): { path: string; line: number | null 
   }
 
   pathValue = normalizeFileUrlToPath(pathValue)
+  pathValue = decodePathLikeValue(pathValue)
   if (!isFilePath(pathValue)) return null
   return { path: pathValue, line }
 }
