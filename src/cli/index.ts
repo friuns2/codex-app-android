@@ -438,7 +438,14 @@ async function addProjectOnly(projectPath: string): Promise<void> {
   await persistLaunchProject(trimmed)
 }
 
-async function startServer(options: { port: string; password: string | boolean; tunnel: boolean; open: boolean; projectPath?: string }) {
+async function startServer(options: {
+  port: string
+  password: string | boolean
+  tunnel: boolean
+  open: boolean
+  login: boolean
+  projectPath?: string
+}) {
   const version = await readCliVersion()
   const projectPath = options.projectPath?.trim() ?? ''
   if (projectPath.length > 0) {
@@ -453,7 +460,7 @@ async function startServer(options: { port: string; password: string | boolean; 
   if (codexCommand) {
     process.env.CODEXUI_CODEX_COMMAND = codexCommand
   }
-  if (!hasCodexAuth() && codexCommand) {
+  if (options.login && !hasCodexAuth() && codexCommand) {
     console.log('\nCodex is not logged in. Starting `codex login`...\n')
     runOrFail(codexCommand, ['login'], 'Codex login')
   }
@@ -555,9 +562,18 @@ program
   .option('--no-tunnel', 'disable cloudflared tunnel startup')
   .option('--open', 'open browser on startup', true)
   .option('--no-open', 'do not open browser on startup')
+  .option('--login', 'run automatic Codex login bootstrap', true)
+  .option('--no-login', 'skip automatic Codex login bootstrap')
   .action(async (
     projectPath: string | undefined,
-    opts: { port: string; password: string | boolean; tunnel: boolean; open: boolean; openProject?: string },
+    opts: {
+      port: string
+      password: string | boolean
+      tunnel: boolean
+      open: boolean
+      login: boolean
+      openProject?: string
+    },
   ) => {
     const rawArgv = process.argv.slice(2)
     const openProjectFlagIndex = rawArgv.findIndex((arg) => arg === '--open-project' || arg.startsWith('--open-project='))

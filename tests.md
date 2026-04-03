@@ -704,3 +704,27 @@ This file tracks manual regression and feature verification steps.
 - Turn off any network blocking, proxy rule, or backend breakpoint used to simulate the failure.
 - Remove any temporary attachments from the composer before continuing other tests.
 - Stop the app server when finished.
+
+### Feature: `--no-login` startup flag
+
+#### Prerequisites
+- `pnpm run build` has completed successfully in this repository.
+- A temporary empty `CODEX_HOME` directory is available so no `auth.json` file is present.
+- A temporary executable is available to stand in for the Codex CLI and record invocations.
+
+#### Steps
+1. Create a temporary directory for `CODEX_HOME` and confirm it does not contain `auth.json`.
+2. Create a fake Codex executable that supports `--version` and appends every invocation to a log file.
+3. Start `node dist-cli/index.js --no-login --no-open --no-tunnel --port 6011` with `CODEX_HOME` pointed at the empty temp directory and `CODEXUI_CODEX_COMMAND` pointed at the fake executable.
+4. Wait for the startup banner, stop the process, and inspect the fake executable log.
+5. Start `node dist-cli/index.js --no-open --no-tunnel --port 6012` with the same environment.
+6. Wait for the startup banner, stop the process, and inspect the log again.
+7. Run `node dist-cli/index.js --help` and confirm the help output includes `--no-login`.
+
+#### Expected Results
+- With `--no-login`, the server starts without attempting `codex login`.
+- Without `--no-login`, startup still invokes `codex login` when `auth.json` is missing.
+- The CLI help output documents the new flag.
+
+#### Rollback/Cleanup
+- Delete the temporary `CODEX_HOME`, fake Codex executable, and invocation log.

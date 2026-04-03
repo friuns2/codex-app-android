@@ -51,6 +51,12 @@ cloudflared tunnel --url http://localhost:<port>
 It prints the tunnel URL, terminal QR code, and password together in startup output.  
 Use `--no-tunnel` to disable this behavior.
 
+If you are using a provider or AI gateway that is already authenticated and do not want `codexapp` to force `codex login` during startup, use:
+
+```bash
+npx codexapp --no-login
+```
+
 ### Linux 🐧
 ```bash
 node -v   # should be 18+
