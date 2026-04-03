@@ -765,3 +765,25 @@ This file tracks manual regression and feature verification steps.
 
 #### Rollback/Cleanup
 - None.
+
+### Feature: Rollback button remains visible on touch/mobile conversation rows
+
+#### Prerequisites
+- App server is running from this repository.
+- Open a thread with at least one completed assistant response that shows message actions.
+- Test on a touch viewport (device emulation is acceptable).
+
+#### Steps
+1. Open the thread conversation on a touch viewport where hover is not available.
+2. Locate an assistant response row and inspect the action toolbar under the message.
+3. Verify the `Rollback` action is visible without needing hover.
+4. Tap `Rollback` and confirm the action triggers the existing rollback flow.
+5. Navigate message actions using keyboard focus on desktop (`Tab`) and verify focused rows also reveal the toolbar.
+
+#### Expected Results
+- On touch/mobile viewports, the message action toolbar is visible by default.
+- The `Rollback` button is visible and actionable on assistant response rows.
+- Keyboard focus reveals the same toolbar visibility behavior on desktop.
+
+#### Rollback/Cleanup
+- None.

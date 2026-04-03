@@ -3917,6 +3917,16 @@ onBeforeUnmount(() => {
   @apply opacity-100;
 }
 
+.message-row:focus-within .message-toolbar {
+  @apply opacity-100;
+}
+
+@media (hover: none) {
+  .message-toolbar {
+    @apply opacity-100;
+  }
+}
+
 .message-copy-button {
   @apply inline-flex items-center gap-0.5 rounded-full border border-slate-200 bg-white/90 px-1.25 py-0.5 text-[9px] font-medium leading-none text-slate-500 transition hover:border-slate-300 hover:bg-white hover:text-slate-900;
 }
