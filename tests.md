@@ -790,3 +790,24 @@ This file tracks manual regression and feature verification steps.
 
 #### Rollback/Cleanup
 - None.
+
+### Feature: Dark theme styling for expanded `N files changed` row
+
+#### Prerequisites
+- App server is running from this repository.
+- Dark theme is enabled.
+- Open a thread that contains an assistant turn with file change summary metadata (`N files changed`).
+
+#### Steps
+1. In dark theme, locate an assistant message that shows the expandable `N files changed` row.
+2. Observe the row background, border, and text before expanding.
+3. Expand the row and inspect readability of the summary header and chevron.
+4. Collapse and re-expand while hovering to verify hover-state contrast in dark mode.
+
+#### Expected Results
+- In dark theme, the `N files changed` expandable row uses dark background/border colors consistent with other dark cards.
+- Summary text and grouped-row labels are readable (no low-contrast dark-on-dark or dark-on-light mismatch).
+- Hover state remains visible and does not revert to light-theme styling.
+
+#### Rollback/Cleanup
+- None.

@@ -598,8 +598,16 @@ body {
   @apply border-zinc-700 bg-zinc-800 hover:bg-zinc-700;
 }
 
+:root.dark .cmd-row.cmd-row-group {
+  @apply border-zinc-600 bg-zinc-800/90 text-zinc-200 hover:bg-zinc-700;
+}
+
 :root.dark .cmd-label {
   @apply text-zinc-300;
+}
+
+:root.dark .cmd-group-label {
+  @apply text-zinc-200;
 }
 
 :root.dark .file-change-summary-label {
