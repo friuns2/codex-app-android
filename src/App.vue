@@ -2670,7 +2670,7 @@ async function submitFirstMessageForNewThread(
 }
 
 .new-thread-empty {
-  @apply flex flex-col items-center justify-start gap-0.5 px-3 py-4 sm:px-6 sm:py-6;
+  @apply flex-1 min-h-0 flex flex-col items-center justify-center gap-0.5 px-3 sm:px-6;
 }
 
 .new-thread-hero {
