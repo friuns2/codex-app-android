@@ -1623,7 +1623,9 @@ async function syncAfterMobileResume(): Promise<void> {
       includeSelectedThreadMessages: true,
       awaitAncillaryRefreshes: true,
     })
-    await restoreLastActiveThreadRoute()
+    if (isPwaRuntime()) {
+      await restoreLastActiveThreadRoute()
+    }
     await syncThreadSelectionWithRoute()
   } finally {
     mobileResumeSyncInProgress.value = false
@@ -2353,11 +2355,20 @@ async function initialize(): Promise<void> {
   })
   void loadAccountsState({ silent: true })
   const appliedLaunchProjectPath = await applyLaunchProjectPathFromUrl()
-  if (!appliedLaunchProjectPath) {
+  if (!appliedLaunchProjectPath && isPwaRuntime()) {
     await restoreLastActiveThreadRoute()
   }
   hasInitialized.value = true
   await syncThreadSelectionWithRoute()
+}
+
+function isPwaRuntime(): boolean {
+  if (typeof window === 'undefined') return false
+  if (window.matchMedia?.('(display-mode: standalone)').matches) return true
+  if (window.matchMedia?.('(display-mode: fullscreen)').matches) return true
+  if (window.matchMedia?.('(display-mode: minimal-ui)').matches) return true
+  const navigatorWithStandalone = navigator as Navigator & { standalone?: boolean }
+  return navigatorWithStandalone.standalone === true
 }
 
 type LastActiveThreadRoute = {
