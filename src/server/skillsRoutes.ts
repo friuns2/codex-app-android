@@ -641,52 +641,121 @@ async function ensureSkillsWorkingTreeRepo(repoUrl: string, branch: string): Pro
 
   await runCommand('git', ['remote', 'set-url', 'origin', repoUrl], { cwd: localDir })
   await runCommand('git', ['fetch', 'origin'], { cwd: localDir })
-  await resolveMergeConflictsByNewerCommit(localDir, branch)
+  const hasLocalChangesBeforeSync = await hasLocalUncommittedChanges(localDir)
+  const localMtimesBeforeSync = hasLocalChangesBeforeSync ? await snapshotFileMtimes(localDir) : new Map<string, number>()
+  await resolveMergeConflictsByNewerCommit(localDir, branch, localMtimesBeforeSync)
   try {
     await runCommand('git', ['checkout', branch], { cwd: localDir })
   } catch {
-    await resolveMergeConflictsByNewerCommit(localDir, branch)
+    await resolveMergeConflictsByNewerCommit(localDir, branch, localMtimesBeforeSync)
     await runCommand('git', ['checkout', '-B', branch], { cwd: localDir })
   }
-  await resolveMergeConflictsByNewerCommit(localDir, branch)
-  const localMtimesBeforePull = await snapshotFileMtimes(localDir)
-  try { await runCommand('git', ['stash', 'push', '--include-untracked', '-m', 'codex-skills-autostash'], { cwd: localDir }) } catch {}
+  await resolveMergeConflictsByNewerCommit(localDir, branch, localMtimesBeforeSync)
+  const hasLocalChangesBeforePull = await hasLocalUncommittedChanges(localDir)
+  const localMtimesBeforePull = hasLocalChangesBeforePull ? await snapshotFileMtimes(localDir) : new Map<string, number>()
+  let createdAutostash = false
+  try {
+    const stashOutput = await runCommandWithOutput('git', ['stash', 'push', '--include-untracked', '-m', 'codex-skills-autostash'], { cwd: localDir })
+    createdAutostash = !stashOutput.includes('No local changes to save')
+  } catch {}
   let pulledMtimes = new Map<string, number>()
-  try {
-    await runCommand('git', ['pull', '--no-rebase', '--no-ff', 'origin', branch], { cwd: localDir })
-    pulledMtimes = await snapshotFileMtimes(localDir)
-  } catch {
-    await resolveMergeConflictsByNewerCommit(localDir, branch)
-    pulledMtimes = await snapshotFileMtimes(localDir)
-  }
-  try {
-    await runCommand('git', ['stash', 'pop'], { cwd: localDir })
-  } catch {
-    await resolveStashPopConflictsByFileTime(localDir, localMtimesBeforePull, pulledMtimes)
+  await runCommand('git', ['fetch', 'origin', branch], { cwd: localDir })
+  await runCommand('git', ['reset', '--hard', `origin/${branch}`], { cwd: localDir })
+  pulledMtimes = await snapshotFileMtimes(localDir)
+  if (createdAutostash) {
+    try {
+      await runCommand('git', ['stash', 'pop'], { cwd: localDir })
+    } catch {
+      await resolveStashPopConflictsByFileTime(localDir, localMtimesBeforePull, pulledMtimes)
+    }
   }
   return localDir
 }
 
-async function resolveMergeConflictsByNewerCommit(repoDir: string, branch: string): Promise<void> {
-  const unmerged = (await runCommandWithOutput('git', ['diff', '--name-only', '--diff-filter=U'], { cwd: repoDir }))
-    .split(/\r?\n/)
-    .map((row) => row.trim())
-    .filter(Boolean)
-  if (unmerged.length === 0) return
-  for (const path of unmerged) {
-    const oursTime = await getCommitTime(repoDir, 'HEAD', path)
-    const theirsTime = await getCommitTime(repoDir, `origin/${branch}`, path)
-    if (theirsTime > oursTime) {
-      await runCommand('git', ['checkout', '--theirs', '--', path], { cwd: repoDir })
-    } else {
-      await runCommand('git', ['checkout', '--ours', '--', path], { cwd: repoDir })
+async function resolveMergeConflictsByNewerCommit(
+  repoDir: string,
+  branch: string,
+  localMtimesBeforeSync: Map<string, number> = new Map<string, number>(),
+): Promise<void> {
+  // Keep resolving until merge/rebase no longer reports unmerged paths.
+  for (let i = 0; i < 20; i++) {
+    const unmerged = (await runCommandWithOutput('git', ['diff', '--name-only', '--diff-filter=U'], { cwd: repoDir }))
+      .split(/\r?\n/)
+      .map((row) => row.trim())
+      .filter(Boolean)
+    if (unmerged.length === 0) return
+    for (const path of unmerged) {
+      const localMtimeMs = localMtimesBeforeSync.get(path) ?? 0
+      const localMtimeSec = Math.floor(localMtimeMs / 1000)
+      const remoteCommitTime = await getCommitTime(repoDir, `origin/${branch}`, path)
+      if (remoteCommitTime > localMtimeSec) {
+        await checkoutConflictSideWithFallback(repoDir, path, '--theirs')
+      } else {
+        await checkoutConflictSideWithFallback(repoDir, path, '--ours')
+      }
+      await runCommand('git', ['add', '--', path], { cwd: repoDir })
     }
-    await runCommand('git', ['add', '--', path], { cwd: repoDir })
+    const rebaseHead = await readOptionalGitRef(repoDir, 'REBASE_HEAD')
+    if (rebaseHead) {
+      try {
+        await runCommand('git', ['rebase', '--continue'], { cwd: repoDir })
+        continue
+      } catch {
+        // Continue loop and resolve next rebase-conflict batch.
+        continue
+      }
+    }
+    const mergeHead = await readOptionalGitRef(repoDir, 'MERGE_HEAD')
+    if (mergeHead) {
+      await runCommand('git', ['commit', '-m', 'Auto-resolve skills merge by mtime policy'], { cwd: repoDir })
+      continue
+    }
   }
-  const mergeHead = (await runCommandWithOutput('git', ['rev-parse', '-q', '--verify', 'MERGE_HEAD'], { cwd: repoDir })).trim()
-  if (mergeHead) {
-    await runCommand('git', ['commit', '-m', 'Auto-resolve skills merge by newer file'], { cwd: repoDir })
+  throw new Error('Auto-resolve exceeded retry limit while reconciling sync conflicts')
+}
+
+async function readOptionalGitRef(repoDir: string, ref: string): Promise<string> {
+  try {
+    return (await runCommandWithOutput('git', ['rev-parse', '-q', '--verify', ref], { cwd: repoDir })).trim()
+  } catch {
+    return ''
   }
+}
+
+async function listUnmergedStages(repoDir: string, path: string): Promise<Set<number>> {
+  const raw = (await runCommandWithOutput('git', ['ls-files', '-u', '--', path], { cwd: repoDir })).trim()
+  const stages = new Set<number>()
+  if (!raw) return stages
+  for (const line of raw.split(/\r?\n/)) {
+    const parts = line.trim().split(/\s+/)
+    const stage = Number.parseInt(parts[2] ?? '', 10)
+    if (Number.isInteger(stage)) stages.add(stage)
+  }
+  return stages
+}
+
+async function checkoutConflictSideWithFallback(
+  repoDir: string,
+  path: string,
+  preferredSide: '--ours' | '--theirs',
+): Promise<void> {
+  const stages = await listUnmergedStages(repoDir, path)
+  const hasOurs = stages.has(2)
+  const hasTheirs = stages.has(3)
+  if (!hasOurs && !hasTheirs) return
+  if (preferredSide === '--ours') {
+    if (hasOurs) {
+      await runCommand('git', ['checkout', '--ours', '--', path], { cwd: repoDir })
+      return
+    }
+    await runCommand('git', ['checkout', '--theirs', '--', path], { cwd: repoDir })
+    return
+  }
+  if (hasTheirs) {
+    await runCommand('git', ['checkout', '--theirs', '--', path], { cwd: repoDir })
+    return
+  }
+  await runCommand('git', ['checkout', '--ours', '--', path], { cwd: repoDir })
 }
 
 async function getCommitTime(repoDir: string, ref: string, path: string): Promise<number> {
@@ -712,10 +781,10 @@ async function resolveStashPopConflictsByFileTime(
     const localMtime = localMtimesBeforePull.get(path) ?? 0
     const pulledMtime = pulledMtimes.get(path) ?? 0
     const side = localMtime >= pulledMtime ? '--theirs' : '--ours'
-    await runCommand('git', ['checkout', side, '--', path], { cwd: repoDir })
+    await checkoutConflictSideWithFallback(repoDir, path, side)
     await runCommand('git', ['add', '--', path], { cwd: repoDir })
   }
-  const mergeHead = (await runCommandWithOutput('git', ['rev-parse', '-q', '--verify', 'MERGE_HEAD'], { cwd: repoDir })).trim()
+  const mergeHead = await readOptionalGitRef(repoDir, 'MERGE_HEAD')
   if (mergeHead) {
     await runCommand('git', ['commit', '-m', 'Auto-resolve stash-pop conflicts by file time'], { cwd: repoDir })
   }
@@ -725,6 +794,11 @@ async function snapshotFileMtimes(dir: string): Promise<Map<string, number>> {
   const mtimes = new Map<string, number>()
   await walkFileMtimes(dir, dir, mtimes)
   return mtimes
+}
+
+async function hasLocalUncommittedChanges(repoDir: string): Promise<boolean> {
+  const status = (await runCommandWithOutput('git', ['status', '--porcelain'], { cwd: repoDir })).trim()
+  return status.length > 0
 }
 
 async function walkFileMtimes(rootDir: string, currentDir: string, out: Map<string, number>): Promise<void> {
@@ -757,6 +831,27 @@ async function syncInstalledSkillsFolderToRepo(
   repoName: string,
   _installedMap: Map<string, InstalledSkillInfo>,
 ): Promise<void> {
+  async function hasTrackedLocalFileChanges(repoDir: string, filePath: string): Promise<boolean> {
+    const diffHead = (await runCommandWithOutput('git', ['diff', '--name-only', 'HEAD', '--', filePath], { cwd: repoDir })).trim()
+    if (diffHead.length > 0) return true
+    const diffCached = (await runCommandWithOutput('git', ['diff', '--cached', '--name-only', '--', filePath], { cwd: repoDir })).trim()
+    return diffCached.length > 0
+  }
+
+  async function restoreProtectedFilesFromOrigin(repoDir: string, branch: string): Promise<void> {
+    const protectedFiles = ['AGENTS.md']
+    for (const filePath of protectedFiles) {
+      const hasLocalEdits = await hasTrackedLocalFileChanges(repoDir, filePath)
+      if (hasLocalEdits) continue
+      try {
+        await runCommand('git', ['cat-file', '-e', `origin/${branch}:${filePath}`], { cwd: repoDir })
+      } catch {
+        continue
+      }
+      await runCommand('git', ['checkout', `origin/${branch}`, '--', filePath], { cwd: repoDir })
+    }
+  }
+
   function isNonFastForwardPushError(error: unknown): boolean {
     const text = getErrorMessage(error, '').toLowerCase()
     return text.includes('non-fast-forward')
@@ -767,24 +862,18 @@ async function syncInstalledSkillsFolderToRepo(
   async function pushWithNonFastForwardRetry(repoDir: string, branch: string): Promise<void> {
     const maxAttempts = 3
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      const hasLocalChangesBeforeReconcile = await hasLocalUncommittedChanges(repoDir)
+      const localMtimesBeforeReconcile = hasLocalChangesBeforeReconcile ? await snapshotFileMtimes(repoDir) : new Map<string, number>()
       await runCommand('git', ['fetch', 'origin'], { cwd: repoDir })
-      let hasLatestRemote = false
       try {
-        await runCommand('git', ['merge-base', '--is-ancestor', `origin/${branch}`, 'HEAD'], { cwd: repoDir })
-        hasLatestRemote = true
+        await runCommand('git', ['rebase', `origin/${branch}`], { cwd: repoDir })
       } catch {
-        hasLatestRemote = false
-      }
-      if (!hasLatestRemote) {
+        try { await runCommand('git', ['rebase', '--abort'], { cwd: repoDir }) } catch {}
         try {
-          await runCommand('git', ['pull', '--no-rebase', '--no-ff', 'origin', branch], { cwd: repoDir })
+          await runCommand('git', ['pull', '--rebase', '--autostash', 'origin', branch], { cwd: repoDir })
         } catch {
-          await resolveMergeConflictsByNewerCommit(repoDir, branch)
-        }
-        await runCommand('git', ['add', '.'], { cwd: repoDir })
-        const statusAfterReconcile = (await runCommandWithOutput('git', ['status', '--porcelain'], { cwd: repoDir })).trim()
-        if (statusAfterReconcile) {
-          await runCommand('git', ['commit', '-m', 'Reconcile skills sync before push retry'], { cwd: repoDir })
+          await resolveMergeConflictsByNewerCommit(repoDir, branch, localMtimesBeforeReconcile)
+          await runCommand('git', ['pull', '--rebase', '--autostash', 'origin', branch], { cwd: repoDir })
         }
       }
       try {
@@ -821,6 +910,7 @@ async function syncInstalledSkillsFolderToRepo(
   void _installedMap
   await runCommand('git', ['config', 'user.email', 'skills-sync@local'], { cwd: repoDir })
   await runCommand('git', ['config', 'user.name', 'Skills Sync'], { cwd: repoDir })
+  await restoreProtectedFilesFromOrigin(repoDir, branch)
   await runCommand('git', ['add', '.'], { cwd: repoDir })
   const status = (await runCommandWithOutput('git', ['status', '--porcelain'], { cwd: repoDir })).trim()
   if (!status) return
@@ -892,6 +982,14 @@ async function autoPushSyncedSkills(appServer: AppServerLike): Promise<void> {
   if (isUpstreamSkillsRepo(state.repoOwner, state.repoName)) {
     throw new Error('Refusing to push to upstream skills repository')
   }
+  const repoDir = getSkillsInstallDir()
+  await runCommand('git', ['fetch', 'origin', PRIVATE_SYNC_BRANCH], { cwd: repoDir })
+  const head = (await runCommandWithOutput('git', ['rev-parse', 'HEAD'], { cwd: repoDir })).trim()
+  const originHead = (await runCommandWithOutput('git', ['rev-parse', `origin/${PRIVATE_SYNC_BRANCH}`], { cwd: repoDir })).trim()
+  const status = (await runCommandWithOutput('git', ['status', '--porcelain'], { cwd: repoDir })).trim()
+  // After a successful pull, if local tree is already clean and equal to remote,
+  // skip push entirely to avoid rewriting/deleting remote-only updates.
+  if (!status && head === originHead) return
   const local = await collectLocalSyncedSkills(appServer)
   const installedMap = await scanInstalledSkillsFromDisk()
   await writeRemoteSkillsManifest(state.githubToken, state.repoOwner, state.repoName, local)

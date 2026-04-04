@@ -39,30 +39,6 @@ This file tracks manual regression and feature verification steps.
 #### Rollback/Cleanup
 - Remove `~/.codex/telegram-bridge.json` to clear saved Telegram token.
 
-### Feature: Current thread context remaining indicator
-
-#### Prerequisites
-- App is running from this repository.
-- At least one thread can send prompts to Codex successfully.
-- The selected model/app-server emits `thread/tokenUsage/updated` notifications.
-
-#### Steps
-1. Open an existing thread in the web UI.
-2. Note the header area on the right side of the thread title and confirm a `Context` badge is present.
-3. If the badge shows `Awaiting data`, send a prompt and wait for Codex to finish at least one turn.
-4. After the turn completes, inspect the `Context` badge again.
-5. Hover the badge and read the tooltip details.
-6. Refresh the page and reopen the same thread.
-
-#### Expected Results
-- The current thread header shows a `Context` badge for thread-specific usage state.
-- Once a token usage event arrives, the badge shows remaining context (for example `152K left`) and secondary text with used/window counts.
-- The tooltip includes current context usage, cumulative thread usage, and remaining context details.
-- After refresh, the last known context badge state for that thread is restored from local storage.
-
-#### Rollback/Cleanup
-- None.
-
 ### Feature: Telegram chatIds persisted for bot DM sending
 
 #### Prerequisites
@@ -240,92 +216,6 @@ This file tracks manual regression and feature verification steps.
 #### Rollback/Cleanup
 - Return appearance and runtime selection to the previous user preference.
 
-### Feature: Provider-backed models appear in the model picker
-
-#### Prerequisites
-- App is running from this repository.
-- Codex is configured with a non-default `model_provider` that exposes an OpenAI-compatible `/models` endpoint.
-- The configured provider can be reached from the host running codexUI.
-
-#### Steps
-1. From the same browser session, request `GET /codex-api/provider-models` and confirm the response is JSON.
-2. Verify the response contains the active `providerId` and a non-empty `data` array of model ids.
-3. Open or refresh a thread in the UI and open the model picker in the composer.
-4. Confirm the provider-backed model ids from `/codex-api/provider-models` appear in the picker alongside the built-in Codex model list.
-5. Stop the upstream provider or block access to it, then refresh the UI and reopen the model picker.
-
-#### Expected Results
-- `/codex-api/provider-models` returns `{ source: "provider", providerId, data }` for the active provider.
-- Provider-backed models appear once each in the model picker and remain selectable.
-- When the provider endpoint is unavailable, the UI still loads and the model picker falls back to the built-in model list without hanging indefinitely.
-
-#### Rollback/Cleanup
-- Restore provider connectivity if it was intentionally interrupted for the failure-path check.
-
-### Feature: Home screen project picker improves project selection and creation UX
-
-#### Prerequisites
-- App is running from this repository.
-- Home/new-thread screen is open.
-- Access to the server filesystem used by codexUI.
-- At least one writable parent directory exists for creating a test folder.
-
-#### Steps
-1. On the home screen, verify the primary folder action is `Select folder`.
-2. Click `Select folder` and confirm codexUI opens an in-page folder picker card instead of navigating away from the home screen.
-3. Confirm the picker shows the current absolute folder with an `Open` action, a `Show hidden folders` toggle, a toggle-style `New folder` action, a folder filter input, and a scrollable single-line list of subfolders inside the same UI shell.
-4. Enter a substring in the filter input and verify the list narrows to folders whose names contain that text, while `..` remains available for navigation.
-5. When the current folder has a parent, confirm the first row in the list is `..`, use it to navigate upward, then browse into an existing subfolder and use the `Open` action without leaving the home screen.
-6. Confirm hidden folders are not shown by default, then enable `Show hidden folders` and verify hidden folders appear before regular folders in the list.
-7. Use `New folder` from inside the picker and confirm a compact inline create row appears below the controls without repeating the current directory path.
-8. Enter a single folder name and confirm the `Create` action sits on the same row as the text input.
-9. Click `New folder` again and confirm the inline create row collapses instead of showing a separate cancel action.
-10. Re-open the inline create row, submit a single folder name, and confirm codexUI creates the folder and navigates the picker into that new child directory without immediately opening it as the selected project.
-11. From that newly created directory, click `Open` and confirm it becomes the selected folder in codexUI.
-12. Trigger a folder-listing failure for the current path if possible (for example by navigating to a directory that becomes unreadable), then confirm the picker keeps the error visible, shows a `Retry` action, and still exposes `..` when a parent directory is known.
-13. If the inline `New folder` row was open before the listing failure, confirm the same `New folder` button now closes that row instead of becoming permanently disabled.
-14. Use `Retry` after restoring access or connectivity and confirm the current folder listing reloads without leaving the picker.
-
-#### Expected Results
-- The home screen uses a single `Select folder` entry point for choosing or creating a local project.
-- Folder creation stays inside the same integrated picker card rather than using a separate browser-style or standalone create panel.
-- Large directory listings stay contained inside a scrollable picker area instead of overlapping the rest of the home screen or composer area.
-- Parent navigation appears as a `..` row in the list, folder names can be filtered by substring, and hidden folders remain hidden unless explicitly requested.
-- Creating a folder from the picker uses a compact single-row composer, can be dismissed by clicking `New folder` again, and creates the folder inside the current directory before navigating into it while keeping final project selection explicit via `Open`.
-- When the current folder cannot be listed, the picker keeps the error visible, offers an in-panel `Retry` path, preserves parent navigation when possible, and blocks folder creation until the browse state is valid again.
-
-#### Rollback/Cleanup
-- Delete any temporary test folder created during the manual check.
-
-### Feature: Configurable chat width keeps composer aligned with conversation
-
-#### Prerequisites
-- App is running from this repository.
-- Desktop viewport is wide enough to show noticeable horizontal margins.
-- At least one existing thread is available.
-- Settings panel can be opened from the bottom-left sidebar button.
-
-#### Steps
-1. Open an existing thread with enough messages to make the conversation area scroll.
-2. Open `Settings` and locate `Chat width`.
-3. Cycle through `Standard`, `Wide`, and `Extra wide`.
-4. After each change, confirm the conversation column width updates immediately.
-5. Compare the left and right edges of the composer shell against the message column above it.
-6. Scroll the conversation until a vertical scrollbar is visible, then re-check the composer/message-column alignment.
-7. Refresh the page.
-8. Re-open the same thread and confirm the previously selected `Chat width` value is still active.
-9. Navigate to the home/new-thread screen and confirm the home composer uses the same selected width and inset behavior.
-
-#### Expected Results
-- `Chat width` cycles through all three values and updates the layout immediately.
-- The conversation column and composer grow and shrink together.
-- The composer shell remains horizontally aligned with the chat column, even when the conversation list is scrollable.
-- The selected width persists after refresh.
-- The home/new-thread composer uses the same width behavior as the thread view.
-
-#### Rollback/Cleanup
-- Return `Chat width` to the previous user preference.
-
 ### Feature: pnpm dev script installs dependencies and starts Vite
 
 #### Prerequisites
@@ -367,6 +257,48 @@ This file tracks manual regression and feature verification steps.
 - None.
 
 ### Feature: Revert PR #16 mobile viewport and chat scroll behavior changes
+
+### Feature: Revert new-project folder-browser flow to inline add flow
+
+#### Prerequisites
+- App is running from this repository.
+- Home/new-thread screen is open.
+- At least one writable parent directory exists for creating a test project folder.
+
+#### Steps
+1. On the home/new-thread screen, open the `Choose folder` dropdown.
+2. Click `+ Add new project`.
+3. Enter a new folder name (for example `New Project Inline Test`) and click `Open`.
+4. Confirm the app selects the newly created/opened project folder.
+5. Repeat step 2, but enter an absolute path to an existing folder and click `Open`.
+
+#### Expected Results
+- Clicking `+ Add new project` opens inline input inside the dropdown instead of navigating to `/codex-local-browse...`.
+- Entering a folder name creates/selects that project under the current base directory.
+- Entering an absolute path opens that existing folder without creating a nested directory.
+
+#### Rollback/Cleanup
+- Delete the test folder created in step 3 if it was created only for verification.
+
+### Feature: Disable auto-restore to last thread when opening home URL
+
+#### Prerequisites
+- App is running from this repository.
+- At least one existing thread is available.
+- Browser local storage may contain previous app state.
+
+#### Steps
+1. Open an existing thread route and confirm messages are visible.
+2. Open `http://localhost:<port>/` (home route) in the same browser profile.
+3. Refresh the home route once.
+4. Close and re-open the app/tab at the home URL again.
+
+#### Expected Results
+- The app remains on the home/new-thread screen and does not auto-navigate to `/thread/<id>`.
+- Refreshing home still keeps the user on home.
+
+#### Rollback/Cleanup
+- None.
 
 #### Prerequisites
 - App is running from this repository.
@@ -706,54 +638,234 @@ This file tracks manual regression and feature verification steps.
 #### Rollback/Cleanup
 - No cleanup required.
 
-### Feature: PR20 composer attachment audit fixes
+### Feature: Skills sync pull live-reloads installed skills list
 
 #### Prerequisites
-- App server is running from this repository.
-- A thread with an enabled composer is open.
-- One image file and one non-image file are available for drag-and-drop tests.
-- Clipboard content that includes both plain text and an image is available.
-- A way to hold or fail `/codex-api/upload-file` requests is available, such as browser network tools, a proxy, or a backend breakpoint.
+- App running from this repository with Skills Hub available.
+- GitHub skills sync configured and connected.
+- At least one skill update available in the sync source (new or edited skill metadata).
 
 #### Steps
-1. Start dragging a file over the composer until the drop overlay appears, then move the pointer outside the window and release without dropping on the composer.
-2. Drag one file onto the composer and wait for it to finish attaching.
-3. Copy clipboard content that includes both plain text and an image, then paste it into the composer with `Ctrl+V`.
-4. Start a multi-file attachment batch with at least two files, then make one upload fail immediately or hold one `/codex-api/upload-file` request open long enough to hit the 60 second timeout while another file succeeds.
-5. After the failed batch settles, attach one additional valid file to confirm a new batch still works.
+1. Open the app and note the currently visible installed skills for the active thread cwd.
+2. In Skills Hub, trigger `Pull` from GitHub sync.
+3. Wait for the pull success toast.
+4. Without restarting the app/server, navigate to thread composer skill picker and verify the installed skills list.
+5. Switch to another thread and back to force a normal UI refresh path.
 
 #### Expected Results
-- The drag overlay disappears after the cancelled drag and does not stay stuck on the composer.
-- A normal file drop still attaches the file successfully.
-- Mixed paste keeps the plain text in the textarea and also adds the pasted image attachment.
-- Failed or timed-out uploads stop showing as pending, submit becomes available again after all attachment work settles, and the composer shows a mixed-result message such as `1 attached, 1 failed`.
-- A follow-up attachment batch can still complete normally after a previous failure summary.
+- Pull completes successfully.
+- Installed skills list reflects pulled changes immediately without app/server restart.
+- Thread switch keeps showing the updated skills list (no stale cache rollback).
 
 #### Rollback/Cleanup
-- Turn off any network blocking, proxy rule, or backend breakpoint used to simulate the failure.
-- Remove any temporary attachments from the composer before continuing other tests.
-- Stop the app server when finished.
+- If needed, run another sync pull/push to restore previous skill state in the sync repo.
 
-### Feature: `--no-login` startup flag
+### Feature: Force Refresh Skills button in Skills Sync panel
 
 #### Prerequisites
-- `pnpm run build` has completed successfully in this repository.
-- A temporary empty `CODEX_HOME` directory is available so no `auth.json` file is present.
-- A temporary executable is available to stand in for the Codex CLI and record invocations.
+- App running from this repository with Skills Hub route accessible.
+- At least one installed skill is available for the current thread cwd.
 
 #### Steps
-1. Create a temporary directory for `CODEX_HOME` and confirm it does not contain `auth.json`.
-2. Create a fake Codex executable that supports `--version` and appends every invocation to a log file.
-3. Start `node dist-cli/index.js --no-login --no-open --no-tunnel --port 6011` with `CODEX_HOME` pointed at the empty temp directory and `CODEXUI_CODEX_COMMAND` pointed at the fake executable.
-4. Wait for the startup banner, stop the process, and inspect the fake executable log.
-5. Start `node dist-cli/index.js --no-open --no-tunnel --port 6012` with the same environment.
-6. Wait for the startup banner, stop the process, and inspect the log again.
-7. Run `node dist-cli/index.js --help` and confirm the help output includes `--no-login`.
+1. Open `Skills Hub`.
+2. In `Skills Sync (GitHub)`, click `Force Refresh Skills`.
+3. Verify button text changes to `Refreshing...` during the request and returns after completion.
+4. Verify success toast appears.
+5. Open the thread composer skills picker and confirm installed skills list is present and current.
+6. Switch to another thread and back to ensure refreshed list remains consistent.
 
 #### Expected Results
-- With `--no-login`, the server starts without attempting `codex login`.
-- Without `--no-login`, startup still invokes `codex login` when `auth.json` is missing.
-- The CLI help output documents the new flag.
+- `Force Refresh Skills` triggers a manual refresh without requiring pull/push.
+- Loading state prevents duplicate clicks while refresh is in progress.
+- Installed skills list updates immediately and remains updated across thread switches.
 
 #### Rollback/Cleanup
-- Delete the temporary `CODEX_HOME`, fake Codex executable, and invocation log.
+- No cleanup required.
+
+### Feature: SkillHub shows detailed skill load errors
+
+#### Prerequisites
+- App running from this repository.
+- At least one invalid installed skill file exists (for example unresolved merge markers in `SKILL.md`).
+
+#### Steps
+1. Open `Skills Hub`.
+2. Trigger `Force Refresh Skills`.
+3. Locate the `Some skills failed to load` panel above the skills sections.
+4. Verify each row shows:
+   - the failing `SKILL.md` path
+   - the exact parser error message from app server (for example invalid YAML line/column details).
+5. Fix the invalid skill file and trigger `Force Refresh Skills` again.
+
+#### Expected Results
+- SkillHub surfaces app-server load failures with detailed path and message.
+- Messages are specific enough to identify the broken file and parser failure reason.
+- Error panel disappears after invalid skills are fixed and refreshed.
+
+#### Rollback/Cleanup
+- Restore any intentionally broken local skill files used for testing.
+
+### Feature: Startup sync preserves local skill edits when remote is ahead
+
+#### Prerequisites
+- Skills sync configured to a private GitHub fork.
+- Local skills repo has a tracked edit in an existing skill file.
+- Remote `main` has at least one newer commit than local (simulate from another machine or commit directly on GitHub).
+
+#### Steps
+1. Edit a local skill file (for example update description text in `SKILL.md`) and keep the change.
+2. Trigger `Startup Sync` in Skills Hub.
+3. If a non-fast-forward condition exists, allow startup sync to complete retry path.
+4. Re-open the same local skill file and verify your edit remains.
+5. Trigger `Force Refresh Skills` and verify no unexpected skill removals occurred.
+
+#### Expected Results
+- Startup sync no longer fails with non-fast-forward push due to missing remote integration.
+- Local tracked skill edits remain after sync (not overwritten by remote state).
+- Sync path rebases/pulls with autostash and auto-resolves conflicts by mtime policy:
+  - choose remote (`theirs`) when remote file commit time is newer than local file mtime.
+  - choose local (`ours`) otherwise.
+- No manual conflict intervention is required during startup sync retries.
+
+#### Rollback/Cleanup
+- Revert test-only skill text changes if they were not intended to keep.
+
+### Feature: Startup sync conflict fallback when one side is missing
+
+#### Prerequisites
+- Skills sync repo contains a conflict candidate where only one side exists for a path (for example delete/modify scenario).
+- Skills Hub is accessible.
+
+#### Steps
+1. Open `Skills Hub`.
+2. Click `Startup Sync`.
+3. Wait for sync completion or error toast.
+4. Verify no toast/error contains `does not have our version`.
+
+#### Expected Results
+- Sync conflict resolver handles missing `--ours`/`--theirs` versions safely.
+- Startup sync does not fail with `git checkout --ours/--theirs` missing-version errors.
+
+#### Rollback/Cleanup
+- None.
+
+### Feature: Remote changes win when no local uncommitted skill edits exist
+
+#### Prerequisites
+- Skills sync configured with GitHub.
+- Local skills repo working tree is clean (`git status --porcelain` empty under skills dir).
+- Remote skills repo has newer commits touching existing skill files.
+
+#### Steps
+1. Confirm no local uncommitted changes in skills directory.
+2. Trigger `Startup Sync` in Skills Hub.
+3. After sync, inspect the skill file changed remotely.
+4. Trigger `Force Refresh Skills` and confirm loaded skill content matches remote update.
+
+#### Expected Results
+- Sync pull/reconcile does not preserve stale local file content when local tree is clean.
+- Remote updates are applied locally and remain after startup sync completes.
+
+#### Rollback/Cleanup
+- None.
+
+### Feature: Startup sync does not delete remote AGENTS.md
+
+#### Prerequisites
+- Skills sync configured to `friuns2/codexskills`.
+- Remote `main` contains `AGENTS.md`.
+- Local skills repo is clean before startup sync.
+
+#### Steps
+1. Confirm remote `AGENTS.md` exists on `main`.
+2. Confirm local `~/.codex/skills` is clean.
+3. Trigger `Startup Sync`.
+4. After completion, inspect latest commit created by sync (if any).
+5. Verify `AGENTS.md` still exists locally and in remote `origin/main`.
+
+#### Expected Results
+- Startup sync may update manifest, but must not delete `AGENTS.md`.
+- If sync creates a commit, changed files do not include `D AGENTS.md`.
+- Local and remote `AGENTS.md` hashes remain equal after sync.
+
+#### Rollback/Cleanup
+- None.
+
+### Feature: Bidirectional AGENTS.md sync via Startup Sync
+
+#### Prerequisites
+- Skills sync configured to `friuns2/codexskills`.
+- `~/.codex/skills` is a clean git working tree before each sub-test.
+- Skills Hub startup sync endpoint is reachable.
+
+#### Steps
+1. Remote -> Local:
+2. Add a unique marker to remote `AGENTS.md` on `main`.
+3. Confirm local `HEAD` is behind `origin/main`.
+4. Trigger `Startup Sync`.
+5. Verify local `AGENTS.md` contains the remote marker and local `HEAD == origin/main`.
+6. Local -> Remote:
+7. Add a different unique marker to local `~/.codex/skills/AGENTS.md`.
+8. Confirm local working tree shows `M AGENTS.md`.
+9. Trigger `Startup Sync`.
+10. Verify remote `origin/main:AGENTS.md` contains the local marker and local `HEAD == origin/main`.
+
+#### Expected Results
+- Remote-only AGENTS edits are pulled into local without deletion.
+- Local AGENTS edits are pushed to remote after startup sync.
+- After each sync direction, local and remote commit SHAs match.
+
+#### Rollback/Cleanup
+- Remove temporary test markers from `AGENTS.md` if required.
+
+### Feature: Mixed local+remote AGENTS edits do not stall Startup Sync
+
+#### Prerequisites
+- Skills sync configured and working.
+- Local skills repo clean before test start.
+
+#### Steps
+1. Add marker `A` to remote `AGENTS.md`.
+2. Add marker `B` to local `AGENTS.md` before syncing.
+3. Trigger `Startup Sync`.
+4. Wait for startup status to finish (`inProgress=false`).
+5. Verify sync outcome explicitly:
+6. If sync succeeds, local/remote SHAs match and expected merged marker result is present.
+7. If sync fails, status includes a concrete error message (not silent success).
+
+#### Expected Results
+- Startup sync must not report success while local remains behind remote.
+- No stale stash side-effects are introduced (no unexpected conflict from old stash entries).
+- Final state is either a valid synchronized result or an explicit failure status with actionable error.
+
+#### Rollback/Cleanup
+- Reset local skills repo to `origin/main` after test if needed.
+
+### Feature: Startup sync uses deterministic pull reconcile (`fetch + reset --hard`) before local replay
+
+#### Prerequisites
+- Skills sync is logged in and targets `friuns2/codexskills`.
+- Local repo path is `~/.codex/skills`.
+- Startup Sync endpoint is reachable at `/codex-api/skills-sync/startup-sync`.
+
+#### Steps
+1. Remote-only case:
+2. Commit a unique marker to remote `AGENTS.md` on `main`.
+3. Ensure local repo is clean and reset to `origin/main`, then trigger `Startup Sync`.
+4. Confirm marker appears locally and `HEAD == origin/main`.
+5. Local-only case:
+6. Add a unique local marker to `~/.codex/skills/AGENTS.md` (uncommitted), trigger `Startup Sync`.
+7. Confirm marker is pushed and `HEAD == origin/main` with clean worktree.
+8. Mixed case:
+9. Add local marker first, then commit a newer remote marker.
+10. Trigger `Startup Sync` and verify mtime policy result (newer remote marker wins, older local marker dropped).
+11. Confirm final state is clean with `HEAD == origin/main`.
+
+#### Expected Results
+- Startup sync does not fail with missing merge refs (`MERGE_HEAD`/`REBASE_HEAD`) in this path.
+- Remote-only changes are always pulled first and visible locally.
+- Local-only changes are preserved and pushed during the same startup sync run.
+- Mixed local+remote edits converge automatically with no manual conflict handling.
+
+#### Rollback/Cleanup
+- Remove temporary test markers from `AGENTS.md` if not needed.
