@@ -641,7 +641,8 @@ async function ensureSkillsWorkingTreeRepo(repoUrl: string, branch: string): Pro
 
   await runCommand('git', ['remote', 'set-url', 'origin', repoUrl], { cwd: localDir })
   await runCommand('git', ['fetch', 'origin'], { cwd: localDir })
-  const localMtimesBeforeSync = await snapshotFileMtimes(localDir)
+  const hasLocalChangesBeforeSync = await hasLocalUncommittedChanges(localDir)
+  const localMtimesBeforeSync = hasLocalChangesBeforeSync ? await snapshotFileMtimes(localDir) : new Map<string, number>()
   await resolveMergeConflictsByNewerCommit(localDir, branch, localMtimesBeforeSync)
   try {
     await runCommand('git', ['checkout', branch], { cwd: localDir })
@@ -650,7 +651,8 @@ async function ensureSkillsWorkingTreeRepo(repoUrl: string, branch: string): Pro
     await runCommand('git', ['checkout', '-B', branch], { cwd: localDir })
   }
   await resolveMergeConflictsByNewerCommit(localDir, branch, localMtimesBeforeSync)
-  const localMtimesBeforePull = await snapshotFileMtimes(localDir)
+  const hasLocalChangesBeforePull = await hasLocalUncommittedChanges(localDir)
+  const localMtimesBeforePull = hasLocalChangesBeforePull ? await snapshotFileMtimes(localDir) : new Map<string, number>()
   try { await runCommand('git', ['stash', 'push', '--include-untracked', '-m', 'codex-skills-autostash'], { cwd: localDir }) } catch {}
   let pulledMtimes = new Map<string, number>()
   try {
@@ -792,6 +794,11 @@ async function snapshotFileMtimes(dir: string): Promise<Map<string, number>> {
   return mtimes
 }
 
+async function hasLocalUncommittedChanges(repoDir: string): Promise<boolean> {
+  const status = (await runCommandWithOutput('git', ['status', '--porcelain'], { cwd: repoDir })).trim()
+  return status.length > 0
+}
+
 async function walkFileMtimes(rootDir: string, currentDir: string, out: Map<string, number>): Promise<void> {
   let entries: Array<{ name: string | Buffer; isDirectory: () => boolean; isFile: () => boolean }>
   try {
@@ -832,7 +839,8 @@ async function syncInstalledSkillsFolderToRepo(
   async function pushWithNonFastForwardRetry(repoDir: string, branch: string): Promise<void> {
     const maxAttempts = 3
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-      const localMtimesBeforeReconcile = await snapshotFileMtimes(repoDir)
+      const hasLocalChangesBeforeReconcile = await hasLocalUncommittedChanges(repoDir)
+      const localMtimesBeforeReconcile = hasLocalChangesBeforeReconcile ? await snapshotFileMtimes(repoDir) : new Map<string, number>()
       await runCommand('git', ['fetch', 'origin'], { cwd: repoDir })
       try {
         await runCommand('git', ['rebase', `origin/${branch}`], { cwd: repoDir })
