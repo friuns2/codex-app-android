@@ -125,10 +125,10 @@
                     {{ fileChangeSummaryLabel(readStandaloneFileChangeSummary(message)) }}
                   </span>
                   <span class="file-change-summary-status">
-                    <span
+                  <span
                       v-for="part in fileChangeSummaryStatusParts(readStandaloneFileChangeSummary(message))"
                       :key="`summary-status:${message.id}:${part.tone}:${part.label}`"
-                      class="file-change-signed-count"
+                      class="file-change-signed-count file-change-summary-signed-count"
                       :data-tone="part.tone"
                     >
                       {{ part.label }}
@@ -539,10 +539,10 @@
                     {{ fileChangeSummaryLabel(readAnchoredFileChangeSummary(message)) }}
                   </span>
                   <span class="file-change-summary-status">
-                    <span
+                  <span
                       v-for="part in fileChangeSummaryStatusParts(readAnchoredFileChangeSummary(message))"
                       :key="`summary-status:${message.id}:${part.tone}:${part.label}`"
-                      class="file-change-signed-count"
+                      class="file-change-signed-count file-change-summary-signed-count"
                       :data-tone="part.tone"
                     >
                       {{ part.label }}
@@ -4420,6 +4420,22 @@ onBeforeUnmount(() => {
 
 .file-change-signed-count {
   @apply inline-flex items-center whitespace-nowrap;
+}
+
+.file-change-summary-signed-count {
+  @apply rounded-full px-2 py-1;
+}
+
+.file-change-summary-signed-count[data-tone='add'] {
+  @apply bg-emerald-100 text-emerald-700;
+}
+
+.file-change-summary-signed-count[data-tone='remove'] {
+  @apply bg-rose-100 text-rose-700;
+}
+
+.file-change-summary-signed-count[data-tone='neutral'] {
+  @apply bg-zinc-100 text-zinc-600;
 }
 
 .file-change-signed-count[data-tone='add'] {

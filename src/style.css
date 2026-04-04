@@ -521,6 +521,18 @@
   @apply bg-zinc-800 text-zinc-300;
 }
 
+:root.dark .file-change-summary-signed-count[data-tone='add'] {
+  @apply bg-emerald-500/15 text-emerald-300;
+}
+
+:root.dark .file-change-summary-signed-count[data-tone='remove'] {
+  @apply bg-rose-500/15 text-rose-300;
+}
+
+:root.dark .file-change-summary-signed-count[data-tone='neutral'] {
+  @apply bg-zinc-800 text-zinc-300;
+}
+
 :root.dark .file-change-signed-count[data-tone='add'] {
   @apply text-emerald-300;
 }
