@@ -191,14 +191,35 @@ async function ghFetch(url: string): Promise<Response> {
   return fetch(url, { headers })
 }
 
+async function fetchGitHubJsonWithCurl(url: string): Promise<unknown> {
+  const token = await getGhToken()
+  const args = [
+    '-fsSL',
+    '--max-time', '20',
+    '-H', 'Accept: application/vnd.github+json',
+    '-H', 'User-Agent: codex-web-local',
+  ]
+  if (token) args.push('-H', `Authorization: Bearer ${token}`)
+  args.push(url)
+  const output = await runCommandWithOutput('curl', args)
+  return JSON.parse(output) as unknown
+}
+
 async function fetchSkillsTree(): Promise<SkillsTreeEntry[]> {
   if (skillsTreeCache && Date.now() - skillsTreeCache.fetchedAt < TREE_CACHE_TTL_MS) {
     return skillsTreeCache.entries
   }
 
-  const resp = await ghFetch(`https://api.github.com/repos/${HUB_SKILLS_OWNER}/${HUB_SKILLS_REPO}/git/trees/main?recursive=1`)
-  if (!resp.ok) throw new Error(`GitHub tree API returned ${resp.status}`)
-  const data = (await resp.json()) as { tree?: Array<{ path: string; type: string }> }
+  const treeUrl = `https://api.github.com/repos/${HUB_SKILLS_OWNER}/${HUB_SKILLS_REPO}/git/trees/main?recursive=1`
+  let data: { tree?: Array<{ path: string; type: string }> }
+  try {
+    // The Skills Hub tree is large; Node fetch can hang while reading the body in some proxy setups.
+    data = await fetchGitHubJsonWithCurl(treeUrl) as { tree?: Array<{ path: string; type: string }> }
+  } catch {
+    const resp = await ghFetch(treeUrl)
+    if (!resp.ok) throw new Error(`GitHub tree API returned ${resp.status}`)
+    data = (await resp.json()) as { tree?: Array<{ path: string; type: string }> }
+  }
 
   const metaPattern = /^skills\/([^/]+)\/([^/]+)\/_meta\.json$/
   const seen = new Set<string>()
