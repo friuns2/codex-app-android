@@ -78,8 +78,6 @@ type AccountInspection = {
   quotaSnapshot: StoredRateLimitSnapshot | null
 }
 
-const APP_SERVER_ARGS = buildAppServerArgs()
-
 const ACCOUNT_QUOTA_REFRESH_TTL_MS = 5 * 60 * 1000
 
 let backgroundRefreshPromise: Promise<void> | null = null
@@ -394,7 +392,7 @@ async function withTemporaryCodexAppServer<T>(
   const authPath = join(tempCodexHome, 'auth.json')
   await writeFile(authPath, authRaw, { encoding: 'utf8', mode: 0o600 })
 
-  const proc = spawn('codex', [...APP_SERVER_ARGS], {
+  const proc = spawn('codex', buildAppServerArgs(), {
     env: { ...process.env, CODEX_HOME: tempCodexHome },
     stdio: ['pipe', 'pipe', 'pipe'],
   })
