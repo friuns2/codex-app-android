@@ -238,6 +238,33 @@ This file tracks manual regression and feature verification steps.
 #### Rollback/Cleanup
 - Decline or skip the pending approval request after verification.
 
+### Feature: Collaboration mode selector moved into composer dropdown row
+
+#### Prerequisites
+- App is running from this repository.
+- At least one thread exists and can be opened.
+- The selected thread is idle so composer controls are enabled.
+
+#### Steps
+1. Open an existing thread so the composer footer controls are visible.
+2. Click the `+` attach menu and inspect the available actions/settings.
+3. Confirm there is no standalone `Plan mode` switch inside that menu.
+4. In the composer footer row, locate the new collaboration mode dropdown near `Model`, `Skills`, and `Thinking`.
+5. Open the collaboration mode dropdown and switch from `Default` to `Plan`.
+6. Confirm the dropdown label updates to `Plan`.
+7. Switch back from `Plan` to `Default`.
+8. Return to the home/new-thread screen, switch the collaboration mode dropdown to `Plan`, and send the very first message in a brand new thread.
+9. After navigation into the created thread, confirm the composer still shows `Plan` for that thread.
+
+#### Expected Results
+- Collaboration mode is selectable from a dedicated dropdown in the composer control row.
+- The attach menu no longer contains a separate `Plan mode` switch.
+- Selecting `Plan` or `Default` updates the dropdown label immediately without affecting the other composer controls.
+- A new thread created while `Plan` is selected keeps that mode for its first turn and remains on `Plan` after the thread opens.
+
+#### Rollback/Cleanup
+- Leave the collaboration mode set to the previous user preference before ending the test.
+
 ### Feature: MCP elicitation requests and thread status labels
 
 #### Prerequisites

@@ -220,28 +220,20 @@
                 }"
               />
             </button>
-            <button
-              class="thread-composer-attach-setting"
-              type="button"
-              role="switch"
-              :aria-checked="isPlanModeSelected"
-              :aria-label="isPlanModeSelected ? 'Disable plan mode' : 'Enable plan mode'"
-              :disabled="disabled || !activeThreadId || isTurnInProgress"
-              @click="toggleCollaborationMode"
-            >
-              <span class="thread-composer-attach-setting-copy">
-                <span class="thread-composer-attach-setting-label">Plan mode</span>
-                <span class="thread-composer-attach-setting-description">Agent proposes a plan before acting</span>
-              </span>
-              <span
-                class="thread-composer-attach-switch"
-                :class="{ 'is-on': isPlanModeSelected }"
-              />
-            </button>
           </div>
         </div>
 
         <template v-if="!isDictationRecording">
+          <ComposerDropdown
+            class="thread-composer-control"
+            :model-value="selectedCollaborationMode"
+            :options="collaborationModeOptions"
+            placeholder="Mode"
+            open-direction="up"
+            :disabled="disabled || !activeThreadId || isTurnInProgress"
+            @update:model-value="onCollaborationModeSelect"
+          />
+
           <ComposerDropdown
             class="thread-composer-control"
             :model-value="selectedModel"
@@ -554,7 +546,15 @@ function formatModelLabel(modelId: string): string {
 const modelOptions = computed(() =>
   props.models.map((modelId) => ({ value: modelId, label: formatModelLabel(modelId) })),
 )
-const isPlanModeSelected = computed(() => props.selectedCollaborationMode === 'plan')
+const collaborationModeOptions = computed<CollaborationModeOption[]>(() => {
+  if (props.collaborationModes && props.collaborationModes.length > 0) {
+    return props.collaborationModes
+  }
+  return [
+    { value: 'default', label: 'Default' },
+    { value: 'plan', label: 'Plan' },
+  ]
+})
 
 const isPlanModeWaitingForModel = computed(() =>
   props.selectedCollaborationMode === 'plan' && props.selectedModel.trim().length === 0,
@@ -1034,8 +1034,9 @@ function onModelSelect(value: string): void {
   emit('update:selected-model', value)
 }
 
-function toggleCollaborationMode(): void {
-  emit('update:selected-collaboration-mode', isPlanModeSelected.value ? 'default' : 'plan')
+function onCollaborationModeSelect(value: string): void {
+  const mode: CollaborationModeKind = value === 'plan' ? 'plan' : 'default'
+  emit('update:selected-collaboration-mode', mode)
 }
 
 function onReasoningEffortSelect(value: string): void {

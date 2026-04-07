@@ -3482,6 +3482,7 @@ export function useDesktopState() {
     const nextText = text.trim()
     const targetCwd = cwd.trim()
     const selectedModel = selectedModelId.value.trim()
+    const collaborationMode = selectedCollaborationMode.value
     if (!nextText && imageUrls.length === 0 && fileAttachments.length === 0) return ''
 
     isSendingMessage.value = true
@@ -3507,6 +3508,7 @@ export function useDesktopState() {
         [threadId]: true,
       }
       setSelectedThreadId(threadId)
+      setSelectedCollaborationMode(collaborationMode)
       shouldAutoScrollOnNextAgentEvent = true
       setTurnSummaryForThread(threadId, null)
       setTurnActivityForThread(
@@ -3516,7 +3518,7 @@ export function useDesktopState() {
           details: buildPendingTurnDetails(
             selectedModelId.value,
             selectedReasoningEffort.value,
-            selectedCollaborationMode.value,
+            collaborationMode,
           ),
         },
       )
