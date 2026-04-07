@@ -37,10 +37,12 @@
 - If a branch is already checked out in another worktree, rebase/commit there, then merge by branch name from main worktree.
 - If merge pulls unrelated conflicts, abort and retry with a narrower commit set.
 
-## package.json Version Conflict Rule
+## package.json / tests.md Conflict Rule
 
 - For any merge/rebase conflict involving `package.json`, always resolve by taking the current local/checkpoint `package.json` entirely (full file replacement) without additional review, then continue merge.
 - Treat `package.json` as generated/low-priority for conflict resolution and do not block merge completion on its conflicts.
+- For any merge/rebase conflict involving `tests.md`, always resolve by taking the current local/checkpoint `tests.md` entirely (full file replacement) without additional review, then continue merge.
+- Treat `tests.md` as low-priority for conflict resolution and do not block merge completion on its conflicts.
 
 ## Commit After Each Task
 
