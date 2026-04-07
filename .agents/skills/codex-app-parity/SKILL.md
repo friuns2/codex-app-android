@@ -1,6 +1,6 @@
 ---
 name: "codex-app-parity"
-description: "Use when implementing or changing user-visible behavior/UI in this repository and parity with the latest official Codex references must be validated before coding. Prefer official OpenAI docs and official code; use an installed Codex app only as supplemental reference when available."
+description: "Use when implementing or changing user-visible behavior/UI in this repository and parity with the installed Codex desktop app must be validated before coding."
 ---
 
 # Codex App Parity Skill
@@ -10,59 +10,22 @@ Do not use it for purely internal refactors that do not affect behavior.
 
 ## Objective
 
-Ensure behavior is implemented against the latest official Codex references, then verified with headless Playwright and screenshots.
+Ensure behavior is implemented with Codex.app as the source of truth, then verified with headless Playwright and screenshots.
 
 ## Project Instructions
 
-## Official Codex Reference-First Development Policy
+## Codex.app-First Development Policy
 
-For every **new feature** and every **behavior/UI change**, treat the latest official Codex materials as the source of truth.
+For every **new feature** and every **behavior/UI change**, treat the installed desktop app as the source of truth:
 
-Reference priority:
-
-1. Official OpenAI Codex docs on `developers.openai.com` / `platform.openai.com`
-2. Official OpenAI code in `openai/codex`
-3. Official product pages or release notes when relevant to user-visible behavior
-4. A locally installed `Codex.app` bundle only if it is actually available on the current machine
+- App path: `/Applications/Codex.app`
+- Primary bundle to inspect: `/Applications/Codex.app/Contents/Resources/app.asar`
 
 Do not implement first and compare later. Compare first, then implement.
 
-When sources conflict, prefer current official docs or official repository behavior over older reverse-engineered desktop bundle findings.
+## How to Search for Features in Codex.app
 
-Because this workspace is commonly developed on Linux, do not assume `/Applications/Codex.app` exists.
-
-## Official Sources To Check First
-
-- Docs entry point: `https://platform.openai.com/docs/codex`
-- Developer portal landing page: `https://developers.openai.com/`
-- Official repository: `https://github.com/openai/codex`
-
-If the task depends on the **latest** behavior, verify the current official source before coding and note the concrete source pages you used.
-
-## How to Search for Features in Official References
-
-### Docs-first search
-
-1. Search official Codex docs for the feature or workflow.
-2. Search official developer docs for adjacent terminology, model/tool references, or product guidance.
-3. Capture the exact page titles and URLs that informed the implementation.
-
-### Official code search
-
-Use the official `openai/codex` repository as the code reference when docs are insufficient or when behavior needs implementation detail:
-
-- Search `README.md`, `docs/`, and relevant packages first.
-- Use repository search terms based on UI labels, settings names, RPC names, and command names.
-- Prefer current main-branch code or the latest tagged release over older snippets copied elsewhere.
-
-### Optional local desktop bundle inspection
-
-If a local desktop app is available, it can still be inspected as supplemental evidence for UI details that are missing from official docs/code.
-
-Typical macOS paths:
-
-- App path: `/Applications/Codex.app`
-- Primary bundle: `/Applications/Codex.app/Contents/Resources/app.asar`
+### Extraction
 
 Extract the app bundle once (reuse if already extracted):
 
@@ -110,10 +73,10 @@ if idx >= 0:
 
 ### Search Strategy
 
-1. Start with **official docs** and current product documentation.
-2. If docs are too high-level, inspect the **official repository** for implementation patterns.
-3. If a desktop bundle is available and still needed, use **i18n locale files** and bundle search to recover UI details.
-4. Trace the result to find **hooks/composables**, **API calls**, **event handlers**, and supporting process logic.
+1. Start with **i18n locale files** — they have human-readable labels that identify features.
+2. Use the i18n key to find the **component** in the main bundle.
+3. Trace the component to find **hooks/composables**, **API calls**, and **event handlers**.
+4. Check the **main process** bundle for any server-side proxying or Electron IPC handling.
 
 ### Architecture Notes
 
@@ -128,14 +91,12 @@ if idx >= 0:
 - Restate what behavior is being added/changed.
 - Define whether it is: data mapping, runtime event handling, UX text, visual treatment, interaction model, or all of these.
 
-2. Inspect official Codex references before coding:
-- Check the latest official docs first.
-- Check the official `openai/codex` repository when implementation detail is needed.
-- If available and useful, inspect a local `Codex.app` bundle as supplemental evidence.
+2. Inspect Codex.app before coding:
+- Locate the implementation in `app.asar` (extract and search built assets as needed).
 - Find relevant strings/keys/functions/components for the feature (status labels, event names, item types, summaries, collapse/expand behavior, etc.).
 - Capture the closest equivalent pattern if exact parity is not present.
 
-3. Build a parity checklist from the official references:
+3. Build a parity checklist from Codex.app:
 - Data model shape (fields used by UI).
 - Realtime event sources and transitions.
 - Rendering structure (what is shown collapsed vs expanded).
@@ -144,47 +105,36 @@ if idx >= 0:
 - Visibility rules (when elements appear/disappear).
 
 4. Implement against that checklist:
-- Prefer official Codex behavior over novel design.
+- Prefer Codex.app behavior over novel design.
 - Keep deviations minimal and intentional.
 - If deviating, include a short reason in the final response.
 
 5. Verify parity after implementation:
 - Confirm each checklist item.
 - Run local build/tests.
-- Re-check UI behavior against the official references you used.
+- Re-check UI behavior against Codex.app reference.
 
 ## Response Requirements (When delivering feature changes)
 
 For feature tasks, include:
 
-- `Official Codex reference analysis`: what was inspected (docs pages, repo areas, optional desktop bundle areas).
+- `Codex.app analysis`: what was inspected (files/areas/patterns).
 - `Parity result`: matched items and any explicit deviations.
-- `Fallback note` only if the official references were insufficient or had no equivalent.
+- `Fallback note` only if Codex.app could not be inspected or had no equivalent.
 
 ## Fallback Rules
 
-If the official references are insufficient, unreachable, or have no equivalent pattern:
+If Codex.app cannot be inspected (missing app, extraction/search failure) or has no equivalent pattern:
 
 - State the blocker explicitly.
 - Use best local implementation consistent with existing repository patterns.
 - Keep behavior conservative and avoid speculative UX innovations.
 
-If the official references are incomplete but a local desktop app is available, use the desktop app as a secondary source rather than the primary source.
-
-## Source Freshness Requirement
-
-For requests involving current or changing Codex behavior:
-
-- State the blocker explicitly.
-- Verify the latest official source before coding.
-- Record the concrete pages or repository locations used.
-- Use explicit dates in the final note when freshness matters.
-
 ## Scope and Safety
 
 - This policy applies to **feature behavior and UX decisions**, not just styling.
-- Bug fixes should still check official Codex references when they affect user-visible behavior.
-- Prefer minimal patches that align with official behavior rather than large refactors.
+- Bug fixes should still check Codex.app when they affect user-visible behavior.
+- Prefer minimal patches that align with app behavior rather than large refactors.
 
 ## Completion Verification Requirement
 
@@ -199,9 +149,6 @@ After each feature implementation session that uses this skill:
 2. **Update search instructions**: If new search techniques were used (e.g., a better way to extract minified code, new file locations), update the "How to Search for Features" section.
 3. **Update architecture notes**: If new IPC channels, API endpoints, or data flows were discovered, add them to the Architecture Notes.
 4. **Keep findings actionable**: Each finding should include enough detail that a future session can reuse it without re-discovering.
-
-Historical findings below may come from official docs, the official repository, or earlier desktop bundle inspections.
-If a finding conflicts with current official docs or current official code, treat the current official source as authoritative.
 
 ## Findings: Workspace Root Ordering (2026-02-25)
 
@@ -283,7 +230,6 @@ If a finding conflicts with current official docs or current official code, trea
 - `ThreadConversation.vue` uses a custom Markdown block parser rather than a standard Markdown library.
 - Ordered-list items separated by non-indented paragraphs are parsed into multiple `orderedList` blocks.
 - To preserve author-visible numbering in that case, each `orderedList` block needs the original marker value persisted and rendered via the HTML `<ol start=\"...\">` attribute.
-
 ## Findings: Dictation / Microphone Feature (2026-02-26)
 
 - **i18n keys**: `composer.dictation.*` — tooltip is "Hold to dictate", aria is "Dictate".
@@ -338,17 +284,10 @@ If a finding conflicts with current official docs or current official code, trea
 - App-server RPC for rename uses method `thread/name/set` with params `{ threadId, name }` (not `threadName`).
 - `thread/name/updated` realtime notification carries `{ threadId, threadName }`, so parity implementations should handle both request/response naming differences (`name` on write, `threadName` on notification).
 
-## Findings: Thread Fork RPC (2026-03-27)
+## Findings: Local Parity Fallback (2026-03-27)
 
-- The local protocol schemas include a stable `thread/fork` RPC in v2, separate from `thread/start`.
-- `ThreadForkParams` accepts `threadId` (required) with optional `cwd` and `model` overrides, and returns a response shape that includes `thread.id`.
-- For sidebar "Create chat fork" actions, prefer `thread/fork` over creating a fresh thread with `thread/start`.
-
-## Findings: Linux Official-Source-First Parity (2026-03-27)
-
-- In this workspace, `/Applications/Codex.app/Contents/Resources/app.asar` was not present, so desktop bundle inspection could not be the default parity workflow.
-- For Linux-based development here, use official Codex docs and the official `openai/codex` repository as the primary parity references.
-- Use a local desktop bundle only as an optional supplement when it is actually available on the current machine.
+- In this workspace, `/Applications/Codex.app/Contents/Resources/app.asar` was not present, so Codex.app-first inspection could not run.
+- For user-visible changes under this constraint, use the skill's fallback path explicitly: preserve existing repository interaction patterns, keep the UX conservative, and call out the parity blocker in the completion report.
 
 ## Findings: Settings Account Labels (2026-03-24)
 
@@ -506,46 +445,3 @@ If a finding conflicts with current official docs or current official code, trea
 - With Codex.app unavailable for inspection, message-action removals should be implemented as full UI deletion, not partial hiding.
 - In this codebase, message actions span both template nodes in `ThreadConversation.vue` and shared dark-theme overrides in `style.css`; removing only the button markup leaves dead hover/dark styles behind.
 - A safe fallback cleanup is to remove the template block, the helper functions/imports that feed it, and the corresponding `.message-action*` selectors together in the same change.
-
-## Findings: Retry Error Status Restoration (2026-03-28)
-
-- Official Codex protocol marks transient stream failures separately from terminal failures: `stream_error` is documented as a notification the system is already handling with retry/backoff, and v2 `error` notifications expose `willRetry`.
-- In `openai/codex` TUI (`codex-rs/tui_app_server/src/chatwidget.rs`), retry-status UI is restored on the next non-retry notification instead of remaining visible for the rest of the turn.
-- For codexui parity, retry/reconnect overlays should be stored as transient state and cleared when follow-up non-retry events arrive or when the transport emits `ready` after reconnect.
-
-## Findings: File Diff Viewer Rendering (2026-03-30)
-
-- Official `openai/codex` TUI renders changed files as a compact summary first, then lets the user inspect per-file diffs from the change list instead of navigating away to a file URL.
-- The canonical per-file payload remains `fileChange.changes[*].diff`; `turn/diff/updated` is useful as turn-level supplemental state but is not required to render an individual file diff viewer.
-- For rename/move cases, the target syntax/language and display label should prefer `move_path` when present, while still keeping the original path visible in the header.
-- A safe web fallback is:
-  - open an in-app modal/panel from the changed-file summary row
-  - render unified diff hunks with separate old/new line gutters
-  - fall back to synthetic add/delete-only rendering when only raw file content is available
-  - show an explicit empty-state message when summaries were recovered from assistant text but no diff payload survived in thread history
-
-## Findings: Session JSONL Patch Recovery (2026-03-30)
-
-- In this workspace with Codex CLI `0.116.0`, `thread/read` can return full turn/item history while still omitting any persisted `fileChange` items for older turns.
-- The raw session JSONL referenced by `thread.path` can still preserve edit intent through `response_item.type = "custom_tool_call"` entries where `name = "apply_patch"` and `input` contains the patch body.
-- A practical parity fallback for historical diff viewing is:
-  - resolve the session JSONL from `thread/read`
-  - group `apply_patch` tool calls by `turn_context.turn_id`
-  - parse per-file sections from the patch body
-  - synthesize `fileChange`-like UI metadata only when canonical `fileChange` items are missing
-
-## Findings: Mobile Diff Viewer Layout (2026-03-30)
-
-- Official Codex references inspected here cover compact file summaries and per-file diff inspection, but do not provide a distinct mobile-web layout pattern for narrow viewports.
-- For this repo, a conservative mobile fallback is more usable than keeping the desktop split pane:
-  - preserve the desktop two-column viewer on wide screens
-  - switch to a single-column full-screen diff on narrow screens
-  - move the changed-file list behind a top toolbar trigger and reveal it as a bottom sheet
-  - keep line numbers visible but shrink their gutter widths on mobile so diff code keeps most of the screen width
-
-## Findings: Build Badge Placement On Mobile (2026-03-30)
-
-- The global top-right build badge in `App.vue` is acceptable on desktop but can overlap transient mobile overlays such as the diff viewer because it sits above content with a fixed viewport anchor.
-- A safer mobile fallback is:
-  - hide the floating badge on mobile
-  - expose the same version/worktree string inside the existing Settings panel instead of adding another mobile-only surface
