@@ -389,31 +389,33 @@
                     </li>
                   </ul>
                 </div>
-                <ComposerRuntimeDropdown
-                  class="new-thread-runtime-dropdown"
-                  v-model="newThreadRuntime"
-                />
-                <div v-if="newThreadRuntime === 'worktree'" class="new-thread-branch-select">
-                  <p class="new-thread-branch-select-label">Base branch</p>
-                  <ComposerDropdown
-                    class="new-thread-branch-dropdown"
-                    :model-value="newWorktreeBaseBranch"
-                    :options="newWorktreeBranchDropdownOptions"
-                    placeholder="Select branch"
-                    :enable-search="true"
-                    search-placeholder="Search branches..."
-                    :disabled="isLoadingWorktreeBranches || newWorktreeBranchDropdownOptions.length === 0"
-                    @update:model-value="onSelectNewWorktreeBranch"
+                <div class="new-thread-runtime-row">
+                  <ComposerRuntimeDropdown
+                    class="new-thread-runtime-dropdown"
+                    v-model="newThreadRuntime"
                   />
-                  <p class="new-thread-branch-select-help">
-                    {{
-                      isLoadingWorktreeBranches
-                        ? 'Loading branches…'
-                        : selectedWorktreeBranchLabel
-                          ? `New worktree branch will start from ${selectedWorktreeBranchLabel}.`
-                          : 'No Git branches found for this folder.'
-                    }}
-                  </p>
+                  <div v-if="newThreadRuntime === 'worktree'" class="new-thread-branch-select">
+                    <p class="new-thread-branch-select-label">Base branch</p>
+                    <ComposerDropdown
+                      class="new-thread-branch-dropdown"
+                      :model-value="newWorktreeBaseBranch"
+                      :options="newWorktreeBranchDropdownOptions"
+                      placeholder="Select branch"
+                      :enable-search="true"
+                      search-placeholder="Search branches..."
+                      :disabled="isLoadingWorktreeBranches || newWorktreeBranchDropdownOptions.length === 0"
+                      @update:model-value="onSelectNewWorktreeBranch"
+                    />
+                    <p class="new-thread-branch-select-help">
+                      {{
+                        isLoadingWorktreeBranches
+                          ? 'Loading branches…'
+                          : selectedWorktreeBranchLabel
+                            ? `New worktree branch will start from ${selectedWorktreeBranchLabel}.`
+                            : 'No Git branches found for this folder.'
+                      }}
+                    </p>
+                  </div>
                 </div>
                 <p class="new-thread-runtime-help">
                   <code>Local project</code> uses the selected folder directly. <code>New worktree</code> creates an isolated Git worktree before the first prompt.
@@ -2983,12 +2985,16 @@ async function loadWorktreeBranches(sourceCwd: string): Promise<void> {
   @apply inline-flex h-7 items-center justify-center rounded-xl border border-zinc-200 bg-white px-2.5 text-xs font-medium text-zinc-700 transition hover:bg-zinc-50;
 }
 
+.new-thread-runtime-row {
+  @apply mt-3 w-full max-w-3xl flex flex-col gap-3 sm:flex-row sm:items-start;
+}
+
 .new-thread-runtime-dropdown {
-  @apply mt-3;
+  @apply w-full sm:mt-0 sm:basis-1/2;
 }
 
 .new-thread-branch-select {
-  @apply mt-3 w-full max-w-3xl;
+  @apply w-full sm:basis-1/2;
 }
 
 .new-thread-branch-select-label {
