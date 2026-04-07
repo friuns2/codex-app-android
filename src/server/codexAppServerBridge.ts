@@ -118,6 +118,112 @@ function asRecord(value: unknown): Record<string, unknown> | null {
     : null
 }
 
+function isInlineDataUrl(value: string): boolean {
+  return /^data:/iu.test(value.trim())
+}
+
+function asNonEmptyString(value: unknown): string | null {
+  if (typeof value !== 'string') return null
+  const trimmed = value.trim()
+  return trimmed.length > 0 ? trimmed : null
+}
+
+function toAttachmentLinkTarget(block: Record<string, unknown>, fallback: string): string {
+  const candidate = asNonEmptyString(block.path)
+    ?? asNonEmptyString(block.file_path)
+    ?? asNonEmptyString(block.filename)
+    ?? asNonEmptyString(block.file_id)
+    ?? fallback
+  return candidate.startsWith('file://') ? candidate : `attachment://${candidate}`
+}
+
+function sanitizeInlineUserContentBlock(
+  block: unknown,
+  context: { turnId: string; itemId: string; blockIndex: number },
+): unknown {
+  const record = asRecord(block)
+  if (!record) return block
+
+  const type = asNonEmptyString(record.type) ?? ''
+  const imageUrl = asNonEmptyString(record.url) ?? asNonEmptyString(record.image_url)
+  if (imageUrl && isInlineDataUrl(imageUrl)) {
+    const target = toAttachmentLinkTarget(record, `inline-image/${context.turnId}/${context.itemId}/${String(context.blockIndex)}`)
+    return {
+      type: 'text',
+      text: `[Image attachment](${target})`,
+    }
+  }
+
+  const inlineFileData = asNonEmptyString(record.file_data)
+    ?? asNonEmptyString(record.data)
+    ?? asNonEmptyString(record.base64)
+  if ((type.includes('file') || type === 'input_file' || type === 'file') && inlineFileData) {
+    const target = toAttachmentLinkTarget(record, `inline-file/${context.turnId}/${context.itemId}/${String(context.blockIndex)}`)
+    return {
+      type: 'text',
+      text: `[File attachment](${target})`,
+    }
+  }
+
+  return block
+}
+
+function sanitizeThreadTurnsInlinePayloads(method: string, result: unknown): unknown {
+  if (!THREAD_METHODS_WITH_TURNS.has(method)) return result
+
+  const record = asRecord(result)
+  const thread = asRecord(record?.thread)
+  const turns = Array.isArray(thread?.turns) ? thread.turns : null
+  if (!record || !thread || !turns || turns.length === 0) return result
+
+  let changed = false
+  const nextTurns = turns.map((turn) => {
+    const turnRecord = asRecord(turn)
+    const turnId = asNonEmptyString(turnRecord?.id) ?? 'turn'
+    const items = Array.isArray(turnRecord?.items) ? turnRecord.items : null
+    if (!turnRecord || !items) return turn
+
+    let itemChanged = false
+    const nextItems = items.map((item) => {
+      const itemRecord = asRecord(item)
+      const itemType = asNonEmptyString(itemRecord?.type) ?? ''
+      const itemId = asNonEmptyString(itemRecord?.id) ?? 'item'
+      const content = Array.isArray(itemRecord?.content) ? itemRecord.content : null
+      if (!itemRecord || itemType !== 'userMessage' || !content) return item
+
+      let contentChanged = false
+      const nextContent = content.map((block, blockIndex) => {
+        const sanitized = sanitizeInlineUserContentBlock(block, { turnId, itemId, blockIndex })
+        if (sanitized !== block) contentChanged = true
+        return sanitized
+      })
+
+      if (!contentChanged) return item
+      itemChanged = true
+      return {
+        ...itemRecord,
+        content: nextContent,
+      }
+    })
+
+    if (!itemChanged) return turn
+    changed = true
+    return {
+      ...turnRecord,
+      items: nextItems,
+    }
+  })
+
+  if (!changed) return result
+  return {
+    ...record,
+    thread: {
+      ...thread,
+      turns: nextTurns,
+    },
+  }
+}
+
 function trimThreadTurnsInRpcResult(method: string, result: unknown): unknown {
   if (!THREAD_METHODS_WITH_TURNS.has(method)) return result
 
@@ -1977,7 +2083,8 @@ export function createCodexBridgeMiddleware(): CodexBridgeMiddleware {
         }
 
         const rpcResult = await appServer.rpc(body.method, body.params ?? null)
-        const result = trimThreadTurnsInRpcResult(body.method, rpcResult)
+        const trimmedResult = trimThreadTurnsInRpcResult(body.method, rpcResult)
+        const result = sanitizeThreadTurnsInlinePayloads(body.method, trimmedResult)
         setJson(res, 200, { result })
         return
       }
