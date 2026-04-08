@@ -2569,12 +2569,19 @@ export function useDesktopState() {
     const command = readString(item.command)
     if (!id) return null
     const cwd = typeof item.cwd === 'string' ? item.cwd : null
+    const threadId = extractThreadIdFromNotification(notification)
+    const turnId = readString(params?.turnId) || readString(params?.turn_id)
+    const turnIndex = threadId && turnId
+      ? turnIndexByTurnIdByThreadId.value[threadId]?.[turnId]
+      : undefined
     return {
       id,
       role: 'system',
       text: command,
       messageType: 'commandExecution',
       commandExecution: { command, cwd, status: 'inProgress', aggregatedOutput: '', exitCode: null },
+      turnId: turnId || undefined,
+      turnIndex: typeof turnIndex === 'number' ? turnIndex : undefined,
     }
   }
 
@@ -2602,12 +2609,19 @@ export function useDesktopState() {
       statusRaw === 'failed' ? 'failed' : statusRaw === 'declined' ? 'declined' : statusRaw === 'interrupted' ? 'interrupted' : 'completed'
     const aggregatedOutput = typeof item.aggregatedOutput === 'string' ? item.aggregatedOutput : ''
     const exitCode = typeof item.exitCode === 'number' ? item.exitCode : null
+    const threadId = extractThreadIdFromNotification(notification)
+    const turnId = readString(params?.turnId) || readString(params?.turn_id)
+    const turnIndex = threadId && turnId
+      ? turnIndexByTurnIdByThreadId.value[threadId]?.[turnId]
+      : undefined
     return {
       id,
       role: 'system',
       text: command,
       messageType: 'commandExecution',
       commandExecution: { command, cwd, status, aggregatedOutput, exitCode },
+      turnId: turnId || undefined,
+      turnIndex: typeof turnIndex === 'number' ? turnIndex : undefined,
     }
   }
 
