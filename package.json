@@ -1,6 +1,6 @@
 {
   "name": "codexapp",
-  "version": "0.1.75",
+  "version": "0.1.78",
   "description": "A lightweight web interface for Codex that runs on top of the Codex app-server, allowing remote access from any browser",
   "type": "module",
   "license": "MIT",
