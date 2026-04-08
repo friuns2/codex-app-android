@@ -1759,6 +1759,8 @@ This file tracks manual regression and feature verification steps.
 - `thread/read` RPC is used only as a fallback when the live-state endpoint fails.
 - Stream events endpoint returns buffered notification frames for active threads.
 - Live command executions during an active turn include `turnId` for strict turn scoping.
+- Command execution items are recovered from the session log for old/completed threads.
+- Commands are interleaved with agent messages in correct chronological order (not appended at end).
 
 #### Rollback/Cleanup
 - Revert commits on `thread-stream-parity` branch if behavior is not desired:
