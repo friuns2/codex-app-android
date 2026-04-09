@@ -2,7 +2,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-TARGET_SCRIPT="$SCRIPT_DIR/scripts/fix-codex-worktree-button.sh"
+TARGET_SCRIPT="$SCRIPT_DIR/fix-codex-worktree-button.sh"
 
 if [[ ! -x "$TARGET_SCRIPT" ]]; then
   echo "Error: script not found or not executable: $TARGET_SCRIPT"
