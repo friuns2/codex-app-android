@@ -10,7 +10,17 @@
     </p>
 
     <ul v-else ref="conversationListRef" class="conversation-list" @scroll="onConversationScroll">
-      <template v-for="message in messages" :key="message.id">
+      <li v-if="hasMoreAbove" class="conversation-load-more">
+        <button
+          type="button"
+          class="load-more-button"
+          :disabled="isLoadingMore"
+          @click="loadMoreAbove"
+        >
+          {{ isLoadingMore ? 'Loading…' : 'Load earlier messages' }}
+        </button>
+      </li>
+      <template v-for="message in visibleMessages" :key="message.id">
       <li
         v-if="!hiddenGroupedCommandIds.has(message.id) && !hiddenFileChangeMessageIds.has(message.id)"
         class="conversation-item"
@@ -1239,6 +1249,16 @@ const trackedPendingImages = new WeakSet<HTMLImageElement>()
 const failedMarkdownImageKeys = ref<Set<string>>(new Set())
 const highlightJsModule = ref<HighlightJsModule | null>(null)
 let highlightJsLoader: Promise<void> | null = null
+
+const RENDER_WINDOW_SIZE = 50
+const LOAD_MORE_CHUNK = 30
+const LOAD_MORE_SCROLL_THRESHOLD_PX = 200
+
+const renderWindowStart = ref(0)
+const isLoadingMore = ref(false)
+
+const visibleMessages = computed(() => props.messages.slice(renderWindowStart.value))
+const hasMoreAbove = computed(() => renderWindowStart.value > 0)
 
 const showJumpToLatestButton = computed(
   () => !autoFollowOutput.value && (props.messages.length > 0 || props.pendingRequests.length > 0 || Boolean(props.liveOverlay)),
@@ -3849,6 +3869,25 @@ function jumpToLatest(): void {
   scheduleBottomLock(4)
 }
 
+async function loadMoreAbove(): Promise<void> {
+  const container = conversationListRef.value
+  if (!container || !hasMoreAbove.value || isLoadingMore.value) return
+
+  isLoadingMore.value = true
+
+  const prevScrollHeight = container.scrollHeight
+  const prevScrollTop = container.scrollTop
+
+  renderWindowStart.value = Math.max(0, renderWindowStart.value - LOAD_MORE_CHUNK)
+
+  await nextTick()
+
+  // Restore relative scroll position so the viewport doesn't jump.
+  container.scrollTop = prevScrollTop + (container.scrollHeight - prevScrollHeight)
+
+  isLoadingMore.value = false
+}
+
 defineExpose({
   jumpToLatest,
 })
@@ -3954,6 +3993,7 @@ watch(
   () => props.isLoading,
   async (loading) => {
     if (loading) return
+    renderWindowStart.value = Math.max(0, props.messages.length - RENDER_WINDOW_SIZE)
     await scheduleScrollRestore()
   },
 )
@@ -3964,6 +4004,8 @@ watch(
     localScrollState.value = null
     autoFollowOutput.value = true
     modalImageUrl.value = ''
+    // Apply immediately for cached threads where isLoading never toggles.
+    renderWindowStart.value = Math.max(0, props.messages.length - RENDER_WINDOW_SIZE)
   },
   { flush: 'post' },
 )
@@ -3973,6 +4015,9 @@ function onConversationScroll(): void {
   if (!container || props.isLoading) return
   autoFollowOutput.value = isAtBottom(container)
   emitScrollState(container)
+  if (hasMoreAbove.value && !isLoadingMore.value && container.scrollTop < LOAD_MORE_SCROLL_THRESHOLD_PX) {
+    void loadMoreAbove()
+  }
 }
 
 const failedMarkdownImages = ref(new Set<string>())
@@ -4036,6 +4081,18 @@ onBeforeUnmount(() => {
 
 .conversation-list {
   @apply h-full min-h-0 list-none m-0 px-2 sm:px-6 py-0 overflow-y-auto overflow-x-visible flex flex-col gap-2 sm:gap-3;
+}
+
+.conversation-load-more {
+  @apply flex justify-center py-3 m-0;
+}
+
+.load-more-button {
+  @apply px-4 py-1.5 text-xs rounded-full border border-slate-300 dark:border-slate-600
+         text-slate-500 dark:text-slate-400 bg-transparent
+         hover:bg-slate-100 dark:hover:bg-slate-800
+         disabled:opacity-40 disabled:cursor-not-allowed
+         transition-colors cursor-pointer;
 }
 
 .conversation-item {
