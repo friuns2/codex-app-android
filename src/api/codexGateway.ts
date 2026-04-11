@@ -465,6 +465,7 @@ async function getThreadGroupsV2(): Promise<UiProjectGroup[]> {
     archived: false,
     limit: 100,
     sortKey: 'updated_at',
+    modelProviders: [],
   })
   return normalizeThreadGroupsV2(payload)
 }

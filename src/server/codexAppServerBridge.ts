@@ -2776,6 +2776,7 @@ async function loadAllThreadsForSearch(appServer: AppServerProcess): Promise<Thr
       archived: false,
       limit: 100,
       sortKey: 'updated_at',
+      modelProviders: [],
       cursor,
     }))
     const data = Array.isArray(response?.data) ? response.data : []

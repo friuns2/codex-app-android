@@ -316,6 +316,7 @@ export class TelegramThreadBridge {
       archived: false,
       limit: 20,
       sortKey: 'updated_at',
+      modelProviders: [],
     }))
     const rows = Array.isArray(payload?.data) ? payload.data : []
     const threads: Array<{ id: string; title: string }> = []

@@ -2077,8 +2077,11 @@ Toggle "Free mode" in settings to use free OpenRouter models without an OpenAI A
 - Clearing the custom key reverts to community keys.
 
 #### Thread Persistence
-- Threads are stored in `~/.codex/` by the codex app-server, regardless of free mode state.
+- The codex app-server filters `thread/list` results by `modelProvider` (e.g. `openai` vs `openrouter-free`).
+- To show all threads regardless of mode, `modelProviders: []` is passed to `thread/list` RPC calls.
+- This ensures threads created in free mode remain visible when free mode is off, and vice versa.
 - Toggling free mode ON/OFF preserves all threads — no data is lost.
+- Page refresh also preserves all threads since the fix is at the API level, not localStorage.
 
 #### Known Limitations
 - `wire_api="chat"` is not supported by the codex CLI — must use `wire_api="responses"`.
