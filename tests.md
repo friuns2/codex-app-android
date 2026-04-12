@@ -19,18 +19,111 @@ This file tracks manual regression and feature verification steps.
 #### Rollback/Cleanup
 - <cleanup action, if any>
 
+### Feature: Mobile settings sheet and conversation follow control
+
+#### Prerequisites
+- App is running from this repository.
+- A thread with enough messages to scroll is available.
+- A mobile-sized browser viewport is available, for example `375x812` or `390x844`.
+
+#### Steps
+1. Switch the browser to a mobile-sized viewport and open any thread.
+2. Open the sidebar drawer and tap `Settings`.
+3. Confirm settings opens as a bottom sheet with a visible top header and close button.
+4. Scroll the settings sheet to the bottom and verify the close button remains reachable.
+5. Close the sheet by tapping the close button.
+6. Re-open `Settings`, then close it by tapping the dimmed backdrop outside the sheet.
+7. Re-open `Settings`, then collapse the sidebar drawer from the toolbar and confirm the sheet is dismissed.
+8. Start a prompt that produces streaming output, stay at the bottom, and confirm the conversation continues to follow new output.
+9. While output is still streaming, manually scroll upward in the conversation list.
+10. Confirm the viewport stays on the current reading position and a `Jump to latest` button appears.
+11. Tap `Jump to latest` and confirm the conversation returns to the newest output and resumes following.
+12. On a desktop viewport, open `Settings`, zoom the browser in, and confirm the panel header with the `X` stays visible while the settings content scrolls inside the panel.
+13. While a thread is still responding, change `Model` and `Thinking`, queue a follow-up prompt, and confirm the queued row shows the selected runtime summary.
+14. Let the running turn finish and confirm the queued follow-up starts with the preselected `Model` and `Thinking` values instead of the older in-flight values.
+
+#### Expected Results
+- On mobile, settings is presented as a bottom sheet instead of an inline sidebar block.
+- The settings sheet can be dismissed by the close button, backdrop tap, or by collapsing the sidebar.
+- Long settings content scrolls inside the sheet without trapping the close affordance off-screen.
+- On desktop, the settings panel remains operable under browser zoom because the panel body scrolls independently and the close affordance stays visible.
+- Conversation output only auto-follows while the user is already at the bottom.
+- After the user scrolls upward, new streamed output does not pull the viewport downward.
+- `Jump to latest` reliably restores the latest position and re-enables follow behavior.
+- While a turn is running, model and thinking controls remain editable for the next queued message.
+- Queued messages preserve the model and thinking values that were selected when they were queued.
+
+#### Rollback/Cleanup
+- Close the settings sheet and return the viewport to its previous size.
+- Wait for the active turn to finish or interrupt it if the test thread should not keep running.
+
+### Feature: Settings menu removes legacy entries
+
+#### Prerequisites
+- App is running from this repository.
+- A desktop or mobile browser viewport is available.
+
+#### Steps
+1. Open any thread or the home screen.
+2. Open the left sidebar, then open `Settings`.
+3. Scan the top-level rows in the settings panel.
+4. Confirm `Accounts` is no longer rendered as a section.
+5. Confirm `Require ⌘ + enter to send`, `GitHub trending projects`, `Dictation language`, and `Telegram` are not present in the menu.
+6. Confirm the remaining controls such as `When busy, send as`, `Appearance`, `Chat width`, `Click to toggle dictation`, `Auto send dictation`, `Session`, and `MCP` still render and behave normally.
+7. On a narrow viewport, scroll the settings panel and confirm the reduced menu remains easy to scan without hidden rows resurfacing.
+
+#### Expected Results
+- The five removed items are absent from the settings panel on both desktop and mobile layouts.
+- The remaining settings rows and sections still open, scroll, and close normally.
+- No blank placeholder gaps or broken separators remain where the removed items used to be.
+
+#### Rollback/Cleanup
+- Close the settings panel.
+
+### Feature: Per-session model and thinking selections stay independent
+
+#### Prerequisites
+- App is running from this repository.
+- At least two existing threads are available, or one existing thread plus the ability to start a new thread.
+- The available runtime controls expose at least two distinct `Model` values and two distinct `Thinking` values.
+
+#### Steps
+1. Open thread A.
+2. Change `Model` and `Thinking` to a distinctive pair for thread A, for example `Model A` plus `high`.
+3. Switch to thread B.
+4. Change `Model` and `Thinking` to a different pair for thread B, for example `Model B` plus `minimal`.
+5. Switch back to thread A.
+6. Confirm thread A restores its original `Model` and `Thinking` selections instead of inheriting thread B's values.
+7. Switch again to thread B and confirm thread B still shows its own pair.
+8. From the home/new-thread screen, choose another `Model` and `Thinking` pair, send the first message, and confirm the newly created thread keeps that pair after navigation completes.
+9. If forking is available, fork one of the threads and confirm the fork starts with the source thread's `Model` and `Thinking` values.
+
+#### Expected Results
+- Changing runtime controls in one thread does not overwrite the selections shown in other threads.
+- Returning to a previously visited thread restores the `Model` and `Thinking` values last chosen for that thread.
+- A newly created thread inherits the runtime pair chosen before its first send and keeps it after the thread is created.
+- A forked thread inherits the source thread's runtime pair instead of the currently visible values from another thread.
+
+#### Rollback/Cleanup
+- Restore each tested thread to its preferred runtime selection if needed.
+
 ### Feature: Telegram bot token stored in dedicated global file
 
 #### Prerequisites
 - App server is running from this repository.
 - A valid Telegram bot token is available.
 - Access to `~/.codex/` on the host machine.
+- The app server base URL is known, for example `http://127.0.0.1:4173`.
 
 #### Steps
-1. In the app UI, open Telegram connection and submit a bot token.
+1. Run:
+   `curl -X POST "$BASE_URL/codex-api/telegram/configure-bot" -H "Content-Type: application/json" -d "{\"botToken\":\"$TELEGRAM_BOT_TOKEN\"}"`
 2. Verify file `~/.codex/telegram-bridge.json` exists.
 3. Open `~/.codex/telegram-bridge.json` and confirm it contains a `botToken` field.
-4. Restart the app server and call Telegram status endpoint from UI to confirm it still reports configured.
+4. Restart the app server.
+5. Run:
+   `curl "$BASE_URL/codex-api/telegram/status"`
+6. Confirm the returned payload reports `configured: true`.
 
 #### Expected Results
 - Telegram token is persisted in `~/.codex/telegram-bridge.json`.
@@ -43,14 +136,16 @@ This file tracks manual regression and feature verification steps.
 
 #### Prerequisites
 - App server is running from this repository.
-- Telegram bot already configured in the app.
+- Telegram bot is already configured through `POST /codex-api/telegram/configure-bot`.
 - Access to `~/.codex/telegram-bridge.json`.
+- The app server base URL is known, for example `http://127.0.0.1:4173`.
 
 #### Steps
 1. Send `/start` to the Telegram bot from your DM.
 2. Wait for the app to process the update, then open `~/.codex/telegram-bridge.json`.
 3. Confirm `chatIds` contains your DM chat id as the first element.
-4. In the app, reconnect Telegram bot with the same token.
+4. Re-run:
+   `curl -X POST "$BASE_URL/codex-api/telegram/configure-bot" -H "Content-Type: application/json" -d "{\"botToken\":\"$TELEGRAM_BOT_TOKEN\"}"`
 5. Re-open `~/.codex/telegram-bridge.json` and confirm `chatIds` remains present.
 
 #### Expected Results
@@ -110,7 +205,7 @@ This file tracks manual regression and feature verification steps.
 - App is running from this repository.
 - Home/new-thread screen is open.
 - Appearance is set to `Dark` in Settings.
-- `GitHub trending projects` setting is enabled.
+- The `Trending GitHub projects` section is visible on the home screen.
 
 #### Steps
 1. On the home/new-thread screen, inspect the `Choose folder` dropdown trigger.

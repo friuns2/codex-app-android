@@ -64,7 +64,9 @@ const READ_STATE_STORAGE_KEY = 'codex-web-local.thread-read-state.v1'
 const SCROLL_STATE_STORAGE_KEY = 'codex-web-local.thread-scroll-state.v1'
 const THREAD_TOKEN_USAGE_STORAGE_KEY = 'codex-web-local.thread-token-usage.v1'
 const SELECTED_THREAD_STORAGE_KEY = 'codex-web-local.selected-thread-id.v1'
-const SELECTED_MODEL_STORAGE_KEY = 'codex-web-local.selected-model-id.v1'
+const SELECTED_MODEL_BY_CONTEXT_STORAGE_KEY = 'codex-web-local.selected-model-by-context.v1'
+const LEGACY_SELECTED_MODEL_STORAGE_KEY = 'codex-web-local.selected-model-id.v1'
+const SELECTED_REASONING_EFFORT_BY_CONTEXT_STORAGE_KEY = 'codex-web-local.selected-reasoning-by-context.v1'
 const PROJECT_ORDER_STORAGE_KEY = 'codex-web-local.project-order.v1'
 const PROJECT_DISPLAY_NAME_STORAGE_KEY = 'codex-web-local.project-display-name.v1'
 const COLLABORATION_MODE_STORAGE_KEY = 'codex-web-local.collaboration-mode-by-context.v1'
@@ -304,19 +306,110 @@ function saveSelectedThreadId(threadId: string): void {
   window.localStorage.setItem(SELECTED_THREAD_STORAGE_KEY, threadId)
 }
 
-function loadSelectedModelId(): string {
-  if (typeof window === 'undefined') return ''
-  return window.localStorage.getItem(SELECTED_MODEL_STORAGE_KEY)?.trim() ?? ''
+function normalizeStoredModelId(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : ''
 }
 
-function saveSelectedModelId(modelId: string): void {
+function loadLegacySelectedModelId(): string {
+  if (typeof window === 'undefined') return ''
+  return normalizeStoredModelId(window.localStorage.getItem(LEGACY_SELECTED_MODEL_STORAGE_KEY))
+}
+
+function loadSelectedModelIdMap(): Record<string, string> {
+  if (typeof window === 'undefined') return {}
+
+  try {
+    const raw = window.localStorage.getItem(SELECTED_MODEL_BY_CONTEXT_STORAGE_KEY)
+    if (raw) {
+      const parsed = JSON.parse(raw) as unknown
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {}
+
+      const next: Record<string, string> = {}
+      for (const [contextId, value] of Object.entries(parsed as Record<string, unknown>)) {
+        const normalizedContextId = typeof contextId === 'string' ? contextId.trim() : ''
+        const normalizedModelId = normalizeStoredModelId(value)
+        if (normalizedContextId && normalizedModelId) {
+          next[normalizedContextId] = normalizedModelId
+        }
+      }
+      return next
+    }
+  } catch {
+    // Fall back to the legacy single-selection key below.
+  }
+
+  const legacyModelId = loadLegacySelectedModelId()
+  return legacyModelId
+    ? { [NEW_THREAD_COLLABORATION_MODE_CONTEXT]: legacyModelId }
+    : {}
+}
+
+function saveSelectedModelIdMap(state: Record<string, string>): void {
   if (typeof window === 'undefined') return
-  const normalizedModelId = modelId.trim()
-  if (!normalizedModelId) {
-    window.localStorage.removeItem(SELECTED_MODEL_STORAGE_KEY)
+  if (Object.keys(state).length === 0) {
+    window.localStorage.removeItem(SELECTED_MODEL_BY_CONTEXT_STORAGE_KEY)
+  } else {
+    window.localStorage.setItem(SELECTED_MODEL_BY_CONTEXT_STORAGE_KEY, JSON.stringify(state))
+  }
+  window.localStorage.removeItem(LEGACY_SELECTED_MODEL_STORAGE_KEY)
+}
+
+function normalizeReasoningEffortValue(value: unknown): ReasoningEffort | '' {
+  if (typeof value !== 'string') return ''
+  const normalized = value.trim() as ReasoningEffort | ''
+  if (!normalized) return ''
+  return REASONING_EFFORT_OPTIONS.includes(normalized) ? normalized : ''
+}
+
+function loadSelectedReasoningEffortMap(): Record<string, ReasoningEffort> {
+  if (typeof window === 'undefined') return {}
+
+  try {
+    const raw = window.localStorage.getItem(SELECTED_REASONING_EFFORT_BY_CONTEXT_STORAGE_KEY)
+    if (!raw) return {}
+
+    const parsed = JSON.parse(raw) as unknown
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {}
+
+    const next: Record<string, ReasoningEffort> = {}
+    for (const [contextId, value] of Object.entries(parsed as Record<string, unknown>)) {
+      const normalizedContextId = typeof contextId === 'string' ? contextId.trim() : ''
+      const normalizedEffort = normalizeReasoningEffortValue(value)
+      if (normalizedContextId && normalizedEffort) {
+        next[normalizedContextId] = normalizedEffort
+      }
+    }
+    return next
+  } catch {
+    return {}
+  }
+}
+
+function saveSelectedReasoningEffortMap(state: Record<string, ReasoningEffort>): void {
+  if (typeof window === 'undefined') return
+  if (Object.keys(state).length === 0) {
+    window.localStorage.removeItem(SELECTED_REASONING_EFFORT_BY_CONTEXT_STORAGE_KEY)
     return
   }
-  window.localStorage.setItem(SELECTED_MODEL_STORAGE_KEY, normalizedModelId)
+  window.localStorage.setItem(SELECTED_REASONING_EFFORT_BY_CONTEXT_STORAGE_KEY, JSON.stringify(state))
+}
+
+function readSelectedModelId(
+  state: Record<string, string>,
+  threadId: string,
+  fallbackModelId = '',
+): string {
+  const contextId = toCollaborationModeContextId(threadId)
+  return normalizeStoredModelId(state[contextId]) || normalizeStoredModelId(fallbackModelId)
+}
+
+function readSelectedReasoningEffort(
+  state: Record<string, ReasoningEffort>,
+  threadId: string,
+  fallbackEffort: ReasoningEffort | '' = 'medium',
+): ReasoningEffort | '' {
+  const contextId = toCollaborationModeContextId(threadId)
+  return normalizeReasoningEffortValue(state[contextId]) || normalizeReasoningEffortValue(fallbackEffort) || 'medium'
 }
 
 function loadProjectOrder(): string[] {
@@ -990,6 +1083,8 @@ export function useDesktopState() {
     imageUrls: string[]
     skills: Array<{ name: string; path: string }>
     fileAttachments: FileAttachment[]
+    modelId: string
+    reasoningEffort: ReasoningEffort | ''
     collaborationMode: CollaborationModeKind
   }
   type PendingTurnRequest = {
@@ -1012,11 +1107,19 @@ export function useDesktopState() {
   const selectedCollaborationModeByContext = ref<Record<string, CollaborationModeKind>>(
     loadSelectedCollaborationModeMap(),
   )
+  const selectedModelIdByContext = ref<Record<string, string>>(loadSelectedModelIdMap())
+  const selectedReasoningEffortByContext = ref<Record<string, ReasoningEffort>>(loadSelectedReasoningEffortMap())
+  const defaultModelId = ref(loadLegacySelectedModelId())
+  const defaultReasoningEffort = ref<ReasoningEffort | ''>('medium')
   const selectedCollaborationMode = ref<CollaborationModeKind>(
     readSelectedCollaborationMode(selectedCollaborationModeByContext.value, selectedThreadId.value),
   )
-  const selectedModelId = ref(loadSelectedModelId())
-  const selectedReasoningEffort = ref<ReasoningEffort | ''>('medium')
+  const selectedModelId = ref(
+    readSelectedModelId(selectedModelIdByContext.value, selectedThreadId.value, defaultModelId.value),
+  )
+  const selectedReasoningEffort = ref<ReasoningEffort | ''>(
+    readSelectedReasoningEffort(selectedReasoningEffortByContext.value, selectedThreadId.value, defaultReasoningEffort.value),
+  )
   const selectedSpeedMode = ref<SpeedMode>('standard')
   const readStateByThreadId = ref<Record<string, string>>(loadReadStateMap())
   const scrollStateByThreadId = ref<Record<string, ThreadScrollState>>(loadThreadScrollStateMap())
@@ -1171,6 +1274,31 @@ export function useDesktopState() {
     return insertTurnSummaryMessage(combined, summary)
   })
 
+  function resolveSelectedModelIdForContext(threadId: string): string {
+    const selectedModel = readSelectedModelId(
+      selectedModelIdByContext.value,
+      threadId,
+      defaultModelId.value,
+    )
+    if (selectedModel.length === 0) return ''
+    if (availableModelIds.value.length === 0 || availableModelIds.value.includes(selectedModel)) {
+      return selectedModel
+    }
+    if (defaultModelId.value && availableModelIds.value.includes(defaultModelId.value)) {
+      return defaultModelId.value
+    }
+    return availableModelIds.value[0] ?? ''
+  }
+
+  function syncSelectedRuntimeForContext(threadId: string): void {
+    selectedModelId.value = resolveSelectedModelIdForContext(threadId)
+    selectedReasoningEffort.value = readSelectedReasoningEffort(
+      selectedReasoningEffortByContext.value,
+      threadId,
+      defaultReasoningEffort.value,
+    )
+  }
+
   function setSelectedThreadId(nextThreadId: string): void {
     if (selectedThreadId.value === nextThreadId) return
     selectedThreadId.value = nextThreadId
@@ -1179,13 +1307,70 @@ export function useDesktopState() {
       selectedCollaborationModeByContext.value,
       nextThreadId,
     )
+    syncSelectedRuntimeForContext(nextThreadId)
     activeReasoningItemId = ''
     shouldAutoScrollOnNextAgentEvent = false
   }
 
+  function setSelectedModelIdForContext(threadId: string, modelId: string): void {
+    const contextId = toCollaborationModeContextId(threadId)
+    const normalizedModelId = modelId.trim()
+    const nextState = normalizedModelId
+      ? {
+          ...selectedModelIdByContext.value,
+          [contextId]: normalizedModelId,
+        }
+      : omitKey(selectedModelIdByContext.value, contextId)
+    selectedModelIdByContext.value = nextState
+    saveSelectedModelIdMap(nextState)
+    if (threadId === selectedThreadId.value) {
+      syncSelectedRuntimeForContext(threadId)
+    }
+  }
+
   function setSelectedModelId(modelId: string): void {
-    selectedModelId.value = modelId.trim()
-    saveSelectedModelId(selectedModelId.value)
+    setSelectedModelIdForContext(selectedThreadId.value, modelId)
+  }
+
+  function setSelectedReasoningEffortForContext(threadId: string, effort: ReasoningEffort | ''): void {
+    const normalizedEffort = normalizeReasoningEffortValue(effort)
+    const contextId = toCollaborationModeContextId(threadId)
+    const nextState = normalizedEffort
+      ? {
+          ...selectedReasoningEffortByContext.value,
+          [contextId]: normalizedEffort,
+        }
+      : omitKey(selectedReasoningEffortByContext.value, contextId)
+    selectedReasoningEffortByContext.value = nextState
+    saveSelectedReasoningEffortMap(nextState)
+    if (threadId === selectedThreadId.value) {
+      syncSelectedRuntimeForContext(threadId)
+    }
+  }
+
+  function copyRuntimeSelectionBetweenContexts(sourceThreadId: string, targetThreadId: string): void {
+    setSelectedModelIdForContext(targetThreadId, resolveSelectedModelIdForContext(sourceThreadId))
+    setSelectedReasoningEffortForContext(targetThreadId, readSelectedReasoningEffort(
+      selectedReasoningEffortByContext.value,
+      sourceThreadId,
+      defaultReasoningEffort.value,
+    ))
+  }
+
+  function applyRuntimeSelection(selection: {
+    modelId?: string
+    reasoningEffort?: ReasoningEffort | ''
+    collaborationMode?: CollaborationModeKind
+  }): void {
+    if (typeof selection.modelId === 'string') {
+      setSelectedModelId(selection.modelId)
+    }
+    if (selection.reasoningEffort !== undefined) {
+      setSelectedReasoningEffort(selection.reasoningEffort)
+    }
+    if (selection.collaborationMode) {
+      setSelectedCollaborationMode(selection.collaborationMode)
+    }
   }
 
   function setThreadTokenUsage(threadId: string, usage: UiThreadTokenUsage | null): void {
@@ -1228,9 +1413,9 @@ export function useDesktopState() {
     codexRateLimit.value = nextSnapshot
   }
 
-  async function applyFallbackModelSelection(): Promise<void> {
-    selectedModelId.value = MODEL_FALLBACK_ID
-    saveSelectedModelId(selectedModelId.value)
+  async function applyFallbackModelSelection(threadId = selectedThreadId.value): Promise<void> {
+    defaultModelId.value = MODEL_FALLBACK_ID
+    setSelectedModelIdForContext(threadId, MODEL_FALLBACK_ID)
     if (!availableModelIds.value.includes(MODEL_FALLBACK_ID)) {
       availableModelIds.value = [...availableModelIds.value, MODEL_FALLBACK_ID]
     }
@@ -1267,7 +1452,7 @@ export function useDesktopState() {
     })
 
     try {
-      await applyFallbackModelSelection()
+      await applyFallbackModelSelection(threadId)
       // Remove the failed user turn before replaying on fallback model to avoid duplicated user messages.
       try {
         const rolledBackMessages = await rollbackThread(threadId, 1)
@@ -1329,7 +1514,7 @@ export function useDesktopState() {
     if (effort && !REASONING_EFFORT_OPTIONS.includes(effort)) {
       return
     }
-    selectedReasoningEffort.value = effort
+    setSelectedReasoningEffortForContext(selectedThreadId.value, effort)
   }
 
   async function updateSelectedSpeedMode(mode: SpeedMode): Promise<void> {
@@ -1369,11 +1554,12 @@ export function useDesktopState() {
     modelId: string,
     effort: ReasoningEffort | '',
     collaborationMode: CollaborationModeKind = selectedCollaborationMode.value,
+    speedMode: SpeedMode = selectedSpeedMode.value,
   ): string[] {
     const modelLabel = modelId.trim() || 'default'
     const effortLabel = effort || 'default'
     const modeLabel = collaborationMode === 'plan' ? 'Plan' : 'Default'
-    const speedLabel = selectedSpeedMode.value === 'fast' ? 'Fast' : 'Standard'
+    const speedLabel = speedMode === 'fast' ? 'Fast' : 'Standard'
     return [`Mode: ${modeLabel}`, `Model: ${modelLabel}`, `Thinking: ${effortLabel}`, `Speed: ${speedLabel}`]
   }
 
@@ -1385,25 +1571,11 @@ export function useDesktopState() {
       ])
 
       availableModelIds.value = modelIds
-
-      const hasSelectedModel = selectedModelId.value.length > 0 && modelIds.includes(selectedModelId.value)
-      if (!hasSelectedModel) {
-        if (currentConfig.model && modelIds.includes(currentConfig.model)) {
-          selectedModelId.value = currentConfig.model
-        } else if (modelIds.length > 0) {
-          selectedModelId.value = modelIds[0]
-        } else {
-          selectedModelId.value = ''
-        }
-        saveSelectedModelId(selectedModelId.value)
-      }
-
-      if (
-        currentConfig.reasoningEffort &&
-        REASONING_EFFORT_OPTIONS.includes(currentConfig.reasoningEffort)
-      ) {
-        selectedReasoningEffort.value = currentConfig.reasoningEffort
-      }
+      defaultModelId.value = currentConfig.model && modelIds.includes(currentConfig.model)
+        ? currentConfig.model
+        : (modelIds[0] ?? '')
+      defaultReasoningEffort.value = normalizeReasoningEffortValue(currentConfig.reasoningEffort) || 'medium'
+      syncSelectedRuntimeForContext(selectedThreadId.value)
       selectedSpeedMode.value = currentConfig.speedMode
     } catch {
       // Keep chat UI usable even if model metadata is temporarily unavailable.
@@ -1762,6 +1934,11 @@ export function useDesktopState() {
       [threadId]: normalizedState,
     }
     saveThreadScrollStateMap(scrollStateByThreadId.value)
+  }
+
+  function shouldKeepThreadAtBottom(threadId: string): boolean {
+    if (!threadId) return false
+    return scrollStateByThreadId.value[threadId]?.isAtBottom !== false
   }
 
   function setPersistedMessagesForThread(threadId: string, nextMessages: UiMessage[]): void {
@@ -3046,7 +3223,7 @@ export function useDesktopState() {
     const shouldRetryWithFallback =
       Boolean(completedThreadId) &&
       Boolean(turnErrorMessage) &&
-      selectedModelId.value !== MODEL_FALLBACK_ID &&
+      resolveSelectedModelIdForContext(completedThreadId ?? '') !== MODEL_FALLBACK_ID &&
       isUnsupportedChatGptModelError(new Error(turnErrorMessage))
     if (completedTurn) {
       clearDelayedCompactOverlay(completedTurn.threadId)
@@ -3102,7 +3279,10 @@ export function useDesktopState() {
         })
       }
       error.value = notificationErrorState.message
-      if (selectedModelId.value !== MODEL_FALLBACK_ID && isUnsupportedChatGptModelError(new Error(notificationErrorState.message))) {
+      if (
+        resolveSelectedModelIdForContext(errorThreadId ?? selectedThreadId.value) !== MODEL_FALLBACK_ID
+        && isUnsupportedChatGptModelError(new Error(notificationErrorState.message))
+      ) {
         if (errorThreadId) {
           void retryPendingTurnWithFallback(errorThreadId)
         } else {
@@ -3285,8 +3465,13 @@ export function useDesktopState() {
     }
 
     if (isAgentContentEvent(notification)) {
-      if (shouldAutoScrollOnNextAgentEvent && selectedThreadId.value) {
-        setThreadScrollState(selectedThreadId.value, {
+      if (
+        shouldAutoScrollOnNextAgentEvent
+        && selectedThreadId.value
+        && selectedThreadId.value === notificationThreadId
+        && shouldKeepThreadAtBottom(notificationThreadId)
+      ) {
+        setThreadScrollState(notificationThreadId, {
           scrollTop: 0,
           isAtBottom: true,
           scrollRatio: 1,
@@ -3619,7 +3804,7 @@ export function useDesktopState() {
     const sourceThread = flattenThreads(sourceGroups.value).find((row) => row.id === sourceThreadId)
     const sourceCwd = sourceThread?.cwd?.trim() ?? ''
     const sourceTitle = sourceThread?.title?.trim() ?? 'Forked chat'
-    const selectedModel = selectedModelId.value.trim()
+    const selectedModel = resolveSelectedModelIdForContext(sourceThreadId)
     error.value = ''
 
     try {
@@ -3627,6 +3812,7 @@ export function useDesktopState() {
       if (typeof nextThreadId !== 'string' || !nextThreadId.trim()) return ''
 
       insertOptimisticThread(nextThreadId, sourceCwd, sourceTitle)
+      copyRuntimeSelectionBetweenContexts(sourceThreadId, nextThreadId)
       resumedThreadById.value = {
         ...resumedThreadById.value,
         [nextThreadId]: true,
@@ -3680,6 +3866,7 @@ export function useDesktopState() {
       const forkedCwd = forked.cwd.trim() || sourceThread?.cwd?.trim() || ''
       const forkedThreadTitle = toForkedThreadTitle(sourceThread?.title || sourceThread?.preview || 'Untitled thread')
       insertOptimisticThread(forkedThreadId, forkedCwd, forkedThreadTitle)
+      copyRuntimeSelectionBetweenContexts(normalizedThreadId, forkedThreadId)
       setPersistedMessagesForThread(forkedThreadId, forked.messages)
       loadedMessagesByThreadId.value = {
         ...loadedMessagesByThreadId.value,
@@ -3753,6 +3940,11 @@ export function useDesktopState() {
     mode: 'steer' | 'queue' = 'steer',
     fileAttachments: FileAttachment[] = [],
     queueInsertIndex?: number,
+    runtimeSelection?: {
+      modelId?: string
+      reasoningEffort?: ReasoningEffort | ''
+      collaborationMode?: CollaborationModeKind
+    },
   ): Promise<void> {
     if (isUpdatingSpeedMode.value) return
 
@@ -3765,6 +3957,9 @@ export function useDesktopState() {
     }
 
     const isInProgress = inProgressById.value[threadId] === true
+    const pendingModelId = runtimeSelection?.modelId?.trim() ?? selectedModelId.value.trim()
+    const pendingReasoningEffort = runtimeSelection?.reasoningEffort ?? selectedReasoningEffort.value
+    const pendingCollaborationMode = runtimeSelection?.collaborationMode ?? selectedCollaborationMode.value
 
     if (isInProgress && mode === 'queue') {
       const queue = queuedMessagesByThreadId.value[threadId] ?? []
@@ -3779,7 +3974,9 @@ export function useDesktopState() {
         imageUrls,
         skills,
         fileAttachments,
-        collaborationMode: selectedCollaborationMode.value,
+        modelId: pendingModelId,
+        reasoningEffort: pendingReasoningEffort,
+        collaborationMode: pendingCollaborationMode,
       })
       queuedMessagesByThreadId.value = {
         ...queuedMessagesByThreadId.value,
@@ -3790,7 +3987,18 @@ export function useDesktopState() {
 
     if (isInProgress) {
       shouldAutoScrollOnNextAgentEvent = true
-      void startTurnForThread(threadId, nextText, imageUrls, skills, fileAttachments).catch((unknownError) => {
+      void startTurnForThread(
+        threadId,
+        nextText,
+        imageUrls,
+        skills,
+        fileAttachments,
+        {
+          modelId: pendingModelId,
+          reasoningEffort: pendingReasoningEffort,
+          collaborationMode: pendingCollaborationMode,
+        },
+      ).catch((unknownError) => {
         const errorMessage = unknownError instanceof Error ? unknownError.message : 'Unknown application error'
         setTurnErrorForThread(threadId, errorMessage)
         error.value = errorMessage
@@ -3806,9 +4014,9 @@ export function useDesktopState() {
       {
         label: 'Thinking',
         details: buildPendingTurnDetails(
-          selectedModelId.value,
-          selectedReasoningEffort.value,
-          selectedCollaborationMode.value,
+          pendingModelId,
+          pendingReasoningEffort,
+          pendingCollaborationMode,
         ),
       },
     )
@@ -3816,7 +4024,18 @@ export function useDesktopState() {
     setThreadInProgress(threadId, true)
 
     try {
-      await startTurnForThread(threadId, nextText, imageUrls, skills, fileAttachments)
+      await startTurnForThread(
+        threadId,
+        nextText,
+        imageUrls,
+        skills,
+        fileAttachments,
+        {
+          modelId: pendingModelId,
+          reasoningEffort: pendingReasoningEffort,
+          collaborationMode: pendingCollaborationMode,
+        },
+      )
     } catch (unknownError) {
       shouldAutoScrollOnNextAgentEvent = false
       setThreadInProgress(threadId, false)
@@ -3860,6 +4079,7 @@ export function useDesktopState() {
       if (!threadId) return ''
 
       insertOptimisticThread(threadId, targetCwd, nextText || '[Image]')
+      copyRuntimeSelectionBetweenContexts('', threadId)
       resumedThreadById.value = {
         ...resumedThreadById.value,
         [threadId]: true,
@@ -3919,10 +4139,15 @@ export function useDesktopState() {
     imageUrls: string[] = [],
     skills: Array<{ name: string; path: string }> = [],
     fileAttachments: FileAttachment[] = [],
+    runtimeSelection?: {
+      modelId?: string
+      reasoningEffort?: ReasoningEffort | ''
+      collaborationMode?: CollaborationModeKind
+    },
   ): Promise<void> {
-    const modelId = selectedModelId.value.trim()
-    const reasoningEffort = selectedReasoningEffort.value
-    const collaborationMode = selectedCollaborationMode.value
+    const modelId = runtimeSelection?.modelId?.trim() ?? selectedModelId.value.trim()
+    const reasoningEffort = runtimeSelection?.reasoningEffort ?? selectedReasoningEffort.value
+    const collaborationMode = runtimeSelection?.collaborationMode ?? selectedCollaborationMode.value
     const normalizedText = nextText.trim()
     const normalizedSkills = skills.map((skill) => ({ name: skill.name, path: skill.path }))
     const normalizedFileAttachments = fileAttachments.map((file) => ({ ...file }))
@@ -3956,7 +4181,7 @@ export function useDesktopState() {
         )
       } catch (unknownError) {
         if (modelId && modelId !== MODEL_FALLBACK_ID && isUnsupportedChatGptModelError(unknownError)) {
-          await applyFallbackModelSelection()
+          await applyFallbackModelSelection(threadId)
           setPendingTurnRequest(threadId, {
             text: normalizedText,
             imageUrls: [...imageUrls],
@@ -4023,8 +4248,8 @@ export function useDesktopState() {
       {
         label: 'Thinking',
         details: buildPendingTurnDetails(
-          selectedModelId.value,
-          selectedReasoningEffort.value,
+          next.modelId,
+          next.reasoningEffort,
           next.collaborationMode,
         ),
       },
@@ -4033,8 +4258,17 @@ export function useDesktopState() {
     setTurnErrorForThread(threadId, null)
     setThreadInProgress(threadId, true)
     try {
-      setSelectedCollaborationMode(next.collaborationMode)
-      await startTurnForThread(threadId, next.text, next.imageUrls, next.skills, next.fileAttachments)
+      if (selectedThreadId.value === threadId) {
+        applyRuntimeSelection(next)
+      }
+      await startTurnForThread(
+        threadId,
+        next.text,
+        next.imageUrls,
+        next.skills,
+        next.fileAttachments,
+        next,
+      )
     } catch {
       setThreadInProgress(threadId, false)
       setTurnActivityForThread(threadId, null)
@@ -4525,8 +4759,16 @@ export function useDesktopState() {
     const msg = queue.find((m) => m.id === messageId)
     if (!msg) return
     removeQueuedMessage(messageId)
-    setSelectedCollaborationMode(msg.collaborationMode)
-    void sendMessageToSelectedThread(msg.text, msg.imageUrls, msg.skills, 'steer', msg.fileAttachments)
+    applyRuntimeSelection(msg)
+    void sendMessageToSelectedThread(
+      msg.text,
+      msg.imageUrls,
+      msg.skills,
+      'steer',
+      msg.fileAttachments,
+      undefined,
+      msg,
+    )
   }
 
   function primeSelectedThread(threadId: string): void {
