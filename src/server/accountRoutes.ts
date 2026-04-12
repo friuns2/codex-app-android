@@ -693,6 +693,71 @@ async function importAccountFromAuthPath(path: string): Promise<{
   }
 }
 
+async function syncStoredActiveAccountWithAuth(): Promise<StoredAccountsState> {
+  const state = await readStoredAccountsState()
+
+  let imported: Awaited<ReturnType<typeof readAuthFileFromPath>> | null = null
+  try {
+    imported = await readAuthFileFromPath(getActiveAuthPath())
+  } catch {
+    return state
+  }
+
+  const snapshotPath = getSnapshotPath(toStorageId(imported.accountId))
+  const existing = state.accounts.find((entry) => entry.accountId === imported.accountId) ?? null
+  const nextEntry: StoredAccountEntry = existing
+    ? {
+        ...existing,
+        storageId: toStorageId(imported.accountId),
+        authMode: imported.authMode,
+        email: imported.metadata.email ?? existing.email,
+        planType: imported.metadata.planType ?? existing.planType,
+      }
+    : {
+        accountId: imported.accountId,
+        storageId: toStorageId(imported.accountId),
+        authMode: imported.authMode,
+        email: imported.metadata.email,
+        planType: imported.metadata.planType,
+        lastRefreshedAtIso: new Date().toISOString(),
+        lastActivatedAtIso: null,
+        quotaSnapshot: null,
+        quotaUpdatedAtIso: null,
+        quotaStatus: 'idle',
+        quotaError: null,
+        unavailableReason: null,
+      }
+
+  const shouldPersistState = (
+    state.activeAccountId !== imported.accountId
+    || !existing
+    || existing.storageId !== nextEntry.storageId
+    || existing.authMode !== nextEntry.authMode
+    || existing.email !== nextEntry.email
+    || existing.planType !== nextEntry.planType
+  )
+
+  const hasSnapshot = await fileExists(snapshotPath)
+  if (!shouldPersistState && hasSnapshot) {
+    return state
+  }
+
+  await writeSnapshot(nextEntry.storageId, imported.raw)
+
+  const nextState = withUpsertedAccount({
+    activeAccountId: imported.accountId,
+    accounts: state.accounts,
+  }, nextEntry)
+  await writeStoredAccountsState({
+    activeAccountId: imported.accountId,
+    accounts: nextState.accounts,
+  })
+  return {
+    activeAccountId: imported.accountId,
+    accounts: nextState.accounts,
+  }
+}
+
 export async function handleAccountRoutes(
   req: IncomingMessage,
   res: ServerResponse,
@@ -702,6 +767,7 @@ export async function handleAccountRoutes(
   const { appServer } = context
 
   if (req.method === 'GET' && url.pathname === '/codex-api/accounts') {
+    await syncStoredActiveAccountWithAuth()
     const state = await scheduleAccountsBackgroundRefresh()
     setJson(res, 200, {
       data: {
@@ -713,7 +779,7 @@ export async function handleAccountRoutes(
   }
 
   if (req.method === 'GET' && url.pathname === '/codex-api/accounts/active') {
-    const state = await readStoredAccountsState()
+    const state = await syncStoredActiveAccountWithAuth()
     const active = state.activeAccountId
       ? state.accounts.find((entry) => entry.accountId === state.activeAccountId) ?? null
       : null

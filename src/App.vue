@@ -326,7 +326,7 @@ import {
   searchThreads,
   switchAccount,
 } from './api/codexGateway'
-import type { ReasoningEffort, ThreadScrollState, UiAccountEntry, UiRateLimitWindow } from './types/codex'
+import type { ReasoningEffort, ThreadScrollState, UiAccountEntry, UiRateLimitSnapshot, UiRateLimitWindow } from './types/codex'
 
 const ThreadConversation = defineAsyncComponent(() => import('./components/content/ThreadConversation.vue'))
 const ReviewPane = defineAsyncComponent(() => import('./components/content/ReviewPane.vue'))
@@ -712,12 +712,19 @@ function formatResetDateCompact(resetsAt: number | null): string {
   return `${date.getMonth() + 1}月${date.getDate()}日`
 }
 
+function resolveDisplayedQuota(account: UiAccountEntry): UiRateLimitSnapshot | null {
+  if (account.isActive && codexQuota.value) {
+    return codexQuota.value
+  }
+  return account.quotaSnapshot
+}
+
 function formatAccountQuota(account: UiAccountEntry): string {
   if (isAccountUnavailable(account)) {
     return account.quotaError || '402 Payment Required'
   }
-  const quota = account.quotaSnapshot
-  const window = pickWeeklyQuotaWindow(account)
+  const quota = resolveDisplayedQuota(account)
+  const window = quota ? pickWeeklyQuotaWindow({ ...account, quotaSnapshot: quota }) : null
   if (window) {
     const remainingPercent = Math.max(0, Math.min(100, 100 - Math.round(window.usedPercent)))
     const refreshDate = formatResetDateCompact(window.resetsAt)
