@@ -292,11 +292,12 @@
             class="thread-composer-mic"
             :class="{
               'thread-composer-mic--active': dictationState === 'recording',
+              'thread-composer-mic--transcribing': dictationState === 'transcribing',
             }"
             type="button"
             :aria-label="dictationButtonLabel"
             :title="dictationButtonLabel"
-            :disabled="isInteractionDisabled"
+            :disabled="isInteractionDisabled || dictationState === 'transcribing'"
             @click="onDictationToggle"
             @pointerdown="onDictationPressStart"
             @pointerup="onDictationPressEnd"
@@ -306,6 +307,7 @@
               v-if="dictationState === 'recording'"
               class="thread-composer-mic-icon thread-composer-mic-icon--stop"
             />
+            <span v-else-if="dictationState === 'transcribing'" class="thread-composer-mic-spinner" aria-hidden="true" />
             <IconTablerMicrophone v-else class="thread-composer-mic-icon" />
           </button>
 
@@ -326,10 +328,10 @@
             class="thread-composer-submit"
             :class="{ 'thread-composer-submit--queue': isTurnInProgress && activeInProgressMode === 'queue' }"
             type="button"
-            :aria-label="isTurnInProgress && activeInProgressMode === 'queue' ? 'Queue message' : 'Send message'"
-            :title="isTurnInProgress ? `Send as ${activeInProgressMode}` : 'Send'"
-            :disabled="!canSubmit"
-            @click="onSubmit(isTurnInProgress ? activeInProgressMode : 'steer')"
+            :aria-label="submitButtonAriaLabel"
+            :title="submitButtonTitle"
+            :disabled="isSubmitButtonDisabled"
+            @click="onPrimarySubmit(isTurnInProgress ? activeInProgressMode : 'steer')"
           >
             <IconTablerArrowUp class="thread-composer-submit-icon" />
           </button>
@@ -496,12 +498,12 @@ const {
   cancel: cancelDictation,
 } = useDictation({
   getLanguage: () => props.dictationLanguage ?? 'auto',
-  onTranscript: (text) => {
+  onTranscript: (text, mode) => {
     draft.value = draft.value ? `${draft.value}\n${text}` : text
     dictationFeedback.value = ''
-    if (props.dictationAutoSend !== false) {
-      const mode = props.isTurnInProgress ? activeInProgressMode.value : 'steer'
-      onSubmit(mode)
+    if (mode === 'send' || props.dictationAutoSend !== false) {
+      const submitMode = props.isTurnInProgress ? activeInProgressMode.value : 'steer'
+      onSubmit(submitMode)
       return
     }
     nextTick(() => inputRef.value?.focus())
@@ -581,6 +583,14 @@ const canSubmit = computed(() => {
   if (pendingAttachmentCount.value > 0) return false
   return draft.value.trim().length > 0 || selectedImages.value.length > 0 || fileAttachments.value.length > 0
 })
+const canRequestDictationSend = computed(() =>
+  dictationState.value === 'recording'
+  && !props.disabled
+  && !props.isUpdatingSpeedMode
+  && !!props.activeThreadId
+  && !isPlanModeWaitingForModel.value
+  && pendingAttachmentCount.value <= 0,
+)
 const hasUnsavedDraft = computed(() =>
   draft.value.trim().length > 0
   || selectedImages.value.length > 0
@@ -618,6 +628,7 @@ const activeInProgressMode = ref<'steer' | 'queue'>(inProgressMode.value)
 const isDictationRecording = computed(() => dictationState.value === 'recording')
 const dictationButtonLabel = computed(() => {
   if (dictationState.value === 'recording') return 'Stop dictation'
+  if (dictationState.value === 'transcribing') return 'Transcribing dictation'
   return props.dictationClickToToggle ? 'Click to dictate' : 'Hold to dictate'
 })
 const dictationErrorText = computed(() =>
@@ -651,6 +662,21 @@ const dictationDurationLabel = computed(() => {
   const minutes = Math.floor(totalSeconds / 60)
   const seconds = totalSeconds % 60
   return `${minutes}:${String(seconds).padStart(2, '0')}`
+})
+const submitButtonAriaLabel = computed(() => {
+  if (dictationState.value === 'recording') return 'Transcribe and send'
+  if (dictationState.value === 'transcribing') return 'Transcribing dictation'
+  return props.isTurnInProgress && activeInProgressMode.value === 'queue' ? 'Queue message' : 'Send message'
+})
+const submitButtonTitle = computed(() => {
+  if (dictationState.value === 'recording') return 'Transcribe and send'
+  if (dictationState.value === 'transcribing') return 'Transcribing dictation'
+  return props.isTurnInProgress ? `Send as ${activeInProgressMode.value}` : 'Send'
+})
+const isSubmitButtonDisabled = computed(() => {
+  if (dictationState.value === 'transcribing') return true
+  if (canRequestDictationSend.value) return false
+  return !canSubmit.value
 })
 
 const placeholderText = computed(() =>
@@ -1031,6 +1057,16 @@ function getCurrentDraftPayload(): ComposerDraftPayload {
 
 function onInterrupt(): void {
   emit('interrupt')
+}
+
+function onPrimarySubmit(mode: 'steer' | 'queue' = 'steer'): void {
+  if (dictationState.value === 'recording') {
+    if (!canRequestDictationSend.value) return
+    stopRecording('send')
+    return
+  }
+  if (dictationState.value === 'transcribing') return
+  onSubmit(mode)
 }
 
 function onModelSelect(value: string): void {
@@ -2069,8 +2105,16 @@ watch(
   @apply bg-red-100 text-red-600 hover:bg-red-200 hover:text-red-700;
 }
 
+.thread-composer-mic--transcribing {
+  @apply bg-zinc-200 text-zinc-600;
+}
+
 .thread-composer-mic-icon {
   @apply h-5 w-5;
+}
+
+.thread-composer-mic-spinner {
+  @apply block h-4 w-4 rounded-full border-2 border-current border-t-transparent animate-spin;
 }
 
 .thread-composer-dictation-waveform-wrap {
