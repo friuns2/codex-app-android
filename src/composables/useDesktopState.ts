@@ -1377,7 +1377,8 @@ export function useDesktopState() {
       }
       availableModelIds.value = nextModelIds
 
-      if (!normalizedSelectedModelId) {
+      const currentModelInNewList = normalizedSelectedModelId && modelIds.includes(normalizedSelectedModelId)
+      if (!normalizedSelectedModelId || !currentModelInNewList) {
         if (normalizedConfiguredModelId && nextModelIds.includes(normalizedConfiguredModelId)) {
           setSelectedModelId(currentConfig.model)
         } else if (nextModelIds.length > 0) {

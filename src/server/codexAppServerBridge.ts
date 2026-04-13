@@ -3340,14 +3340,16 @@ export function createCodexBridgeMiddleware(): CodexBridgeMiddleware {
                 const resp = await fetch(modelsUrl, { headers, signal: AbortSignal.timeout(8000) })
                 if (resp.ok) {
                   const json = await resp.json() as { data?: Array<{ id: string }> }
-                  const ids = (json.data ?? []).map(m => m.id).filter(Boolean)
-                  setJson(res, 200, { data: ids, exclusive: true, source: 'opencode-zen' })
+                  const allIds = (json.data ?? []).map(m => m.id).filter(Boolean)
+                  const freeIds = allIds.filter(id => id.endsWith('-free') || id === 'big-pickle')
+                  const paidIds = allIds.filter(id => !id.endsWith('-free') && id !== 'big-pickle')
+                  setJson(res, 200, { data: [...freeIds, ...paidIds], exclusive: true, source: 'opencode-zen' })
                   return
                 }
               } catch {
                 // OpenCode Zen model fetch failed
               }
-              setJson(res, 200, { data: ['big-pickle'], exclusive: true, source: 'opencode-zen' })
+              setJson(res, 200, { data: ['big-pickle', 'minimax-m2.5-free', 'nemotron-3-super-free', 'trinity-large-preview-free'], exclusive: true, source: 'opencode-zen' })
               return
             }
             if (fmState.provider === 'custom' && fmState.customBaseUrl) {
