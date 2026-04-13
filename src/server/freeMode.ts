@@ -151,6 +151,20 @@ export interface FreeModeState {
   wireApi?: WireApi
 }
 
+export function getFreeModeEnvVars(state: FreeModeState): Record<string, string> {
+  if (!state.enabled || !state.apiKey) return {}
+
+  if (state.provider === 'opencode-zen') {
+    return { OPENCODE_ZEN_API_KEY: state.apiKey }
+  }
+
+  if (state.provider === 'custom' && state.customBaseUrl) {
+    return { CUSTOM_ENDPOINT_API_KEY: state.apiKey }
+  }
+
+  return {}
+}
+
 export function getFreeModeConfigArgs(state: FreeModeState): string[] {
   if (!state.enabled || !state.apiKey) return []
 
@@ -161,7 +175,7 @@ export function getFreeModeConfigArgs(state: FreeModeState): string[] {
       '-c', `model_providers.${OPENCODE_ZEN_PROVIDER_ID}.name="OpenCode Zen"`,
       '-c', `model_providers.${OPENCODE_ZEN_PROVIDER_ID}.base_url="${OPENCODE_ZEN_BASE_URL}"`,
       '-c', `model_providers.${OPENCODE_ZEN_PROVIDER_ID}.wire_api="${wireApi}"`,
-      '-c', `model_providers.${OPENCODE_ZEN_PROVIDER_ID}.experimental_bearer_token="${state.apiKey}"`,
+      '-c', `model_providers.${OPENCODE_ZEN_PROVIDER_ID}.env_key="OPENCODE_ZEN_API_KEY"`,
     ]
   }
 
@@ -172,7 +186,7 @@ export function getFreeModeConfigArgs(state: FreeModeState): string[] {
       '-c', `model_providers.${CUSTOM_PROVIDER_ID}.name="Custom Endpoint"`,
       '-c', `model_providers.${CUSTOM_PROVIDER_ID}.base_url="${state.customBaseUrl}"`,
       '-c', `model_providers.${CUSTOM_PROVIDER_ID}.wire_api="${wireApi}"`,
-      '-c', `model_providers.${CUSTOM_PROVIDER_ID}.experimental_bearer_token="${state.apiKey}"`,
+      '-c', `model_providers.${CUSTOM_PROVIDER_ID}.env_key="CUSTOM_ENDPOINT_API_KEY"`,
     ]
   }
 

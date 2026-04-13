@@ -23,6 +23,7 @@ import {
   getFreeModels,
   FREE_MODE_STATE_FILE,
   getFreeModeConfigArgs,
+  getFreeModeEnvVars,
   type FreeModeState,
 } from './freeMode.js'
 import { getSpawnInvocation } from '../utils/commandInvocation.js'
@@ -2170,29 +2171,35 @@ class AppServerProcess {
     return codexCommand
   }
 
-  private buildAppServerArgs(): string[] {
+  private buildAppServerConfig(): { args: string[]; env: Record<string, string> } {
     const args = [
       'app-server',
       '-c', 'approval_policy="never"',
       '-c', 'sandbox_mode="danger-full-access"',
     ]
+    let extraEnv: Record<string, string> = {}
     const statePath = join(getCodexHomeDir(), FREE_MODE_STATE_FILE)
     try {
       const raw = readFileSync(statePath, 'utf8')
       const state = JSON.parse(raw) as FreeModeState
       args.push(...getFreeModeConfigArgs(state))
+      extraEnv = getFreeModeEnvVars(state)
     } catch {
       // No free-mode state or invalid — use defaults
     }
-    return args
+    return { args, env: extraEnv }
   }
 
   private start(): void {
     if (this.process) return
 
     this.stopping = false
-    const invocation = getSpawnInvocation(this.getCodexCommand(), this.buildAppServerArgs())
-    const proc = spawn(invocation.command, invocation.args, { stdio: ['pipe', 'pipe', 'pipe'] })
+    const config = this.buildAppServerConfig()
+    const invocation = getSpawnInvocation(this.getCodexCommand(), config.args)
+    const spawnEnv = Object.keys(config.env).length > 0
+      ? { ...process.env, ...config.env }
+      : undefined
+    const proc = spawn(invocation.command, invocation.args, { stdio: ['pipe', 'pipe', 'pipe'], ...(spawnEnv ? { env: spawnEnv } : {}) })
     this.process = proc
 
     proc.stdout.setEncoding('utf8')
