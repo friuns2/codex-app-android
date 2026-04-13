@@ -240,6 +240,7 @@ fi
 
 ui_pid=""
 tunnel_pid=""
+clean_tunnel_token_file=""
 
 cleanup() {
   trap - EXIT INT TERM
@@ -256,6 +257,9 @@ cleanup() {
   fi
   if [[ -n "${ui_pid}" ]]; then
     wait "${ui_pid}" 2>/dev/null || true
+  fi
+  if [[ -n "${clean_tunnel_token_file}" ]]; then
+    rm -f "${clean_tunnel_token_file}" 2>/dev/null || true
   fi
 }
 
@@ -289,12 +293,17 @@ unset CODEXUI_PASSWORD
 
 if [[ "${forward_tunnel}" == true ]]; then
   need_cmd cloudflared
-  log "Starting cloudflared named tunnel -> http://127.0.0.1:${port}"
+  log "Starting cloudflared named tunnel over http2 -> http://127.0.0.1:${port}"
   if cloudflared_supports_token_file; then
-    cloudflared tunnel run --token-file "${tunnel_token_file}" &
+    tunnel_token="$(read_tunnel_token)"
+    clean_tunnel_token_file="$(mktemp)"
+    chmod 600 "${clean_tunnel_token_file}"
+    printf '%s\n' "${tunnel_token}" > "${clean_tunnel_token_file}"
+    unset tunnel_token
+    cloudflared tunnel run --protocol http2 --token-file "${clean_tunnel_token_file}" &
   else
     tunnel_token="$(read_tunnel_token)"
-    TUNNEL_TOKEN="${tunnel_token}" cloudflared tunnel run &
+    TUNNEL_TOKEN="${tunnel_token}" cloudflared tunnel run --protocol http2 &
     unset tunnel_token
   fi
   tunnel_pid="$!"

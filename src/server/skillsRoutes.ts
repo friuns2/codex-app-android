@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process'
-import { mkdtemp, readFile, readdir, rm, mkdir, stat } from 'node:fs/promises'
+import { lstat, mkdtemp, readFile, readdir, rm, mkdir, stat } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { homedir, tmpdir } from 'node:os'
@@ -1001,6 +1001,24 @@ async function ensureCodexAgentsFilesArePlainFiles(): Promise<void> {
   const skillsDir = join(codexHomeDir, 'skills')
   const skillsAgentsPath = join(skillsDir, 'AGENTS.md')
   const codexAgentsPath = join(codexHomeDir, 'AGENTS.md')
+
+  async function getPathState(targetPath: string): Promise<'missing' | 'file' | 'unsafe'> {
+    try {
+      const info = await lstat(targetPath)
+      return info.isFile() ? 'file' : 'unsafe'
+    } catch {
+      return 'missing'
+    }
+  }
+
+  const codexAgentsState = await getPathState(codexAgentsPath)
+  const skillsAgentsState = await getPathState(skillsAgentsPath)
+  const needsRepair = codexAgentsState === 'unsafe' || skillsAgentsState === 'unsafe'
+
+  // Avoid materializing AGENTS.md files on startup when they do not already exist.
+  // We only rewrite when repairing a symlink or another non-file path hazard.
+  if (!needsRepair) return
+
   await mkdir(skillsDir, { recursive: true })
   let content = ''
   try {
@@ -1012,10 +1030,16 @@ async function ensureCodexAgentsFilesArePlainFiles(): Promise<void> {
       content = ''
     }
   }
-  await rm(skillsAgentsPath, { force: true, recursive: true })
-  await rm(codexAgentsPath, { force: true, recursive: true })
-  await writeFile(skillsAgentsPath, content, 'utf8')
-  await writeFile(codexAgentsPath, content, 'utf8')
+
+  if (skillsAgentsState === 'unsafe') {
+    await rm(skillsAgentsPath, { force: true, recursive: true })
+    await writeFile(skillsAgentsPath, content, 'utf8')
+  }
+
+  if (codexAgentsState === 'unsafe') {
+    await rm(codexAgentsPath, { force: true, recursive: true })
+    await writeFile(codexAgentsPath, content, 'utf8')
+  }
 }
 
 async function runSkillsSyncStartup(appServer: AppServerLike): Promise<void> {
