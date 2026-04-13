@@ -247,14 +247,23 @@ function ensureCodexInstalled(): string | null {
   return codexCommand
 }
 
-function resolvePassword(input: string | boolean): string | undefined {
+type ResolvedPassword = {
+  value?: string
+  source: 'disabled' | 'explicit' | 'env' | 'generated'
+}
+
+function resolvePassword(input: string | boolean): ResolvedPassword {
   if (input === false) {
-    return undefined
+    return { source: 'disabled' }
   }
   if (typeof input === 'string') {
-    return input
+    return { value: input, source: 'explicit' }
   }
-  return generatePassword()
+  const fromEnv = process.env.CODEXUI_PASSWORD?.trim()
+  if (fromEnv) {
+    return { value: fromEnv, source: 'env' }
+  }
+  return { value: generatePassword(), source: 'generated' }
 }
 
 function printTermuxKeepAlive(lines: string[]): void {
@@ -355,6 +364,10 @@ async function startCloudflaredTunnel(command: string, localPort: number): Promi
 }
 
 function listenWithFallback(server: ReturnType<typeof createServer>, startPort: number): Promise<number> {
+  return listenWithFallbackOnHost(server, startPort, '0.0.0.0')
+}
+
+function listenWithFallbackOnHost(server: ReturnType<typeof createServer>, startPort: number, host: string): Promise<number> {
   return new Promise((resolve, reject) => {
     const attempt = (port: number) => {
       const onError = (error: NodeJS.ErrnoException) => {
@@ -372,7 +385,7 @@ function listenWithFallback(server: ReturnType<typeof createServer>, startPort: 
 
       server.once('error', onError)
       server.once('listening', onListening)
-      server.listen(port, '0.0.0.0')
+      server.listen(port, host)
     }
 
     attempt(startPort)
@@ -439,11 +452,13 @@ async function addProjectOnly(projectPath: string): Promise<void> {
 }
 
 async function startServer(options: {
+  host: string
   port: string
   password: string | boolean
   tunnel: boolean
   open: boolean
   login: boolean
+  strictLocalAuth: boolean
   projectPath?: string
 }) {
   const version = await readCliVersion()
@@ -466,10 +481,13 @@ async function startServer(options: {
   }
   const requestedPort = parseInt(options.port, 10)
   const password = resolvePassword(options.password)
-  const { app, dispose, attachWebSocket } = createApp({ password })
+  const { app, dispose, attachWebSocket } = createApp({
+    password: password.value,
+    trustLocalhost: !options.strictLocalAuth,
+  })
   const server = createServer(app)
   attachWebSocket(server)
-  const port = await listenWithFallback(server, requestedPort)
+  const port = await listenWithFallbackOnHost(server, requestedPort, options.host)
   let tunnelChild: ReturnType<typeof spawn> | null = null
   let tunnelUrl: string | null = null
 
@@ -494,9 +512,9 @@ async function startServer(options: {
     `  Version:  ${version}`,
     '  GitHub:   https://github.com/friuns2/codexui',
     '',
-    `  Bind:     http://0.0.0.0:${String(port)}`,
+    `  Bind:     http://${options.host}:${String(port)}`,
   ]
-  const accessUrls = getAccessibleUrls(port)
+  const accessUrls = options.host === '0.0.0.0' ? getAccessibleUrls(port) : [`http://${options.host}:${String(port)}`]
   if (accessUrls.length > 0) {
     lines.push(`  Local:    ${accessUrls[0]}`)
     for (const accessUrl of accessUrls.slice(1)) {
@@ -508,8 +526,12 @@ async function startServer(options: {
     lines.push(`  Requested port ${String(requestedPort)} was unavailable; using ${String(port)}.`)
   }
 
-  if (password) {
-    lines.push(`  Password: ${password}`)
+  if (password.source === 'generated' && password.value) {
+    lines.push(`  Password: ${password.value}`)
+  } else if (password.source === 'env') {
+    lines.push('  Password: configured via CODEXUI_PASSWORD')
+  } else if (password.source === 'explicit') {
+    lines.push('  Password: configured via CLI flag')
   }
   if (tunnelUrl) {
     lines.push(`  Tunnel:   ${tunnelUrl}`)
@@ -555,9 +577,11 @@ async function runLogin() {
 program
   .argument('[projectPath]', 'project directory to open on launch')
   .option('--open-project <path>', 'open project directory on launch (Codex desktop parity)')
+  .option('-H, --host <host>', 'host to listen on', '0.0.0.0')
   .option('-p, --port <port>', 'port to listen on', '5999')
   .option('--password <pass>', 'set a specific password')
   .option('--no-password', 'disable password protection')
+  .option('--strict-local-auth', 'require password auth even for localhost and same-pod tunnel requests', false)
   .option('--tunnel', 'start cloudflared tunnel', true)
   .option('--no-tunnel', 'disable cloudflared tunnel startup')
   .option('--open', 'open browser on startup', true)
@@ -567,8 +591,10 @@ program
   .action(async (
     projectPath: string | undefined,
     opts: {
+      host: string
       port: string
       password: string | boolean
+      strictLocalAuth: boolean
       tunnel: boolean
       open: boolean
       login: boolean

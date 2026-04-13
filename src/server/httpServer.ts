@@ -15,6 +15,7 @@ const spaEntryFile = join(distDir, 'index.html')
 
 export type ServerOptions = {
   password?: string
+  trustLocalhost?: boolean
 }
 
 export type ServerInstance = {
@@ -71,7 +72,9 @@ function readWildcardPathParam(value: unknown): string {
 export function createServer(options: ServerOptions = {}): ServerInstance {
   const app = express()
   const bridge = createCodexBridgeMiddleware()
-  const authSession = options.password ? createAuthSession(options.password) : null
+  const authSession = options.password
+    ? createAuthSession(options.password, { trustLocalhost: options.trustLocalhost })
+    : null
 
   // 1. Auth middleware (if password is set)
   if (authSession) {

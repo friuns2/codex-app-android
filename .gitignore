@@ -11,5 +11,7 @@ package-lock.json
 pnpm-lock.yaml
 .codex/
 .env.local
+.cloudflared-token
+.codexui-password
 
 package.json

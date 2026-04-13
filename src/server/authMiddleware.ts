@@ -3,6 +3,7 @@ import type { IncomingMessage } from 'node:http'
 import type { RequestHandler, Request, Response, NextFunction } from 'express'
 
 const TOKEN_COOKIE = 'codex_web_local_token'
+const DEFAULT_TRUST_LOCALHOST = true
 
 function constantTimeCompare(a: string, b: string): boolean {
   const bufA = Buffer.from(a)
@@ -24,6 +25,18 @@ function parseCookies(header: string | undefined): Record<string, string> {
   return cookies
 }
 
+function requestUsesSecureTransport(req: Request): boolean {
+  if (req.secure) return true
+  const forwardedProto = req.headers['x-forwarded-proto']
+  if (typeof forwardedProto === 'string') {
+    return forwardedProto.split(',').some((value) => value.trim().toLowerCase() === 'https')
+  }
+  if (Array.isArray(forwardedProto)) {
+    return forwardedProto.some((value) => value.trim().toLowerCase() === 'https')
+  }
+  return false
+}
+
 function isLocalhostRemote(remote: string): boolean {
   return remote === '127.0.0.1' || remote === '::1' || remote === '::ffff:127.0.0.1'
 }
@@ -33,9 +46,10 @@ function isAuthorizedByRequestLike(
   _hostHeader: string | undefined,
   cookieHeader: string | undefined,
   validTokens: Set<string>,
+  trustLocalhost: boolean,
 ): boolean {
   const remote = remoteAddress ?? ''
-  if (isLocalhostRemote(remote)) {
+  if (trustLocalhost && isLocalhostRemote(remote)) {
     return true
   }
 
@@ -95,11 +109,16 @@ export type AuthSession = {
   isRequestAuthorized: (req: IncomingMessage) => boolean
 }
 
-export function createAuthSession(password: string): AuthSession {
+export type AuthSessionOptions = {
+  trustLocalhost?: boolean
+}
+
+export function createAuthSession(password: string, options: AuthSessionOptions = {}): AuthSession {
   const validTokens = new Set<string>()
+  const trustLocalhost = options.trustLocalhost ?? DEFAULT_TRUST_LOCALHOST
 
   const middleware: RequestHandler = (req: Request, res: Response, next: NextFunction): void => {
-    if (isAuthorizedByRequestLike(req.socket.remoteAddress, req.headers.host, req.headers.cookie, validTokens)) {
+    if (isAuthorizedByRequestLike(req.socket.remoteAddress, req.headers.host, req.headers.cookie, validTokens, trustLocalhost)) {
       next()
       return
     }
@@ -122,7 +141,8 @@ export function createAuthSession(password: string): AuthSession {
           const token = randomBytes(32).toString('hex')
           validTokens.add(token)
 
-          res.setHeader('Set-Cookie', `${TOKEN_COOKIE}=${token}; Path=/; HttpOnly; SameSite=Strict`)
+          const secureSuffix = requestUsesSecureTransport(req) ? '; Secure' : ''
+          res.setHeader('Set-Cookie', `${TOKEN_COOKIE}=${token}; Path=/; HttpOnly; SameSite=Strict${secureSuffix}`)
           res.json({ ok: true })
         } catch {
           res.status(400).json({ error: 'Invalid request body' })
@@ -139,7 +159,7 @@ export function createAuthSession(password: string): AuthSession {
   return {
     middleware,
     isRequestAuthorized: (req: IncomingMessage) => (
-      isAuthorizedByRequestLike(req.socket.remoteAddress, req.headers.host, req.headers.cookie, validTokens)
+      isAuthorizedByRequestLike(req.socket.remoteAddress, req.headers.host, req.headers.cookie, validTokens, trustLocalhost)
     ),
   }
 }
