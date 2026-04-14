@@ -47,15 +47,19 @@ export async function rpcCall<T>(method: string, params?: unknown): Promise<T> {
   }
 
   let payload: unknown = null
+  let rawText: string | null = null
   try {
-    payload = await response.json()
+    rawText = await response.text()
+    payload = JSON.parse(rawText)
   } catch {
     payload = null
   }
 
   if (!response.ok) {
+    const detail = extractErrorMessage(payload, '') || rawText?.slice(0, 500) || ''
+    const prefix = `RPC ${method} failed with HTTP ${response.status}`
     throw new CodexApiError(
-      extractErrorMessage(payload, `RPC ${method} failed with HTTP ${response.status}`),
+      detail ? `${prefix}: ${detail}` : prefix,
       {
         code: 'http_error',
         method,

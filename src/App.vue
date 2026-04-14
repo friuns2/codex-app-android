@@ -206,6 +206,9 @@
                   <option value="custom">Custom endpoint</option>
                 </select>
               </div>
+              <div v-if="providerError" class="sidebar-settings-row sidebar-settings-error">
+                {{ providerError }}
+              </div>
               <div v-if="selectedProvider === 'openrouter'" class="sidebar-settings-row sidebar-settings-row--input">
                 <div class="sidebar-settings-provider-info">
                   <span class="sidebar-settings-label">OpenRouter API key</span>
@@ -1063,6 +1066,7 @@ const freeModeCustomKey = ref('')
 const freeModeHasCustomKey = ref(false)
 const freeModeCustomKeyMasked = ref<string | null>(null)
 const freeModeCustomKeySaving = ref(false)
+const providerError = ref('')
 const selectedProvider = ref<'codex' | 'openrouter' | 'opencode-zen' | 'custom'>('codex')
 const customEndpointUrl = ref('')
 const customEndpointKey = ref('')
@@ -2690,12 +2694,13 @@ async function onProviderChange(provider: string): Promise<void> {
         freeModeEnabled.value = true
       }
     }
+    providerError.value = ''
     await refreshAll({ includeSelectedThreadMessages: false, providerChanged: true, awaitAncillaryRefreshes: true })
     if (route.name === 'thread') {
       void router.push({ name: 'home' })
     }
-  } catch {
-    // Silently fail — state unchanged
+  } catch (err) {
+    providerError.value = err instanceof Error ? err.message : 'Failed to switch provider'
   } finally {
     freeModeLoading.value = false
   }
@@ -2707,13 +2712,14 @@ async function saveCustomEndpoint(): Promise<void> {
   if (!url) return
   freeModeCustomKeySaving.value = true
   try {
+    providerError.value = ''
     await setCustomProvider(url, customEndpointKey.value.trim(), {
       wireApi: customEndpointWireApi.value,
     })
     freeModeEnabled.value = true
     await refreshAll({ includeSelectedThreadMessages: false, providerChanged: true, awaitAncillaryRefreshes: true })
-  } catch {
-    // Silently fail
+  } catch (err) {
+    providerError.value = err instanceof Error ? err.message : 'Failed to save custom endpoint'
   } finally {
     freeModeCustomKeySaving.value = false
   }
@@ -2725,14 +2731,15 @@ async function saveOpencodeZen(): Promise<void> {
   if (!key) return
   freeModeCustomKeySaving.value = true
   try {
+    providerError.value = ''
     await setCustomProvider('', key, {
       wireApi: 'chat',
       provider: 'opencode-zen',
     })
     freeModeEnabled.value = true
     await refreshAll({ includeSelectedThreadMessages: false, providerChanged: true, awaitAncillaryRefreshes: true })
-  } catch {
-    // Silently fail
+  } catch (err) {
+    providerError.value = err instanceof Error ? err.message : 'Failed to save OpenCode Zen config'
   } finally {
     freeModeCustomKeySaving.value = false
   }
@@ -3820,6 +3827,10 @@ async function loadWorktreeBranches(sourceCwd: string): Promise<void> {
 
 .sidebar-settings-row--input {
   @apply flex flex-col gap-1 py-1.5;
+}
+
+.sidebar-settings-error {
+  @apply text-xs text-red-600 bg-red-50 rounded px-2 py-1.5 break-words;
 }
 
 .sidebar-settings-key-group {

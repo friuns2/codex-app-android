@@ -193,7 +193,9 @@ export function handleZenProxyRequest(req: IncomingMessage, res: ServerResponse,
           'Authorization': `Bearer ${bearerToken}`,
         },
       }, (upstreamRes) => {
-        if (isStreaming) {
+        const upstreamStatus = upstreamRes.statusCode ?? 500
+
+        if (isStreaming && upstreamStatus >= 200 && upstreamStatus < 300) {
           forwardStreamingResponse(upstreamRes, res, parsed.model)
           return
         }
@@ -201,10 +203,11 @@ export function handleZenProxyRequest(req: IncomingMessage, res: ServerResponse,
         const chunks: Buffer[] = []
         upstreamRes.on('data', (chunk: Buffer) => chunks.push(chunk))
         upstreamRes.on('end', () => {
+          const rawBody = Buffer.concat(chunks).toString()
           try {
-            const upstream = JSON.parse(Buffer.concat(chunks).toString()) as Record<string, unknown>
-            if (upstream.error) {
-              res.writeHead(upstreamRes.statusCode ?? 500, { 'Content-Type': 'application/json' })
+            const upstream = JSON.parse(rawBody) as Record<string, unknown>
+            if (upstream.error || upstreamStatus >= 400) {
+              res.writeHead(upstreamStatus, { 'Content-Type': 'application/json' })
               res.end(JSON.stringify(upstream))
               return
             }
@@ -212,8 +215,9 @@ export function handleZenProxyRequest(req: IncomingMessage, res: ServerResponse,
             res.writeHead(200, { 'Content-Type': 'application/json' })
             res.end(JSON.stringify(translated))
           } catch {
-            res.writeHead(502, { 'Content-Type': 'application/json' })
-            res.end(JSON.stringify({ error: { message: 'Bad gateway: failed to parse upstream response' } }))
+            const detail = rawBody.slice(0, 500).trim()
+            res.writeHead(upstreamStatus >= 400 ? upstreamStatus : 502, { 'Content-Type': 'application/json' })
+            res.end(JSON.stringify({ error: { message: detail || 'Bad gateway: failed to parse upstream response' } }))
           }
         })
       })
