@@ -800,6 +800,15 @@
               </p>
             </div>
             <div class="diff-viewer-toolbar-actions">
+              <a
+                v-if="activeDiffViewerFileHref !== '#'"
+                class="diff-viewer-open-file"
+                :href="activeDiffViewerFileHref"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Open file
+              </a>
               <button
                 v-if="isMobile"
                 type="button"
@@ -886,6 +895,7 @@ import IconTablerArrowUp from '../icons/IconTablerArrowUp.vue'
 import IconTablerCopy from '../icons/IconTablerCopy.vue'
 import IconTablerGitFork from '../icons/IconTablerGitFork.vue'
 import IconTablerX from '../icons/IconTablerX.vue'
+import { buildFilesRouteHref } from '../../utils/fileExplorer'
 
 type HighlightJsModule = (typeof import('highlight.js/lib/common'))['default']
 
@@ -1892,6 +1902,11 @@ const activeDiffViewerChange = computed<UiFileChange | null>(() => {
   if (changes.length === 0) return null
   return changes.find((change) => fileChangeKey(change) === activeDiffViewerChangeKey.value) ?? changes[0]
 })
+const activeDiffViewerFileHref = computed(() => {
+  const change = activeDiffViewerChange.value
+  if (!change) return '#'
+  return buildFilesRouteHref(change.movedToPath || change.path, { cwd: props.cwd })
+})
 
 function inferDiffViewerLanguage(change: UiFileChange): string {
   const targetPath = change.movedToPath || change.path
@@ -2428,8 +2443,7 @@ function toBrowseUrl(pathValue: string): string {
   const resolved = resolveRelativePath(candidatePath, props.cwd)
 
   if (looksLikeAbsolutePath(resolved)) {
-    const normalizedResolved = resolved.startsWith('/') ? resolved : `/${resolved}`
-    return `/codex-local-browse${encodeURI(normalizedResolved)}`
+    return buildFilesRouteHref(resolved, { cwd: props.cwd })
   }
 
   return '#'
@@ -4516,6 +4530,10 @@ onBeforeUnmount(() => {
 
 .diff-viewer-close {
   @apply static shrink-0 border-zinc-200 bg-zinc-100 text-zinc-700;
+}
+
+.diff-viewer-open-file {
+  @apply inline-flex items-center rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 no-underline transition hover:bg-zinc-50;
 }
 
 .diff-viewer-mobile-files-button {

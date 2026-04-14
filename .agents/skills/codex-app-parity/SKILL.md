@@ -534,3 +534,9 @@ If a finding conflicts with current official docs or current official code, trea
 - A safer mobile fallback is:
   - hide the floating badge on mobile
   - expose the same version/worktree string inside the existing Settings panel instead of adding another mobile-only surface
+
+## Findings: App-Server Files UI Baseline (2026-04-14)
+
+- In Codex CLI `0.120.0`, `codex app-server generate-ts --experimental` exposes a stable read-only filesystem baseline for UI work: `fs/readDirectory`, `fs/getMetadata`, and `fs/readFile`, plus write/watch methods that can be layered later.
+- The generated protocol is enough to implement an in-app file browser even when official public docs or official repo UI references do not provide a concrete desktop/web file-explorer spec.
+- `fs/watch` is explicitly connection-scoped via `watchId`; for web clients that use stateless HTTP RPC plus a separate notification transport, treating watch support as a later phase is safer than coupling it into an MVP explorer.

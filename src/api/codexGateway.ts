@@ -1318,6 +1318,90 @@ export async function searchThreads(
   return payload.data ?? { threadIds: [], indexedThreadCount: 0 }
 }
 
+export type FileExplorerEntry = {
+  name: string
+  path: string
+  isDirectory: boolean
+  isFile: boolean
+}
+
+export type FilePathMetadata = {
+  path: string
+  isDirectory: boolean
+  isFile: boolean
+  createdAtMs: number
+  modifiedAtMs: number
+}
+
+export async function getFilePathMetadata(path: string): Promise<FilePathMetadata> {
+  const normalizedPath = path.trim()
+  if (!normalizedPath) {
+    throw new Error('Missing file path')
+  }
+
+  const payload = await callRpc<{
+    isDirectory?: boolean
+    isFile?: boolean
+    createdAtMs?: number
+    modifiedAtMs?: number
+  }>('fs/getMetadata', { path: normalizedPath })
+
+  return {
+    path: normalizedPath,
+    isDirectory: payload.isDirectory === true,
+    isFile: payload.isFile === true,
+    createdAtMs: typeof payload.createdAtMs === 'number' ? payload.createdAtMs : 0,
+    modifiedAtMs: typeof payload.modifiedAtMs === 'number' ? payload.modifiedAtMs : 0,
+  }
+}
+
+export async function readDirectoryEntries(path: string): Promise<FileExplorerEntry[]> {
+  const normalizedPath = path.trim()
+  if (!normalizedPath) {
+    throw new Error('Missing directory path')
+  }
+
+  const payload = await callRpc<{
+    entries?: Array<{
+      fileName?: string
+      isDirectory?: boolean
+      isFile?: boolean
+    }>
+  }>('fs/readDirectory', { path: normalizedPath })
+
+  const entries = Array.isArray(payload.entries) ? payload.entries : []
+  const normalized = entries
+    .map((entry) => {
+      const name = typeof entry.fileName === 'string' ? entry.fileName.trim() : ''
+      if (!name) return null
+      const basePath = normalizedPath.replace(/\/+$/u, '')
+      return {
+        name,
+        path: basePath ? `${basePath}/${name}` : `/${name}`,
+        isDirectory: entry.isDirectory === true,
+        isFile: entry.isFile === true,
+      } satisfies FileExplorerEntry
+    })
+    .filter((entry): entry is FileExplorerEntry => entry !== null)
+
+  normalized.sort((first, second) => {
+    if (first.isDirectory !== second.isDirectory) return first.isDirectory ? -1 : 1
+    return first.name.localeCompare(second.name)
+  })
+
+  return normalized
+}
+
+export async function readFileContentsBase64(path: string): Promise<string> {
+  const normalizedPath = path.trim()
+  if (!normalizedPath) {
+    throw new Error('Missing file path')
+  }
+
+  const payload = await callRpc<{ dataBase64?: string }>('fs/readFile', { path: normalizedPath })
+  return typeof payload.dataBase64 === 'string' ? payload.dataBase64 : ''
+}
+
 function getErrorMessageFromPayload(payload: unknown, fallback: string): string {
   const record = payload && typeof payload === 'object' && !Array.isArray(payload)
     ? (payload as Record<string, unknown>)

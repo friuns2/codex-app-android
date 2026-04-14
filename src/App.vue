@@ -200,6 +200,9 @@
           <template v-if="isSkillsRoute">
             <SkillsHub @skills-changed="onSkillsChanged" />
           </template>
+          <template v-else-if="isFilesRoute">
+            <FileExplorer :path="routeFilePath" :cwd="routeFileCwd" />
+          </template>
           <template v-else-if="isHomeRoute">
             <div class="content-grid">
               <div class="new-thread-empty">
@@ -308,6 +311,7 @@ import ThreadComposer from './components/content/ThreadComposer.vue'
 import QueuedMessages from './components/content/QueuedMessages.vue'
 import ComposerDropdown from './components/content/ComposerDropdown.vue'
 import ComposerRuntimeDropdown from './components/content/ComposerRuntimeDropdown.vue'
+import FileExplorer from './components/content/FileExplorer.vue'
 import SidebarThreadControls from './components/sidebar/SidebarThreadControls.vue'
 import IconTablerSearch from './components/icons/IconTablerSearch.vue'
 import IconTablerSettings from './components/icons/IconTablerSettings.vue'
@@ -328,6 +332,7 @@ import {
   switchAccount,
 } from './api/codexGateway'
 import type { ReasoningEffort, ThreadScrollState, UiAccountEntry, UiRateLimitSnapshot, UiRateLimitWindow } from './types/codex'
+import { buildFilesRouteLocation } from './utils/fileExplorer'
 
 const ThreadConversation = defineAsyncComponent(() => import('./components/content/ThreadConversation.vue'))
 const ReviewPane = defineAsyncComponent(() => import('./components/content/ReviewPane.vue'))
@@ -437,6 +442,14 @@ const routeThreadId = computed(() => {
   const rawThreadId = route.params.threadId
   return typeof rawThreadId === 'string' ? rawThreadId : ''
 })
+const routeFilePath = computed(() => {
+  const rawPath = route.query.path
+  return typeof rawPath === 'string' ? rawPath : ''
+})
+const routeFileCwd = computed(() => {
+  const rawCwd = route.query.cwd
+  return typeof rawCwd === 'string' ? rawCwd : ''
+})
 
 const knownThreadIdSet = computed(() => {
   const ids = new Set<string>()
@@ -450,8 +463,10 @@ const knownThreadIdSet = computed(() => {
 
 const isHomeRoute = computed(() => route.name === 'home')
 const isSkillsRoute = computed(() => route.name === 'skills')
+const isFilesRoute = computed(() => route.name === 'files')
 const contentTitle = computed(() => {
   if (isSkillsRoute.value) return 'Skills'
+  if (isFilesRoute.value) return getPathLeafName(routeFilePath.value) || 'Files'
   if (isHomeRoute.value) return 'New thread'
   return selectedThread.value?.title ?? 'Choose a thread'
 })
@@ -880,8 +895,9 @@ function onStartNewThread(projectName: string): void {
 function onBrowseProjectFiles(projectName: string): void {
   const projectGroup = projectGroups.value.find((group) => group.projectName === projectName)
   const projectCwd = projectGroup?.threads[0]?.cwd?.trim() ?? ''
-  if (!projectCwd || typeof window === 'undefined') return
-  window.open(`/codex-local-browse${encodeURI(projectCwd)}`, '_blank', 'noopener,noreferrer')
+  if (!projectCwd) return
+  if (isMobile.value) setSidebarCollapsed(true)
+  void router.push(buildFilesRouteLocation(projectCwd))
 }
 
 function onStartNewThreadFromToolbar(): void {
@@ -1435,6 +1451,10 @@ async function syncThreadSelectionWithRoute(): Promise<void> {
       return
     }
 
+    if (route.name === 'files') {
+      return
+    }
+
   } finally {
     isRouteSyncInProgress.value = false
   }
@@ -1474,7 +1494,7 @@ watch(
   async (threadId) => {
     if (!hasInitialized.value) return
     if (isRouteSyncInProgress.value) return
-    if (isHomeRoute.value || isSkillsRoute.value) return
+    if (isHomeRoute.value || isSkillsRoute.value || isFilesRoute.value) return
 
     if (!threadId) {
       if (route.name !== 'home') {
