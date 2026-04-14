@@ -1405,9 +1405,11 @@ export function useDesktopState() {
       const normalizedSelectedModelId = readModelIdForThread(selectedThreadId.value)
       const normalizedConfiguredModelId = currentConfig.model.trim()
       const nextModelIds = [...modelIds]
-      for (const modelId of [normalizedSelectedModelId, normalizedConfiguredModelId]) {
-        if (modelId && !nextModelIds.includes(modelId)) {
-          nextModelIds.push(modelId)
+      if (!options?.providerChanged) {
+        for (const modelId of [normalizedSelectedModelId, normalizedConfiguredModelId]) {
+          if (modelId && !nextModelIds.includes(modelId)) {
+            nextModelIds.push(modelId)
+          }
         }
       }
       availableModelIds.value = nextModelIds
