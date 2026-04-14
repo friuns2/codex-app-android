@@ -1383,6 +1383,10 @@ export function useDesktopState() {
       if (!normalizedSelectedModelId || !currentModelInNewList || options?.providerChanged) {
         if (options?.providerChanged && nextModelIds.length > 0) {
           setSelectedModelId(nextModelIds[0])
+          const nextModelMap = cloneStringKeyedRecord(selectedModelIdByContext.value)
+          nextModelMap[NEW_THREAD_COLLABORATION_MODE_CONTEXT] = nextModelIds[0]
+          selectedModelIdByContext.value = nextModelMap
+          saveSelectedModelMap(selectedModelIdByContext.value)
         } else if (normalizedConfiguredModelId && nextModelIds.includes(normalizedConfiguredModelId)) {
           setSelectedModelId(currentConfig.model)
         } else if (nextModelIds.length > 0) {
