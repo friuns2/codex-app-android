@@ -6,6 +6,10 @@ log() {
   printf '[codexapp-current-dir] %s\n' "$*" >&2
 }
 
+log_kv() {
+  printf '[codexapp-current-dir]   %-10s %s\n' "$1" "$2" >&2
+}
+
 fail() {
   log "$*"
   exit 1
@@ -196,6 +200,15 @@ cloudflared_supports_token_file() {
   cloudflared tunnel run --help 2>&1 | grep -q -- '--token-file'
 }
 
+display_value() {
+  local value="${1:-}"
+  if [[ -n "${value}" ]]; then
+    printf '%s' "${value}"
+  else
+    printf '%s' '<default>'
+  fi
+}
+
 if [[ -n "${codex_home}" ]]; then
   export CODEX_HOME="${codex_home}"
 else
@@ -369,6 +382,11 @@ if [[ "${strict_local_auth}" == true ]]; then
 fi
 
 log "Launching codexUI on ${host}:${port}"
+log_kv "user" "${profile}"
+log_kv "CODEX_HOME" "$(display_value "${CODEX_HOME:-}")"
+log_kv "http_proxy" "$(display_value "${http_proxy:-}")"
+log_kv "https_proxy" "$(display_value "${https_proxy:-}")"
+log_kv "all_proxy" "$(display_value "${all_proxy:-}")"
 node "${launch_args[@]}" &
 ui_pid="$!"
 unset CODEXUI_PASSWORD

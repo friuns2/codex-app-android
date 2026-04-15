@@ -1816,6 +1816,7 @@ This file tracks manual regression and feature verification steps.
 - Default `pein_train` behavior stays compatible with current-dir launches and still creates `$PWD/.codex` unless `CODEX_HOME` is already set.
 - `mac` leaves `CODEX_HOME` unset so Codex uses its normal default home path.
 - `mac` uses `http://127.0.0.1:7890` for `http_proxy` and `https_proxy`, plus `socks5://127.0.0.1:7890` for `all_proxy`.
+- Startup logs print the resolved `user`, `CODEX_HOME`, `http_proxy`, `https_proxy`, and `all_proxy` values before launching the app.
 
 #### Rollback/Cleanup
 - Stop the launcher and remove any disposable launch directories created for the test.
