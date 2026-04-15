@@ -18,7 +18,6 @@ need_cmd() {
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 repo_root="$(cd "${script_dir}/.." && pwd -P)"
 launch_dir="$(pwd -P)"
-codex_home="${CODEX_HOME:-${launch_dir}/.codex}"
 local_entry="${repo_root}/dist-cli/index.js"
 frontend_entry="${repo_root}/dist/index.html"
 default_host="${CODEXUI_BIND_HOST:-127.0.0.1}"
@@ -26,18 +25,76 @@ default_port="${CODEXUI_PORT:-5999}"
 default_tunnel_token_file="${repo_root}/.cloudflared-token"
 default_password_file="${repo_root}/.codexui-password"
 
+detect_launch_profile() {
+  local kernel_name=""
+
+  kernel_name="$(uname -s 2>/dev/null || true)"
+  case "${kernel_name}" in
+    Darwin)
+      printf 'mac'
+      return 0
+      ;;
+    Linux)
+      if [[ -f "/.dockerenv" || -f "/run/.containerenv" ]]; then
+        printf 'pein_train'
+        return 0
+      fi
+      if [[ -r "/etc/os-release" ]] && grep -qi 'ubuntu' /etc/os-release; then
+        printf 'pein_train'
+        return 0
+      fi
+      ;;
+  esac
+
+  printf 'pein_train'
+}
+
+default_profile="${CODEXUI_LAUNCH_PROFILE:-$(detect_launch_profile)}"
+
 host="${default_host}"
 port="${default_port}"
 forward_tunnel=false
 tunnel_token_file="${CODEXUI_TUNNEL_TOKEN_FILE:-${default_tunnel_token_file}}"
 password_file="${CODEXUI_PASSWORD_FILE:-${default_password_file}}"
 strict_local_auth=false
+profile="${default_profile}"
+codex_home="${CODEX_HOME:-}"
+profile_default_http_proxy=""
+profile_default_https_proxy=""
+profile_default_all_proxy=""
+
+apply_launch_profile() {
+  local next_profile="$1"
+
+  case "${next_profile}" in
+    pein_train)
+      profile_default_http_proxy="http://127.0.0.1:9090"
+      profile_default_https_proxy="${profile_default_http_proxy}"
+      profile_default_all_proxy=""
+      codex_home="${CODEX_HOME:-${launch_dir}/.codex}"
+      ;;
+    mac)
+      profile_default_http_proxy="http://127.0.0.1:7890"
+      profile_default_https_proxy="${profile_default_http_proxy}"
+      profile_default_all_proxy="socks5://127.0.0.1:7890"
+      codex_home=""
+      ;;
+    *)
+      fail "Unknown launch profile: ${next_profile}. Expected one of: pein_train, mac"
+      ;;
+  esac
+
+  profile="${next_profile}"
+}
+
+apply_launch_profile "${profile}"
 
 usage() {
   cat <<EOF
-Usage: $(basename "${BASH_SOURCE[0]}") [--forward-tunnel] [--host HOST] [--port PORT] [--tunnel-token-file PATH] [--password-file PATH] [--strict-local-auth]
+Usage: $(basename "${BASH_SOURCE[0]}") [--user USER] [--forward-tunnel] [--host HOST] [--port PORT] [--tunnel-token-file PATH] [--password-file PATH] [--strict-local-auth]
 
 Options:
+  --user USER                Launch user. Accepted values: pein_train, mac. Defaults to auto-detected ${default_profile}.
   --forward-tunnel           Start a named cloudflared tunnel alongside codexUI.
   --host HOST                codexUI listen host. Defaults to ${default_host}.
   --port PORT                codexUI listen port. Defaults to ${default_port}.
@@ -51,6 +108,11 @@ EOF
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
+    --user)
+      [[ $# -ge 2 ]] || fail "Missing value for $1"
+      apply_launch_profile "$2"
+      shift 2
+      ;;
     --forward-tunnel)
       forward_tunnel=true
       shift
@@ -134,15 +196,19 @@ cloudflared_supports_token_file() {
   cloudflared tunnel run --help 2>&1 | grep -q -- '--token-file'
 }
 
-export CODEX_HOME="${codex_home}"
+if [[ -n "${codex_home}" ]]; then
+  export CODEX_HOME="${codex_home}"
+else
+  unset CODEX_HOME || true
+fi
 export TELEGRAM_DEFAULT_CWD="${TELEGRAM_DEFAULT_CWD:-${launch_dir}}"
 export CODEXUI_LAUNCH_SCOPE="${CODEXUI_LAUNCH_SCOPE:-${launch_dir}}"
 export CODEXUI_REPO_ROOT="${CODEXUI_REPO_ROOT:-${repo_root}}"
+export CODEXUI_LAUNCH_PROFILE="${profile}"
 export CODEXUI_SERENA_READY_DELAY_MS="${CODEXUI_SERENA_READY_DELAY_MS:-3000}"
 export CODEXUI_SERENA_READY_TIMEOUT_MS="${CODEXUI_SERENA_READY_TIMEOUT_MS:-30000}"
 export CODEXUI_SERENA_RETRY_DELAY_MS="${CODEXUI_SERENA_RETRY_DELAY_MS:-1500}"
 export CODEXUI_SERENA_MAX_RETRIES="${CODEXUI_SERENA_MAX_RETRIES:-3}"
-export http_proxy=http://127.0.0.1:9090
 
 if [[ -z "${CODEXUI_SERENA_REPO_ROOT:-}" ]]; then
   if [[ -d "${launch_dir}/mcp/serena" ]]; then
@@ -152,15 +218,31 @@ if [[ -z "${CODEXUI_SERENA_REPO_ROOT:-}" ]]; then
   fi
 fi
 
-proxy_url="${CODEXUI_PROXY_URL:-${http_proxy:-${HTTP_PROXY:-}}}"
+proxy_url="${CODEXUI_PROXY_URL:-${profile_default_http_proxy}}"
+secure_proxy_url="${CODEXUI_HTTPS_PROXY_URL:-${profile_default_https_proxy:-${proxy_url}}}"
+socket_proxy_url="${CODEXUI_ALL_PROXY_URL:-${profile_default_all_proxy}}"
 if [[ -n "${proxy_url}" ]]; then
   export http_proxy="${proxy_url}"
-  export https_proxy="${https_proxy:-${proxy_url}}"
-  export HTTP_PROXY="${HTTP_PROXY:-${http_proxy}}"
-  export HTTPS_PROXY="${HTTPS_PROXY:-${https_proxy}}"
+  export HTTP_PROXY="${http_proxy}"
+else
+  unset http_proxy HTTP_PROXY || true
+fi
+if [[ -n "${secure_proxy_url}" ]]; then
+  export https_proxy="${secure_proxy_url}"
+  export HTTPS_PROXY="${https_proxy}"
+else
+  unset https_proxy HTTPS_PROXY || true
+fi
+if [[ -n "${socket_proxy_url}" ]]; then
+  export all_proxy="${socket_proxy_url}"
+  export ALL_PROXY="${all_proxy}"
+else
+  unset all_proxy ALL_PROXY || true
 fi
 
-mkdir -p "${CODEX_HOME}"
+if [[ -n "${CODEX_HOME:-}" ]]; then
+  mkdir -p "${CODEX_HOME}"
+fi
 
 deps_ready() {
   [[ -x "${repo_root}/node_modules/.bin/vue-tsc" ]] &&

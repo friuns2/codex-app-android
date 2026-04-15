@@ -66,10 +66,20 @@ cd /path/to/your/project
 bash /path/to/codexUI-main/scripts/codexapp-current-dir.sh
 ```
 
+If you want to force the local Mac flow explicitly:
+
+```bash
+cd /path/to/your/project
+bash /path/to/codexUI-main/scripts/codexapp-current-dir.sh --user mac
+```
+
 This launcher:
 
-- sets `CODEX_HOME=$PWD/.codex`
-- sets `http_proxy` / `https_proxy` to `http://127.0.0.1:9091`
+- auto-detects `mac` on Darwin and otherwise falls back to `pein_train`
+- `pein_train` sets `CODEX_HOME=$PWD/.codex`
+- supports a `mac` profile that unsets `CODEX_HOME` so Codex uses its normal default home
+- sets `http_proxy` / `https_proxy` to the profile default (`pein_train`: `http://127.0.0.1:9090`, `mac`: `http://127.0.0.1:7890`)
+- sets `all_proxy=socks5://127.0.0.1:7890` for the `mac` profile
 - scopes visible threads to the launch directory
 - uses the bundled Serena MCP wrapper for pyright compatibility and symbol-tool readiness probing
 - starts the local built `codexUI` instead of `npx`

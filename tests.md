@@ -1790,3 +1790,32 @@ This file tracks manual regression and feature verification steps.
 
 #### Rollback/Cleanup
 - Close any opened file tabs and remove temporary test messages if needed.
+
+### Feature: Support `pein_train` and `mac` launch profiles in `codexapp-current-dir.sh`
+
+#### Prerequisites
+- Build artifacts already exist locally or let the launcher build them on first run.
+- For `mac` profile verification, ensure a local proxy is listening on `127.0.0.1:7890`.
+- Use a disposable launch directory so it is easy to inspect whether `.codex` is created.
+
+#### Steps
+1. From any disposable directory, run `bash /absolute/path/to/codexUI/scripts/codexapp-current-dir.sh --help` and confirm the help text documents `--user pein_train` and `--user mac`, plus the auto-detected default.
+2. On macOS, run `bash /absolute/path/to/codexUI/scripts/codexapp-current-dir.sh` and confirm the launcher auto-detects `mac`.
+3. On the Ubuntu container, run the same command with no `--user` flag and confirm the launcher auto-detects or falls back to `pein_train`.
+4. In the Ubuntu container, confirm the app scopes to the current directory and that a local `.codex` directory is created under the launch directory when `CODEX_HOME` was not preset.
+5. Stop the launcher.
+6. From a fresh disposable directory on macOS, run `bash /absolute/path/to/codexUI/scripts/codexapp-current-dir.sh --user mac`.
+7. Confirm the app still scopes to the current directory.
+8. Confirm no local `.codex` directory is created automatically when `CODEX_HOME` is unset before launch.
+9. Confirm the `mac` session can reach upstream services through `http://127.0.0.1:7890` and `socks5://127.0.0.1:7890`.
+
+#### Expected Results
+- On macOS, the launcher auto-detects `mac` when `--user` is omitted.
+- On the Ubuntu container, the launcher auto-detects or falls back to `pein_train` when `--user` is omitted.
+- The launcher still accepts an explicit `--user mac` override when requested.
+- Default `pein_train` behavior stays compatible with current-dir launches and still creates `$PWD/.codex` unless `CODEX_HOME` is already set.
+- `mac` leaves `CODEX_HOME` unset so Codex uses its normal default home path.
+- `mac` uses `http://127.0.0.1:7890` for `http_proxy` and `https_proxy`, plus `socks5://127.0.0.1:7890` for `all_proxy`.
+
+#### Rollback/Cleanup
+- Stop the launcher and remove any disposable launch directories created for the test.
