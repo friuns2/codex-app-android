@@ -2378,3 +2378,27 @@ Test Codex CLI with Big Pickle model via OpenCode Zen provider.
 - To restore latest Codex CLI: `npm install -g @openai/codex@latest`
 - Remove `[model_providers.opencode-zen]` and `[profiles.pickle]` from `~/.codex/config.toml`.
 - Remove API key from environment.
+
+### Feature: Live overlay clears when a turn stops
+
+#### Prerequisites
+- App is running from this repository.
+- At least two threads exist, or one thread can be interrupted and later revisited.
+- Use a prompt that produces visible live activity near the bottom of the thread, such as reasoning text or command execution.
+
+#### Steps
+1. Open a thread and send a prompt that causes the bottom live overlay to appear with `Thinking`, `Running command`, or visible reasoning text.
+2. While the overlay is still visible, interrupt the turn from the UI.
+3. Wait for the interrupt flow to settle and the thread to leave the in-progress state.
+4. Start another prompt that produces live overlay content again.
+5. Before that second turn finishes, switch to a different thread.
+6. After the second turn has completed in the background, switch back to the original thread.
+
+#### Expected Results
+- Once the interrupted turn stops, the bottom live overlay row disappears instead of leaving faded or truncated reasoning text behind.
+- Revisiting a thread after it finishes in the background does not show stale truncated live reasoning or stale activity labels at the bottom.
+- Persisted assistant output remains visible as normal.
+- If a real turn error exists, only the error text may remain in the overlay area; stale live reasoning should not.
+
+#### Rollback/Cleanup
+- Delete the temporary test prompts or threads if they were created only for this regression test.

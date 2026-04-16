@@ -1072,8 +1072,11 @@ export function useDesktopState() {
     const threadId = selectedThreadId.value
     if (!threadId) return null
 
-    const activity = turnActivityByThreadId.value[threadId]
-    const reasoningText = (liveReasoningTextByThreadId.value[threadId] ?? '').trim()
+    const isInProgress = inProgressById.value[threadId] === true
+    const activity = isInProgress ? turnActivityByThreadId.value[threadId] : undefined
+    const reasoningText = isInProgress
+      ? (liveReasoningTextByThreadId.value[threadId] ?? '').trim()
+      : ''
     const errorText = (turnErrorByThreadId.value[threadId]?.message ?? '').trim()
 
     if (!activity && !reasoningText && !errorText) return null
@@ -1657,6 +1660,7 @@ export function useDesktopState() {
       }
     } else {
       inProgressById.value = omitKey(inProgressById.value, threadId)
+      clearCompletedTurnLiveState(threadId)
       clearInterruptPersistenceGate(threadId)
     }
     applyThreadFlags()
@@ -1947,6 +1951,9 @@ export function useDesktopState() {
     clearLivePlansForThread(threadId)
     clearLiveReasoningForThread(threadId)
     setTurnActivityForThread(threadId, null)
+    if (threadId === selectedThreadId.value) {
+      activeReasoningItemId = ''
+    }
     if (liveCommandsByThreadId.value[threadId]) {
       liveCommandsByThreadId.value = omitKey(liveCommandsByThreadId.value, threadId)
     }
