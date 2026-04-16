@@ -151,6 +151,7 @@ export function useDictation(options: {
     if (state.value !== 'idle' || !isSupported.value || isStartingRecording) return
     isStartingRecording = true
     stopRequestedBeforeStart = false
+    pendingStopMode = 'insert'
 
     try {
       mediaStream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1 } })
@@ -171,10 +172,13 @@ export function useDictation(options: {
       mediaRecorder.start(250)
       state.value = 'recording'
       if (stopRequestedBeforeStart) {
-        stopRecording()
+        const stopMode = pendingStopMode
+        stopRequestedBeforeStart = false
+        stopRecording(stopMode)
       }
     } catch (error) {
       cleanup()
+      stopRequestedBeforeStart = false
       state.value = 'idle'
       options.onError?.(error)
     } finally {
@@ -203,6 +207,7 @@ export function useDictation(options: {
 
   function cancel() {
     stopRequestedBeforeStart = false
+    pendingStopMode = 'insert'
     cancelTranscription()
     cleanup()
     state.value = 'idle'
@@ -274,6 +279,7 @@ export function useDictation(options: {
   function cleanup() {
     stopWaveformCapture()
     resetWaveformDisplay()
+    pendingStopMode = 'insert'
     if (mediaRecorder) {
       mediaRecorder.ondataavailable = null
       mediaRecorder.onstop = null
@@ -291,7 +297,7 @@ export function useDictation(options: {
   })
 
   function toggleRecording() {
-    if (state.value === 'recording') {
+    if (state.value === 'recording' || (isStartingRecording && state.value === 'idle')) {
       stopRecording()
       return
     }

@@ -1008,8 +1008,8 @@ const accountActionError = ref('')
 const SEND_WITH_ENTER_KEY = 'codex-web-local.send-with-enter.v1'
 const IN_PROGRESS_SEND_MODE_KEY = 'codex-web-local.in-progress-send-mode.v1'
 const DARK_MODE_KEY = 'codex-web-local.dark-mode.v1'
-const DICTATION_CLICK_TO_TOGGLE_KEY = 'codex-web-local.dictation-click-to-toggle.v1'
-const DICTATION_AUTO_SEND_KEY = 'codex-web-local.dictation-auto-send.v1'
+const DICTATION_CLICK_TO_TOGGLE_KEY = 'codex-web-local.dictation-click-to-toggle.v2'
+const DICTATION_AUTO_SEND_KEY = 'codex-web-local.dictation-auto-send.v2'
 const DICTATION_LANGUAGE_KEY = 'codex-web-local.dictation-language.v1'
 
 const GITHUB_TRENDING_PROJECTS_KEY = 'codex-web-local.github-trending-projects.v1'
