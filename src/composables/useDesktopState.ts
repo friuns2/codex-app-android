@@ -649,6 +649,7 @@ function normalizeMessageText(value: string): string {
 }
 
 function removeRedundantLiveAgentMessages(previous: UiMessage[], incoming: UiMessage[]): UiMessage[] {
+  const incomingMessageIds = new Set(incoming.map((message) => message.id))
   const incomingAssistantTexts = new Set(
     incoming
       .filter((message) => message.role === 'assistant')
@@ -662,6 +663,7 @@ function removeRedundantLiveAgentMessages(previous: UiMessage[], incoming: UiMes
 
   const next = previous.filter((message) => {
     if (message.messageType !== 'agentMessage.live') return true
+    if (incomingMessageIds.has(message.id)) return false
     const normalized = normalizeMessageText(message.text)
     if (normalized.length === 0) return false
     return !incomingAssistantTexts.has(normalized)
@@ -1868,6 +1870,12 @@ export function useDesktopState() {
       ...liveAgentMessagesByThreadId.value,
       [threadId]: nextMessages,
     }
+  }
+
+  function clearLiveAgentMessagesForThread(threadId: string): void {
+    if (!threadId) return
+    if (!(threadId in liveAgentMessagesByThreadId.value)) return
+    liveAgentMessagesByThreadId.value = omitKey(liveAgentMessagesByThreadId.value, threadId)
   }
 
   function setLiveFileChangeMessagesForThread(threadId: string, nextMessages: UiMessage[]): void {
@@ -3422,8 +3430,12 @@ export function useDesktopState() {
       setPersistedMessagesForThread(threadId, mergedMessages)
 
       const previousLiveAgent = liveAgentMessagesByThreadId.value[threadId] ?? []
-      const nextLiveAgent = removeRedundantLiveAgentMessages(previousLiveAgent, nextMessages)
-      setLiveAgentMessagesForThread(threadId, nextLiveAgent)
+      if (inProgress) {
+        const nextLiveAgent = removeRedundantLiveAgentMessages(previousLiveAgent, nextMessages)
+        setLiveAgentMessagesForThread(threadId, nextLiveAgent)
+      } else {
+        clearLiveAgentMessagesForThread(threadId)
+      }
       removeLiveCommandsPersistedIn(threadId, nextMessages)
       removeLiveFileChangesPersistedIn(threadId, nextMessages)
 
