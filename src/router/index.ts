@@ -23,6 +23,11 @@ const router = createRouter({
       component: EmptyRouteView,
     },
     {
+      path: '/automations',
+      name: 'automations',
+      component: EmptyRouteView,
+    },
+    {
       path: '/skills',
       name: 'skills',
       component: EmptyRouteView,

@@ -1451,6 +1451,288 @@ function getErrorMessageFromPayload(payload: unknown, fallback: string): string 
 
 export type ThreadTitleCache = { titles: Record<string, string>; order: string[] }
 
+export type UiAutomation = {
+  id: string
+  title: string
+  prompt: string
+  projectPaths: string[]
+  skillNames: string[]
+  enabled: boolean
+  runMode: 'local' | 'worktree'
+  schedulePreset: 'hourly' | 'daily' | 'weekly' | 'custom'
+  cronExpression: string
+  model: string
+  reasoningEffort: string
+  sandboxMode: 'default' | 'read-only' | 'workspace-write' | 'danger-full-access'
+  autoArchiveEmpty: boolean
+  createdAtIso: string
+  updatedAtIso: string
+  nextRunAtIso: string | null
+  lastRunAtIso: string | null
+  lastSuccessAtIso: string | null
+  lastStatus: 'idle' | 'running' | 'succeeded' | 'failed'
+  lastError: string
+}
+
+export type UiAutomationRun = {
+  id: string
+  automationId: string
+  automationTitle: string
+  projectPath: string
+  cwd: string
+  effectiveRunMode: 'local' | 'worktree'
+  worktreeCwd: string
+  status: 'running' | 'completed' | 'failed' | 'archived'
+  unread: boolean
+  archived: boolean
+  startedAtIso: string
+  completedAtIso: string | null
+  summary: string
+  finalMessage: string
+  error: string
+  outputPath: string
+  eventLogPath: string
+  threadId: string
+  model: string
+  reasoningEffort: string
+  sandboxMode: string
+  hasFindings: boolean
+}
+
+export type UiAutomationDefaults = {
+  model: string
+  reasoningEffort: string
+  sandboxMode: string
+}
+
+function normalizeUiAutomation(value: unknown): UiAutomation | null {
+  const record = asRecord(value)
+  if (!record) return null
+  const id = readString(record.id)
+  const title = readString(record.title)
+  const prompt = readString(record.prompt)
+  if (!id || !title || !prompt) return null
+  const sandboxMode = readString(record.sandboxMode)
+  const lastStatus = readString(record.lastStatus)
+  const runMode = readString(record.runMode)
+  const schedulePreset = readString(record.schedulePreset)
+  return {
+    id,
+    title,
+    prompt,
+    projectPaths: readStringArray(record.projectPaths),
+    skillNames: readStringArray(record.skillNames),
+    enabled: readBoolean(record.enabled) ?? true,
+    runMode: runMode === 'worktree' ? 'worktree' : 'local',
+    schedulePreset: schedulePreset === 'hourly' || schedulePreset === 'daily' || schedulePreset === 'weekly' ? schedulePreset : 'custom',
+    cronExpression: readString(record.cronExpression) ?? '',
+    model: readString(record.model) ?? '',
+    reasoningEffort: readString(record.reasoningEffort) ?? '',
+    sandboxMode: sandboxMode === 'read-only' || sandboxMode === 'workspace-write' || sandboxMode === 'danger-full-access' ? sandboxMode : 'default',
+    autoArchiveEmpty: readBoolean(record.autoArchiveEmpty) ?? true,
+    createdAtIso: readString(record.createdAtIso) ?? '',
+    updatedAtIso: readString(record.updatedAtIso) ?? '',
+    nextRunAtIso: readString(record.nextRunAtIso),
+    lastRunAtIso: readString(record.lastRunAtIso),
+    lastSuccessAtIso: readString(record.lastSuccessAtIso),
+    lastStatus: lastStatus === 'running' || lastStatus === 'succeeded' || lastStatus === 'failed' ? lastStatus : 'idle',
+    lastError: readString(record.lastError) ?? '',
+  }
+}
+
+function normalizeUiAutomationRun(value: unknown): UiAutomationRun | null {
+  const record = asRecord(value)
+  if (!record) return null
+  const id = readString(record.id)
+  const automationId = readString(record.automationId)
+  const automationTitle = readString(record.automationTitle)
+  const projectPath = readString(record.projectPath)
+  const cwd = readString(record.cwd)
+  if (!id || !automationId || !automationTitle || !projectPath || !cwd) return null
+  const status = readString(record.status)
+  const effectiveRunMode = readString(record.effectiveRunMode)
+  return {
+    id,
+    automationId,
+    automationTitle,
+    projectPath,
+    cwd,
+    effectiveRunMode: effectiveRunMode === 'worktree' ? 'worktree' : 'local',
+    worktreeCwd: readString(record.worktreeCwd) ?? '',
+    status: status === 'running' || status === 'failed' || status === 'archived' ? status : 'completed',
+    unread: readBoolean(record.unread) ?? false,
+    archived: readBoolean(record.archived) ?? false,
+    startedAtIso: readString(record.startedAtIso) ?? '',
+    completedAtIso: readString(record.completedAtIso),
+    summary: readString(record.summary) ?? '',
+    finalMessage: typeof record.finalMessage === 'string' ? record.finalMessage : '',
+    error: readString(record.error) ?? '',
+    outputPath: readString(record.outputPath) ?? '',
+    eventLogPath: readString(record.eventLogPath) ?? '',
+    threadId: readString(record.threadId) ?? '',
+    model: readString(record.model) ?? '',
+    reasoningEffort: readString(record.reasoningEffort) ?? '',
+    sandboxMode: readString(record.sandboxMode) ?? '',
+    hasFindings: readBoolean(record.hasFindings) ?? false,
+  }
+}
+
+export async function getAutomationsState(): Promise<{
+  automations: UiAutomation[]
+  runs: UiAutomationRun[]
+  defaults: UiAutomationDefaults
+}> {
+  const response = await fetch('/codex-api/automations/state')
+  const payload = (await response.json()) as unknown
+  if (!response.ok) {
+    throw new Error(getErrorMessageFromPayload(payload, 'Failed to load automations'))
+  }
+
+  const envelope = asRecord(payload)
+  const data = asRecord(envelope?.data)
+  const defaultsRecord = asRecord(data?.defaults)
+  return {
+    automations: (Array.isArray(data?.automations) ? data.automations : [])
+      .map((entry) => normalizeUiAutomation(entry))
+      .filter((entry): entry is UiAutomation => entry !== null),
+    runs: (Array.isArray(data?.runs) ? data.runs : [])
+      .map((entry) => normalizeUiAutomationRun(entry))
+      .filter((entry): entry is UiAutomationRun => entry !== null),
+    defaults: {
+      model: readString(defaultsRecord?.model) ?? '',
+      reasoningEffort: readString(defaultsRecord?.reasoningEffort) ?? '',
+      sandboxMode: readString(defaultsRecord?.sandboxMode) ?? '',
+    },
+  }
+}
+
+export async function createAutomation(payload: {
+  title: string
+  prompt: string
+  projectPaths: string[]
+  skillNames: string[]
+  enabled: boolean
+  runMode: 'local' | 'worktree'
+  schedulePreset: 'hourly' | 'daily' | 'weekly' | 'custom'
+  cronExpression: string
+  model: string
+  reasoningEffort: string
+  sandboxMode: 'default' | 'read-only' | 'workspace-write' | 'danger-full-access'
+  autoArchiveEmpty: boolean
+}): Promise<UiAutomation> {
+  const response = await fetch('/codex-api/automations', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  const body = (await response.json()) as unknown
+  if (!response.ok) {
+    throw new Error(getErrorMessageFromPayload(body, 'Failed to create automation'))
+  }
+  const record = asRecord(asRecord(body)?.data)
+  const normalized = normalizeUiAutomation(record)
+  if (!normalized) throw new Error('Failed to create automation')
+  return normalized
+}
+
+export async function updateAutomation(
+  id: string,
+  payload: {
+    title: string
+    prompt: string
+    projectPaths: string[]
+    skillNames: string[]
+    enabled: boolean
+    runMode: 'local' | 'worktree'
+    schedulePreset: 'hourly' | 'daily' | 'weekly' | 'custom'
+    cronExpression: string
+    model: string
+    reasoningEffort: string
+    sandboxMode: 'default' | 'read-only' | 'workspace-write' | 'danger-full-access'
+    autoArchiveEmpty: boolean
+  },
+): Promise<UiAutomation> {
+  const response = await fetch(`/codex-api/automations/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  const body = (await response.json()) as unknown
+  if (!response.ok) {
+    throw new Error(getErrorMessageFromPayload(body, 'Failed to update automation'))
+  }
+  const record = asRecord(asRecord(body)?.data)
+  const normalized = normalizeUiAutomation(record)
+  if (!normalized) throw new Error('Failed to update automation')
+  return normalized
+}
+
+export async function deleteAutomation(id: string): Promise<void> {
+  const response = await fetch(`/codex-api/automations/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+  })
+  const body = (await response.json()) as unknown
+  if (!response.ok) {
+    throw new Error(getErrorMessageFromPayload(body, 'Failed to delete automation'))
+  }
+}
+
+export async function setAutomationEnabled(id: string, enabled: boolean): Promise<UiAutomation> {
+  const response = await fetch(`/codex-api/automations/${encodeURIComponent(id)}/toggle`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ enabled }),
+  })
+  const body = (await response.json()) as unknown
+  if (!response.ok) {
+    throw new Error(getErrorMessageFromPayload(body, 'Failed to toggle automation'))
+  }
+  const record = asRecord(asRecord(body)?.data)
+  const normalized = normalizeUiAutomation(record)
+  if (!normalized) throw new Error('Failed to toggle automation')
+  return normalized
+}
+
+export async function runAutomationNow(id: string): Promise<void> {
+  const response = await fetch(`/codex-api/automations/${encodeURIComponent(id)}/run`, {
+    method: 'POST',
+  })
+  const body = (await response.json()) as unknown
+  if (!response.ok) {
+    throw new Error(getErrorMessageFromPayload(body, 'Failed to run automation'))
+  }
+}
+
+export async function markAutomationRunRead(id: string): Promise<UiAutomationRun> {
+  const response = await fetch(`/codex-api/automations/runs/${encodeURIComponent(id)}/read`, {
+    method: 'POST',
+  })
+  const body = (await response.json()) as unknown
+  if (!response.ok) {
+    throw new Error(getErrorMessageFromPayload(body, 'Failed to update triage item'))
+  }
+  const record = asRecord(asRecord(body)?.data)
+  const normalized = normalizeUiAutomationRun(record)
+  if (!normalized) throw new Error('Failed to update triage item')
+  return normalized
+}
+
+export async function setAutomationRunArchived(id: string, archived: boolean): Promise<UiAutomationRun> {
+  const response = await fetch(`/codex-api/automations/runs/${encodeURIComponent(id)}/archive`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ archived }),
+  })
+  const body = (await response.json()) as unknown
+  if (!response.ok) {
+    throw new Error(getErrorMessageFromPayload(body, 'Failed to update triage archive state'))
+  }
+  const record = asRecord(asRecord(body)?.data)
+  const normalized = normalizeUiAutomationRun(record)
+  if (!normalized) throw new Error('Failed to update triage archive state')
+  return normalized
+}
+
 export async function getThreadTitleCache(): Promise<ThreadTitleCache> {
   try {
     const response = await fetch('/codex-api/thread-titles')

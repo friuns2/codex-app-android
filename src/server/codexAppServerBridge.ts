@@ -9,6 +9,7 @@ import { tmpdir } from 'node:os'
 import { basename, isAbsolute, join, resolve } from 'node:path'
 import { writeFile } from 'node:fs/promises'
 import { handleAccountRoutes } from './accountRoutes.js'
+import { handleAutomationRoutes } from './automationRoutes.js'
 import { handleReviewRoutes } from './reviewGit.js'
 import { readCodexCliVersion } from './runtimeInfo.js'
 import { handleSkillsRoutes, initializeSkillsSyncOnStartup } from './skillsRoutes.js'
@@ -1448,6 +1449,10 @@ export function createCodexBridgeMiddleware(): CodexBridgeMiddleware {
       }
 
       if (await handleSkillsRoutes(req, res, url, { appServer, readJsonBody })) {
+        return
+      }
+
+      if (await handleAutomationRoutes(req, res, url, { appServer, readJsonBody })) {
         return
       }
 

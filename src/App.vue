@@ -57,6 +57,16 @@
           <button
             v-if="!isSidebarCollapsed"
             class="sidebar-skills-link"
+            :class="{ 'is-active': isAutomationsRoute }"
+            type="button"
+            @click="router.push({ name: 'automations' }); isMobile && setSidebarCollapsed(true)"
+          >
+            Automations
+          </button>
+
+          <button
+            v-if="!isSidebarCollapsed"
+            class="sidebar-skills-link"
             :class="{ 'is-active': isSkillsRoute }"
             type="button"
             @click="router.push({ name: 'skills' }); isMobile && setSidebarCollapsed(true)"
@@ -210,6 +220,9 @@
           <template v-if="isPluginsRoute">
             <PluginsHub @skills-changed="onSkillsChanged" />
           </template>
+          <template v-else-if="isAutomationsRoute">
+            <AutomationsHub />
+          </template>
           <template v-else-if="isSkillsRoute">
             <SkillsHub @skills-changed="onSkillsChanged" />
           </template>
@@ -357,6 +370,7 @@ const ThreadConversation = defineAsyncComponent(() => import('./components/conte
 const ReviewPane = defineAsyncComponent(() => import('./components/content/ReviewPane.vue'))
 const SkillsHub = defineAsyncComponent(() => import('./components/content/SkillsHub.vue'))
 const PluginsHub = defineAsyncComponent(() => import('./components/content/PluginsHub.vue'))
+const AutomationsHub = defineAsyncComponent(() => import('./components/content/AutomationsHub.vue'))
 
 const SIDEBAR_COLLAPSED_STORAGE_KEY = 'codex-web-local.sidebar-collapsed.v1'
 const LAST_ACTIVE_THREAD_ROUTE_STORAGE_KEY = 'codex-web-local.last-active-thread-route.v1'
@@ -485,10 +499,12 @@ const knownThreadIdSet = computed(() => {
 
 const isHomeRoute = computed(() => route.name === 'home')
 const isPluginsRoute = computed(() => route.name === 'plugins')
+const isAutomationsRoute = computed(() => route.name === 'automations')
 const isSkillsRoute = computed(() => route.name === 'skills')
 const isFilesRoute = computed(() => route.name === 'files')
 const contentTitle = computed(() => {
   if (isPluginsRoute.value) return 'Plugins'
+  if (isAutomationsRoute.value) return 'Automations'
   if (isSkillsRoute.value) return 'Skills'
   if (isFilesRoute.value) return getPathLeafName(routeFilePath.value) || 'Files'
   if (isHomeRoute.value) return 'New thread'
@@ -1246,7 +1262,7 @@ function onInterruptTurn(): void {
 }
 
 function onExportChat(): void {
-  if (isHomeRoute.value || isPluginsRoute.value || isSkillsRoute.value || typeof document === 'undefined') return
+  if (isHomeRoute.value || isPluginsRoute.value || isAutomationsRoute.value || isSkillsRoute.value || typeof document === 'undefined') return
   if (!selectedThread.value || filteredMessages.value.length === 0) return
   const markdown = buildThreadMarkdown()
   const fileName = buildExportFileName()
@@ -1498,7 +1514,7 @@ async function syncThreadSelectionWithRoute(): Promise<void> {
   isRouteSyncInProgress.value = true
 
   try {
-    if (route.name === 'home' || route.name === 'plugins' || route.name === 'skills') {
+    if (route.name === 'home' || route.name === 'plugins' || route.name === 'automations' || route.name === 'skills') {
       if (selectedThreadId.value !== '') {
         await selectThread('')
       }
@@ -1565,7 +1581,7 @@ watch(
   async (threadId) => {
     if (!hasInitialized.value) return
     if (isRouteSyncInProgress.value) return
-    if (isHomeRoute.value || isPluginsRoute.value || isSkillsRoute.value || isFilesRoute.value) return
+    if (isHomeRoute.value || isPluginsRoute.value || isAutomationsRoute.value || isSkillsRoute.value || isFilesRoute.value) return
 
     if (!threadId) {
       if (route.name !== 'home') {

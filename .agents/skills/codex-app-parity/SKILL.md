@@ -247,6 +247,16 @@ If a finding conflicts with current official docs or current official code, trea
   - selected plugin should also add a separate `mention` content item with `path: "plugin://linear@openai-curated"`
   - both are needed for reliable app-server routing; a mention item alone is not the documented parity path
 
+## Findings: Automations Surface (2026-04-17)
+
+- Official Codex app docs expose a first-class `Automations` concept and deeplink, but `codex-cli 0.121.0` app-server does not currently expose any `automation/*` or `automations/*` RPC methods in `meta/methods`.
+- In this runtime, automation parity therefore cannot be implemented as a thin app-server proxy the way `Plugins` and `Apps` can.
+- The closest official execution surface available locally is `codex exec`, which the official repository explicitly describes as the headless/non-interactive automation surface.
+- A web-shell automation feature built on current official surfaces should:
+  - persist its own schedule/task metadata locally
+  - schedule background runs in the web server process while the app is running
+  - invoke `codex exec` with explicit cwd/model/sandbox overrides rather than waiting for missing app-server automation RPCs
+
 ## Findings: Context Usage Meter (2026-04-01)
 
 - Official `openai/codex` app-server protocol exposes per-thread context telemetry via `thread/tokenUsage/updated` with:
