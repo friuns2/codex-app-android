@@ -68,6 +68,10 @@ function extractCodexUserRequestText(value: string): string {
   return value.slice(markerOffset).trim()
 }
 
+function toLocalImageUrl(path: string): string {
+  return `/codex-local-image?path=${encodeURIComponent(path)}`
+}
+
 function parseUserMessageContent(
   itemId: string,
   content: UserInput[] | undefined,
@@ -85,8 +89,11 @@ function parseUserMessageContent(
     if (block.type === 'image' && typeof block.url === 'string' && block.url.trim().length > 0) {
       images.push(block.url.trim())
     }
+    if (block.type === 'localImage' && typeof block.path === 'string' && block.path.trim().length > 0) {
+      images.push(toLocalImageUrl(block.path.trim()))
+    }
 
-    if (block.type !== 'text' && block.type !== 'image') {
+    if (block.type !== 'text' && block.type !== 'image' && block.type !== 'localImage') {
       rawBlocks.push({
         id: `${itemId}:user-content:${index}`,
         role: 'user',

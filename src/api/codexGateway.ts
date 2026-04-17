@@ -1082,6 +1082,18 @@ export async function forkThread(
 
 export type FileAttachmentParam = { label: string; path: string; fsPath: string }
 
+function extractLocalImagePathFromUrl(value: string): string | null {
+  if (!value) return null
+  try {
+    const parsed = new URL(value, 'http://localhost')
+    if (parsed.pathname !== '/codex-local-image') return null
+    const path = parsed.searchParams.get('path')?.trim() ?? ''
+    return path.length > 0 ? path : null
+  } catch {
+    return null
+  }
+}
+
 function buildTextWithAttachments(
   prompt: string,
   files: FileAttachmentParam[],
@@ -1163,6 +1175,14 @@ export async function startThreadTurn(
     for (const imageUrl of imageUrls) {
       const normalizedUrl = imageUrl.trim()
       if (!normalizedUrl) continue
+      const localImagePath = extractLocalImagePathFromUrl(normalizedUrl)
+      if (localImagePath) {
+        input.push({
+          type: 'localImage',
+          path: localImagePath,
+        })
+        continue
+      }
       input.push({
         type: 'image',
         url: normalizedUrl,

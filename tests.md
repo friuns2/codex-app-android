@@ -2403,79 +2403,65 @@ Test Codex CLI with Big Pickle model via OpenCode Zen provider.
 #### Rollback/Cleanup
 - Delete the temporary test prompts or threads if they were created only for this regression test.
 
-### Feature: API performance logging for `/codex-api/*` requests
+### Feature: Stale partial live assistant text clears after turn completion
 
 #### Prerequisites
-- App server is running from this repository (for example, `pnpm run dev`).
-- Terminal output is visible.
+- App is running from this repository.
+- At least one thread can produce streaming assistant text for several seconds.
 
 #### Steps
-1. Trigger a couple of backend API calls from the UI (for example, open a thread, refresh thread list, or open settings that load API metadata).
-2. In a separate terminal, optionally run:
-   - `curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:4173/codex-api/meta/methods`
-   - `curl -s -o /dev/null -w "%{http_code}\n" -X POST http://127.0.0.1:4173/codex-api/rpc -H "content-type: application/json" -d '{"method":"thread/list","params":{}}'`
-3. Inspect the server terminal logs.
+1. Open a thread and send a prompt that causes the assistant response to stream progressively.
+2. While the assistant text is still streaming, note a distinctive partial sentence near the bottom of the conversation.
+3. Let the turn finish normally.
+4. Confirm the final persisted assistant response remains in the conversation.
+5. Switch to a different thread, then return to the original thread.
+6. Trigger a reload path if needed by refreshing thread data or waiting for the normal thread sync.
 
 #### Expected Results
-- Each completed `/codex-api/*` request writes a performance log line in this format:
-  - `[codex-api-perf] <METHOD> <PATH> -> <STATUS> (<DURATION>ms)`
-- Example entries include:
-  - `[codex-api-perf] GET /codex-api/meta/methods -> 200 (Xms)`
-  - `[codex-api-perf] POST /codex-api/rpc -> 200 (Xms)`
-- Non-API routes (for example static assets) do not emit this log line.
+- The partial live assistant fragment does not remain pinned at the bottom after the turn has completed.
+- Returning to the thread does not resurrect a stale partial assistant sentence beneath the persisted messages.
+- Only the final persisted assistant response remains visible.
 
 #### Rollback/Cleanup
-- Stop the dev server when finished.
+- Delete the temporary test prompt or thread if it was created only for this regression test.
 
-### Feature: Thread search cold-start performance guardrail (issue #46)
+### Feature: Image attachments send as localImage paths (Codex parity)
 
-#### Prerequisites
-- App server is running from this repository.
-- A profile with many threads exists in `~/.codex` so `/codex-api/thread-search` performs indexing.
+#### Prerequisites/Setup
+- Run the app from this repository (`pnpm run dev -- --host 0.0.0.0 --port 4173`).
+- Open a thread (for example the thread URL provided in this task).
+- Have an image available to attach (clipboard screenshot or file picker image).
 
-#### Steps
-1. Start the app and wait for server readiness.
-2. Trigger first-time thread search with a non-empty query:
-   - `curl -s -X POST http://127.0.0.1:4173/codex-api/thread-search -H "content-type: application/json" -d '{"query":"perf_issue_46_marker","limit":200}'`
-3. Verify response includes `data.indexedThreadCount`.
-4. Confirm server remains responsive during/after first search.
-5. Optional: run the same request again and verify subsequent request is significantly faster due to warm index cache.
+#### Step-by-step actions
+1. Attach an image in the composer.
+2. Send a prompt like `copy screenshot to ./`.
+3. Wait for the model response.
+4. Refresh the thread or re-open it from the sidebar.
+5. Confirm the sent user image still renders in the conversation.
 
-#### Expected Results
-- First search no longer requires full `thread/read includeTurns=true` on every thread.
-- Index still covers all threads by `title + preview`.
-- Full message-body indexing is limited to a bounded recent subset for responsiveness.
-- Cold-start `/codex-api/thread-search` latency is materially lower than before on large histories.
+#### Expected result(s)
+- The turn uses a filesystem-backed image attachment (`localImage`) instead of inline `data:` image payload.
+- The model can resolve the attachment as a local file path and perform file copy actions without asking for an ambiguous `<image>` target.
+- After thread reload, the user image remains visible in the message history.
 
-#### Rollback/Cleanup
-- Stop dev server when finished.
+#### Rollback/Cleanup notes
+- Remove copied screenshot files created in the workspace during the test (for example `./Screenshot*.png`) if they were only for verification.
 
-### Feature: API perf logging toggle + body size + RPC method
+### Feature: Reuse latest attached image on follow-up "attached image" requests
 
-#### Prerequisites
-- `.env.local` contains `CODEXUI_API_PERF_LOGGING=true`.
-- `.env.local` may optionally set:
-  - `CODEXUI_API_PERF_MS_THRESHOLD=300`
-  - `CODEXUI_API_PERF_BODY_MB_THRESHOLD=1`
-- App server is running from this repository.
+#### Prerequisites/Setup
+- Open an existing thread.
+- Have an image ready to attach.
 
-#### Steps
-1. Call a non-RPC API endpoint:
-   - `curl -s -o /dev/null http://127.0.0.1:4173/codex-api/meta/methods`
-2. Call RPC endpoint:
-   - `curl -s -o /dev/null -X POST http://127.0.0.1:4173/codex-api/rpc -H "content-type: application/json" -d '{"method":"thread/list","params":{}}'`
-3. Check server logs for `[codex-api-perf]` entries.
+#### Step-by-step actions
+1. Attach one image and send: `copy to ./`.
+2. Without attaching a new image, send: `save the attached image into the current directory`.
+3. Observe the `turn/start` payload in network logs (optional) and assistant behavior.
 
-#### Expected Results
-- A perf log line is emitted only when either condition is true:
-  - elapsed time is greater than `CODEXUI_API_PERF_MS_THRESHOLD`, or
-  - combined request+response payload is greater than `CODEXUI_API_PERF_BODY_MB_THRESHOLD`.
-- When a log line is emitted, it always includes both fields:
-  - `... (<durationMs>ms, bodyMB=<combinedMb>...)`
-- RPC log still includes method name:
-  - `[codex-api-perf] POST /codex-api/rpc -> 200 (...ms, bodyMB=..., rpcMethod=thread/list)`
-- `bodyMB` is the combined payload size of request + response bodies.
-- Setting `CODEXUI_API_PERF_LOGGING=false` suppresses these perf log lines.
+#### Expected result(s)
+- Follow-up message reuses the most recent user local image attachment for that thread.
+- The second turn should not fail with "I don't have a file handle" due to missing attachment context.
+- Assistant can proceed to copy/save using the reused attachment path.
 
-#### Rollback/Cleanup
-- Set `CODEXUI_API_PERF_LOGGING=false` (or remove it) to disable perf logs.
+#### Rollback/Cleanup notes
+- Remove any copied image files created only for the test.
