@@ -1,5 +1,5 @@
 <template>
-  <div class="plugins-hub">
+  <div ref="hubScrollContainer" class="plugins-hub">
     <div class="plugins-hub-header">
       <div>
         <h2 class="plugins-hub-title">Plugins</h2>
@@ -217,7 +217,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import IconTablerSearch from '../icons/IconTablerSearch.vue'
 import PluginDetailModal from './PluginDetailModal.vue'
 import {
@@ -226,6 +226,7 @@ import {
   listApps,
   listMcpServers,
   listPlugins,
+  normalizeAppListNotification,
   readPluginDetail,
   reloadMcpServers,
   startMcpOauthLogin,
@@ -274,6 +275,7 @@ const tabs = [
 
 const activeTab = ref<(typeof tabs)[number]['value']>('plugins')
 const query = ref('')
+const hubScrollContainer = ref<HTMLElement | null>(null)
 const methods = ref<string[]>([])
 const pluginsLoading = ref(false)
 const appsLoading = ref(false)
@@ -383,6 +385,35 @@ async function fetchApps(forceRefetch = false): Promise<void> {
   } finally {
     appsLoading.value = false
   }
+}
+
+function sameApps(left: UiAppInfo[], right: UiAppInfo[]): boolean {
+  if (left.length !== right.length) return false
+  return left.every((app, index) => {
+    const next = right[index]
+    return next
+      && app.id === next.id
+      && app.name === next.name
+      && app.description === next.description
+      && app.installUrl === next.installUrl
+      && app.logoUrl === next.logoUrl
+      && app.logoUrlDark === next.logoUrlDark
+      && app.distributionChannel === next.distributionChannel
+      && app.isAccessible === next.isAccessible
+      && app.isEnabled === next.isEnabled
+      && app.categories.join('\u0000') === next.categories.join('\u0000')
+      && app.pluginDisplayNames.join('\u0000') === next.pluginDisplayNames.join('\u0000')
+  })
+}
+
+async function applyAppsUpdate(nextApps: UiAppInfo[], preserveScroll = false): Promise<void> {
+  if (sameApps(apps.value, nextApps)) return
+  const container = preserveScroll ? hubScrollContainer.value : null
+  const scrollTop = container?.scrollTop ?? 0
+  apps.value = nextApps
+  if (!container) return
+  await nextTick()
+  container.scrollTop = scrollTop
 }
 
 async function fetchMcp(): Promise<void> {
@@ -516,7 +547,8 @@ function formatAuthStatus(value: string): string {
 
 function handleNotification(notification: RpcNotification): void {
   if (notification.method === 'app/list/updated') {
-    void fetchApps()
+    const nextApps = normalizeAppListNotification(notification.params)
+    void applyAppsUpdate(nextApps, activeTab.value === 'apps')
     return
   }
   if (notification.method === 'mcpServer/oauthLogin/completed') {
@@ -547,6 +579,7 @@ onBeforeUnmount(() => {
 
 .plugins-hub {
   @apply mx-auto flex h-full w-full max-w-6xl flex-col gap-4 overflow-y-auto p-3 sm:p-6;
+  overscroll-behavior-y: contain;
 }
 
 .plugins-hub-header {

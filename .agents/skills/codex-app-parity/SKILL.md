@@ -241,6 +241,7 @@ If a finding conflicts with current official docs or current official code, trea
   - response shape includes `appsNeedingAuth[]`
   - use a real install only from an explicit user action, not from capability probing
 - `app/list/updated` notifications arrive after connector data refreshes, so plugin/app settings pages should subscribe and update in-place rather than requiring a full page reload.
+- `app/list/updated` already carries the latest merged `data` payload; a UI that reacts by issuing a new foreground `app/list` fetch can flash back to a loading state and lose scroll position on the Apps page. Consume the notification payload in place when possible.
 - Composer invocation parity for plugins is validated against live `turn/start` payloads:
   - selected plugin should prepend a UI token such as `@linear` into the text input payload
   - selected plugin should also add a separate `mention` content item with `path: "plugin://linear@openai-curated"`

@@ -1567,6 +1567,41 @@ export type UiAppInfo = {
   pluginDisplayNames: string[]
 }
 
+function normalizeAppList(value: unknown): UiAppInfo[] {
+  const record = asRecord(value)
+  const rows = Array.isArray(record?.data) ? record.data : []
+  return rows.flatMap((row) => {
+    const app = asRecord(row)
+    if (!app) return []
+    const id = readString(app.id)
+    const name = readString(app.name)
+    if (!id || !name) return []
+    const metadata = asRecord(app.appMetadata)
+    const labelsRecord = asRecord(app.labels)
+    const labels: Record<string, string> = {}
+    if (labelsRecord) {
+      for (const [key, value] of Object.entries(labelsRecord)) {
+        const normalized = readString(value)
+        if (normalized) labels[key] = normalized
+      }
+    }
+    return [{
+      id,
+      name,
+      description: readString(app.description) ?? '',
+      installUrl: readString(app.installUrl) ?? '',
+      logoUrl: readString(app.logoUrl) ?? '',
+      logoUrlDark: readString(app.logoUrlDark) ?? '',
+      distributionChannel: readString(app.distributionChannel) ?? '',
+      isAccessible: readBoolean(app.isAccessible) ?? false,
+      isEnabled: readBoolean(app.isEnabled) ?? false,
+      categories: readStringArray(metadata?.categories),
+      labels,
+      pluginDisplayNames: readStringArray(app.pluginDisplayNames),
+    }]
+  })
+}
+
 export type UiMcpToolInfo = {
   name: string
   description: string
@@ -1781,41 +1816,14 @@ export async function uninstallPlugin(pluginId: string): Promise<boolean> {
 export async function listApps(params: { threadId?: string; forceRefetch?: boolean; limit?: number } = {}): Promise<UiAppInfo[]> {
   try {
     const payload = await callRpc<unknown>('app/list', params)
-    const record = asRecord(payload)
-    const rows = Array.isArray(record?.data) ? record.data : []
-    return rows.flatMap((row) => {
-      const app = asRecord(row)
-      if (!app) return []
-      const id = readString(app.id)
-      const name = readString(app.name)
-      if (!id || !name) return []
-      const metadata = asRecord(app.appMetadata)
-      const labelsRecord = asRecord(app.labels)
-      const labels: Record<string, string> = {}
-      if (labelsRecord) {
-        for (const [key, value] of Object.entries(labelsRecord)) {
-          const normalized = readString(value)
-          if (normalized) labels[key] = normalized
-        }
-      }
-      return [{
-        id,
-        name,
-        description: readString(app.description) ?? '',
-        installUrl: readString(app.installUrl) ?? '',
-        logoUrl: readString(app.logoUrl) ?? '',
-        logoUrlDark: readString(app.logoUrlDark) ?? '',
-        distributionChannel: readString(app.distributionChannel) ?? '',
-        isAccessible: readBoolean(app.isAccessible) ?? false,
-        isEnabled: readBoolean(app.isEnabled) ?? false,
-        categories: readStringArray(metadata?.categories),
-        labels,
-        pluginDisplayNames: readStringArray(app.pluginDisplayNames),
-      }]
-    })
+    return normalizeAppList(payload)
   } catch {
     return []
   }
+}
+
+export function normalizeAppListNotification(payload: unknown): UiAppInfo[] {
+  return normalizeAppList(payload)
 }
 
 export async function listMcpServers(limit = 100): Promise<UiMcpServerStatus[]> {
