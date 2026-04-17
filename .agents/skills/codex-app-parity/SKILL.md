@@ -241,6 +241,10 @@ If a finding conflicts with current official docs or current official code, trea
   - response shape includes `appsNeedingAuth[]`
   - use a real install only from an explicit user action, not from capability probing
 - `app/list/updated` notifications arrive after connector data refreshes, so plugin/app settings pages should subscribe and update in-place rather than requiring a full page reload.
+- Composer invocation parity for plugins is validated against live `turn/start` payloads:
+  - selected plugin should prepend a UI token such as `@linear` into the text input payload
+  - selected plugin should also add a separate `mention` content item with `path: "plugin://linear@openai-curated"`
+  - both are needed for reliable app-server routing; a mention item alone is not the documented parity path
 
 ## Findings: Context Usage Meter (2026-04-01)
 

@@ -68,6 +68,35 @@
         </span>
       </div>
 
+      <div v-if="selectedPlugins.length > 0 || selectedApps.length > 0" class="thread-composer-skill-chips">
+        <span
+          v-for="plugin in selectedPlugins"
+          :key="plugin.path"
+          class="thread-composer-skill-chip thread-composer-skill-chip--plugin"
+        >
+          <span class="thread-composer-skill-chip-name">{{ plugin.name }}</span>
+          <button
+            class="thread-composer-skill-chip-remove"
+            type="button"
+            :aria-label="`Remove plugin ${plugin.name}`"
+            @click="removePlugin(plugin.path)"
+          >×</button>
+        </span>
+        <span
+          v-for="app in selectedApps"
+          :key="app.path"
+          class="thread-composer-skill-chip thread-composer-skill-chip--app"
+        >
+          <span class="thread-composer-skill-chip-name">{{ app.name }}</span>
+          <button
+            class="thread-composer-skill-chip-remove"
+            type="button"
+            :aria-label="`Remove app ${app.name}`"
+            @click="removeApp(app.path)"
+          >×</button>
+        </span>
+      </div>
+
       <div
         v-if="quotaSummaryText || contextUsageSummaryText"
         class="thread-composer-rate-limit"
@@ -227,6 +256,28 @@
             @toggle="onSkillDropdownToggle"
           />
 
+          <ComposerSearchDropdown
+            class="thread-composer-control"
+            :options="pluginDropdownOptions"
+            :selected-values="selectedPluginPaths"
+            placeholder="Plugins"
+            search-placeholder="Search plugins..."
+            open-direction="up"
+            :disabled="disabled || !activeThreadId || isTurnInProgress || pluginDropdownOptions.length === 0"
+            @toggle="onPluginDropdownToggle"
+          />
+
+          <ComposerSearchDropdown
+            class="thread-composer-control"
+            :options="appDropdownOptions"
+            :selected-values="selectedAppPaths"
+            placeholder="Apps"
+            search-placeholder="Search apps..."
+            open-direction="up"
+            :disabled="disabled || !activeThreadId || isTurnInProgress || appDropdownOptions.length === 0"
+            @toggle="onAppDropdownToggle"
+          />
+
           <ComposerDropdown
             class="thread-composer-control"
             :model-value="selectedReasoningEffort"
@@ -353,6 +404,7 @@ import ComposerSearchDropdown from './ComposerSearchDropdown.vue'
 import ComposerSkillPicker from './ComposerSkillPicker.vue'
 
 type SkillItem = { name: string; description: string; path: string }
+type MentionItem = { name: string; description: string; path: string; token?: string }
 
 const props = defineProps<{
   activeThreadId: string
@@ -363,6 +415,8 @@ const props = defineProps<{
   selectedModel: string
   selectedReasoningEffort: ReasoningEffort | ''
   skills?: SkillItem[]
+  plugins?: MentionItem[]
+  apps?: MentionItem[]
   threadTokenUsage?: UiThreadTokenUsage | null
   codexQuota?: UiRateLimitSnapshot | null
   isTurnInProgress?: boolean
@@ -381,6 +435,7 @@ export type SubmitPayload = {
   imageUrls: string[]
   fileAttachments: FileAttachment[]
   skills: Array<{ name: string; path: string }>
+  mentions: Array<{ name: string; path: string; token?: string }>
   mode: 'steer' | 'queue'
 }
 
@@ -410,6 +465,8 @@ type FolderUploadGroup = {
 const draft = ref('')
 const selectedImages = ref<SelectedImage[]>([])
 const selectedSkills = ref<SkillItem[]>([])
+const selectedPlugins = ref<MentionItem[]>([])
+const selectedApps = ref<MentionItem[]>([])
 const fileAttachments = ref<FileAttachment[]>([])
 const folderUploadGroups = ref<FolderUploadGroup[]>([])
 
@@ -485,12 +542,35 @@ const skillDropdownOptions = computed(() =>
     description: s.description,
   })),
 )
+const pluginOptions = computed<MentionItem[]>(() => props.plugins ?? [])
+const appOptions = computed<MentionItem[]>(() => props.apps ?? [])
+const selectedPluginPaths = computed(() => selectedPlugins.value.map((item) => item.path))
+const selectedAppPaths = computed(() => selectedApps.value.map((item) => item.path))
+const pluginDropdownOptions = computed(() =>
+  pluginOptions.value.map((item) => ({
+    value: item.path,
+    label: item.name,
+    description: item.description,
+  })),
+)
+const appDropdownOptions = computed(() =>
+  appOptions.value.map((item) => ({
+    value: item.path,
+    label: item.name,
+    description: item.description,
+  })),
+)
 
 const canSubmit = computed(() => {
   if (props.disabled) return false
   if (!props.activeThreadId) return false
   if (isPlanModeWaitingForModel.value) return false
-  return draft.value.trim().length > 0 || selectedImages.value.length > 0 || fileAttachments.value.length > 0
+  return draft.value.trim().length > 0
+    || selectedImages.value.length > 0
+    || fileAttachments.value.length > 0
+    || selectedSkills.value.length > 0
+    || selectedPlugins.value.length > 0
+    || selectedApps.value.length > 0
 })
 const standaloneFileAttachments = computed(() => {
   const grouped = new Set<string>()
@@ -754,11 +834,17 @@ function onSubmit(mode: 'steer' | 'queue' = 'steer'): void {
     imageUrls: selectedImages.value.map((image) => image.url),
     fileAttachments: [...fileAttachments.value],
     skills: selectedSkills.value.map((s) => ({ name: s.name, path: s.path })),
+    mentions: [
+      ...selectedPlugins.value.map((item) => ({ name: item.name, path: item.path, token: item.token })),
+      ...selectedApps.value.map((item) => ({ name: item.name, path: item.path, token: item.token })),
+    ],
     mode,
   })
   draft.value = ''
   selectedImages.value = []
   selectedSkills.value = []
+  selectedPlugins.value = []
+  selectedApps.value = []
   fileAttachments.value = []
   folderUploadGroups.value = []
   isAttachMenuOpen.value = false
@@ -850,6 +936,14 @@ function removeImage(id: string): void {
 
 function removeSkill(path: string): void {
   selectedSkills.value = selectedSkills.value.filter((s) => s.path !== path)
+}
+
+function removePlugin(path: string): void {
+  selectedPlugins.value = selectedPlugins.value.filter((item) => item.path !== path)
+}
+
+function removeApp(path: string): void {
+  selectedApps.value = selectedApps.value.filter((item) => item.path !== path)
 }
 
 function removeFileAttachment(fsPath: string): void {
@@ -1219,6 +1313,28 @@ function onSkillDropdownToggle(path: string, checked: boolean): void {
   }
 }
 
+function onPluginDropdownToggle(path: string, checked: boolean): void {
+  if (checked) {
+    const plugin = pluginOptions.value.find((item) => item.path === path)
+    if (plugin && !selectedPlugins.value.some((item) => item.path === path)) {
+      selectedPlugins.value = [...selectedPlugins.value, plugin]
+    }
+  } else {
+    selectedPlugins.value = selectedPlugins.value.filter((item) => item.path !== path)
+  }
+}
+
+function onAppDropdownToggle(path: string, checked: boolean): void {
+  if (checked) {
+    const app = appOptions.value.find((item) => item.path === path)
+    if (app && !selectedApps.value.some((item) => item.path === path)) {
+      selectedApps.value = [...selectedApps.value, app]
+    }
+  } else {
+    selectedApps.value = selectedApps.value.filter((item) => item.path !== path)
+  }
+}
+
 function onDocumentClick(event: MouseEvent): void {
   if (!isAttachMenuOpen.value) return
   const root = attachMenuRootRef.value
@@ -1248,6 +1364,8 @@ watch(
     draft.value = ''
     selectedImages.value = []
     selectedSkills.value = []
+    selectedPlugins.value = []
+    selectedApps.value = []
     fileAttachments.value = []
     folderUploadGroups.value = []
     dictationFeedback.value = ''
@@ -1348,6 +1466,14 @@ watch(
 
 .thread-composer-skill-chip {
   @apply inline-flex items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs text-emerald-700;
+}
+
+.thread-composer-skill-chip--plugin {
+  @apply border-sky-200 bg-sky-50 text-sky-700;
+}
+
+.thread-composer-skill-chip--app {
+  @apply border-violet-200 bg-violet-50 text-violet-700;
 }
 
 .thread-composer-skill-chip-name {

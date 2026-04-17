@@ -27,6 +27,7 @@ import {
   startThreadTurn,
   type RpcNotification,
   type SkillInfo,
+  type MentionParam,
 } from '../api/codexGateway'
 import { normalizeFileChangeStatus, toUiFileChanges } from '../api/normalizers/v2'
 import type {
@@ -766,6 +767,7 @@ export function useDesktopState() {
     text: string
     imageUrls: string[]
     skills: Array<{ name: string; path: string }>
+    mentions: MentionParam[]
     fileAttachments: FileAttachment[]
     collaborationMode: CollaborationModeKind
   }
@@ -773,6 +775,7 @@ export function useDesktopState() {
     text: string
     imageUrls: string[]
     skills: Array<{ name: string; path: string }>
+    mentions: MentionParam[]
     fileAttachments: FileAttachment[]
     effort: ReasoningEffort | ''
     collaborationMode: CollaborationModeKind
@@ -992,6 +995,7 @@ export function useDesktopState() {
         MODEL_FALLBACK_ID,
         pending.effort || undefined,
         pending.skills.length > 0 ? pending.skills : undefined,
+        pending.mentions.length > 0 ? pending.mentions : undefined,
         pending.fileAttachments,
         pending.collaborationMode,
       )
@@ -2889,10 +2893,11 @@ export function useDesktopState() {
     text: string,
     imageUrls: string[] = [],
     skills: Array<{ name: string; path: string }> = [],
+    mentions: MentionParam[] = [],
     fileAttachments: FileAttachment[] = [],
   ): Promise<boolean> {
     if (!threadId || !text.trim()) return false
-    if (imageUrls.length > 0 || skills.length > 0 || fileAttachments.length > 0) return false
+    if (imageUrls.length > 0 || skills.length > 0 || mentions.length > 0 || fileAttachments.length > 0) return false
 
     const requests = pendingServerRequestsByThreadId.value[threadId] ?? []
     const userInputRequests = requests.filter((request) => request.method === 'item/tool/requestUserInput')
@@ -2918,6 +2923,7 @@ export function useDesktopState() {
     text: string,
     imageUrls: string[] = [],
     skills: Array<{ name: string; path: string }> = [],
+    mentions: MentionParam[] = [],
     mode: 'steer' | 'queue' = 'steer',
     fileAttachments: FileAttachment[] = [],
   ): Promise<void> {
@@ -2925,7 +2931,7 @@ export function useDesktopState() {
     const nextText = text.trim()
     if (!threadId || (!nextText && imageUrls.length === 0 && fileAttachments.length === 0)) return
 
-    if (await maybeReplyToPendingUserInputRequest(threadId, nextText, imageUrls, skills, fileAttachments)) {
+    if (await maybeReplyToPendingUserInputRequest(threadId, nextText, imageUrls, skills, mentions, fileAttachments)) {
       return
     }
 
@@ -2943,6 +2949,7 @@ export function useDesktopState() {
             text: nextText,
             imageUrls,
             skills,
+            mentions,
             fileAttachments,
             collaborationMode: selectedCollaborationMode.value,
           },
@@ -2953,7 +2960,7 @@ export function useDesktopState() {
 
     if (isInProgress) {
       shouldAutoScrollOnNextAgentEvent = true
-      void startTurnForThread(threadId, nextText, imageUrls, skills, fileAttachments).catch((unknownError) => {
+      void startTurnForThread(threadId, nextText, imageUrls, skills, mentions, fileAttachments).catch((unknownError) => {
         const errorMessage = unknownError instanceof Error ? unknownError.message : 'Unknown application error'
         setTurnErrorForThread(threadId, errorMessage)
         error.value = errorMessage
@@ -2979,7 +2986,7 @@ export function useDesktopState() {
     setThreadInProgress(threadId, true)
 
     try {
-      await startTurnForThread(threadId, nextText, imageUrls, skills, fileAttachments)
+      await startTurnForThread(threadId, nextText, imageUrls, skills, mentions, fileAttachments)
     } catch (unknownError) {
       shouldAutoScrollOnNextAgentEvent = false
       setThreadInProgress(threadId, false)
@@ -2996,6 +3003,7 @@ export function useDesktopState() {
     cwd: string,
     imageUrls: string[] = [],
     skills: Array<{ name: string; path: string }> = [],
+    mentions: MentionParam[] = [],
     fileAttachments: FileAttachment[] = [],
   ): Promise<string> {
     const nextText = text.trim()
@@ -3044,7 +3052,7 @@ export function useDesktopState() {
       const capturedThreadId = threadId
       const capturedCwd = targetCwd || null
       const capturedPrompt = nextText
-      void startTurnForThread(threadId, nextText, imageUrls, skills, fileAttachments)
+      void startTurnForThread(threadId, nextText, imageUrls, skills, mentions, fileAttachments)
         .catch((unknownError) => {
           shouldAutoScrollOnNextAgentEvent = false
           setThreadInProgress(threadId, false)
@@ -3079,6 +3087,7 @@ export function useDesktopState() {
     nextText: string,
     imageUrls: string[] = [],
     skills: Array<{ name: string; path: string }> = [],
+    mentions: MentionParam[] = [],
     fileAttachments: FileAttachment[] = [],
   ): Promise<void> {
     const modelId = selectedModelId.value.trim()
@@ -3086,12 +3095,18 @@ export function useDesktopState() {
     const collaborationMode = selectedCollaborationMode.value
     const normalizedText = nextText.trim()
     const normalizedSkills = skills.map((skill) => ({ name: skill.name, path: skill.path }))
+    const normalizedMentions = mentions.map((mention) => ({
+      name: mention.name,
+      path: mention.path,
+      token: mention.token,
+    }))
     const normalizedFileAttachments = fileAttachments.map((file) => ({ ...file }))
 
     setPendingTurnRequest(threadId, {
       text: normalizedText,
       imageUrls: [...imageUrls],
       skills: normalizedSkills,
+      mentions: normalizedMentions,
       fileAttachments: normalizedFileAttachments,
       effort: reasoningEffort,
       collaborationMode,
@@ -3111,6 +3126,7 @@ export function useDesktopState() {
           modelId || undefined,
           reasoningEffort || undefined,
           skills.length > 0 ? skills : undefined,
+          mentions.length > 0 ? mentions : undefined,
           fileAttachments,
           collaborationMode,
         )
@@ -3122,6 +3138,7 @@ export function useDesktopState() {
             text: normalizedText,
             imageUrls: [...imageUrls],
             skills: normalizedSkills,
+            mentions: normalizedMentions,
             fileAttachments: normalizedFileAttachments,
             effort: reasoningEffort,
             collaborationMode,
@@ -3134,6 +3151,7 @@ export function useDesktopState() {
             MODEL_FALLBACK_ID,
             reasoningEffort || undefined,
             skills.length > 0 ? skills : undefined,
+            mentions.length > 0 ? mentions : undefined,
             fileAttachments,
             collaborationMode,
           )
@@ -3183,7 +3201,7 @@ export function useDesktopState() {
     setThreadInProgress(threadId, true)
     try {
       setSelectedCollaborationMode(next.collaborationMode)
-      await startTurnForThread(threadId, next.text, next.imageUrls, next.skills, next.fileAttachments)
+      await startTurnForThread(threadId, next.text, next.imageUrls, next.skills, next.mentions, next.fileAttachments)
     } catch {
       setThreadInProgress(threadId, false)
       setTurnActivityForThread(threadId, null)
@@ -3581,7 +3599,7 @@ export function useDesktopState() {
     if (!msg) return
     removeQueuedMessage(messageId)
     setSelectedCollaborationMode(msg.collaborationMode)
-    void sendMessageToSelectedThread(msg.text, msg.imageUrls, msg.skills, 'steer', msg.fileAttachments)
+    void sendMessageToSelectedThread(msg.text, msg.imageUrls, msg.skills, msg.mentions, 'steer', msg.fileAttachments)
   }
 
   function primeSelectedThread(threadId: string): void {

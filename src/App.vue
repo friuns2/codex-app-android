@@ -252,6 +252,8 @@
                   :selected-collaboration-mode="selectedCollaborationMode"
                   :models="availableModelIds" :selected-model="selectedModelId"
                   :selected-reasoning-effort="selectedReasoningEffort" :skills="installedSkills"
+                  :plugins="composerPluginOptions"
+                  :apps="composerAppOptions"
                   :thread-token-usage="selectedThreadTokenUsage"
                   :codex-quota="codexQuota"
                   :is-turn-in-progress="false"
@@ -295,6 +297,8 @@
                     :models="availableModelIds"
                     :selected-model="selectedModelId" :selected-reasoning-effort="selectedReasoningEffort"
                     :skills="installedSkills"
+                    :plugins="composerPluginOptions"
+                    :apps="composerAppOptions"
                     :thread-token-usage="selectedThreadTokenUsage"
                     :codex-quota="codexQuota"
                     :is-turn-in-progress="isSelectedThreadInProgress" :is-interrupting-turn="isInterruptingTurn"
@@ -337,6 +341,8 @@ import {
   getHomeDirectory,
   getProjectRootSuggestion,
   getRuntimeInfo,
+  listApps,
+  listPlugins,
   getWorkspaceRootsState,
   openProjectRoot,
   removeAccount,
@@ -451,6 +457,8 @@ const mobileResumeReloadTriggered = ref(false)
 const mobileResumeSyncInProgress = ref(false)
 let accountStatePollTimer: number | null = null
 let isAccountStatePollInFlight = false
+const composerPluginOptions = ref<Array<{ name: string; description: string; path: string; token?: string }>>([])
+const composerAppOptions = ref<Array<{ name: string; description: string; path: string; token?: string }>>([])
 
 const routeThreadId = computed(() => {
   const rawThreadId = route.params.threadId
@@ -621,6 +629,44 @@ watch(accounts, () => {
 
 function onSkillsChanged(): void {
   void refreshSkills()
+  void refreshComposerIntegrations()
+}
+
+function slugifyMentionToken(value: string, prefix: '@' | '$'): string {
+  const slug = value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+  return `${prefix}${slug || 'item'}`
+}
+
+async function refreshComposerIntegrations(): Promise<void> {
+  const [marketplaces, apps] = await Promise.all([
+    listPlugins(),
+    listApps({ limit: 150 }),
+  ])
+
+  composerPluginOptions.value = marketplaces
+    .flatMap((marketplace) => marketplace.plugins)
+    .filter((plugin) => plugin.installed && plugin.enabled)
+    .map((plugin) => ({
+      name: plugin.displayName,
+      description: plugin.shortDescription || plugin.longDescription || plugin.category,
+      path: `plugin://${plugin.name}@${plugin.marketplaceName}`,
+      token: slugifyMentionToken(plugin.displayName || plugin.name, '@'),
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name))
+
+  composerAppOptions.value = apps
+    .filter((app) => app.isAccessible)
+    .map((app) => ({
+      name: app.name,
+      description: app.description || app.categories.join(' · '),
+      path: `app://${app.id}`,
+      token: slugifyMentionToken(app.name, '$'),
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name))
 }
 
 function toggleSidebarSearch(): void {
@@ -1023,6 +1069,7 @@ async function syncAfterMobileResume(): Promise<void> {
       includeSelectedThreadMessages: true,
       awaitAncillaryRefreshes: true,
     })
+    await refreshComposerIntegrations()
     await restoreLastActiveThreadRoute()
     await syncThreadSelectionWithRoute()
   } finally {
@@ -1030,14 +1077,21 @@ async function syncAfterMobileResume(): Promise<void> {
   }
 }
 
-function onSubmitThreadMessage(payload: { text: string; imageUrls: string[]; fileAttachments: Array<{ label: string; path: string; fsPath: string }>; skills: Array<{ name: string; path: string }>; mode: 'steer' | 'queue' }): void {
+function onSubmitThreadMessage(payload: {
+  text: string
+  imageUrls: string[]
+  fileAttachments: Array<{ label: string; path: string; fsPath: string }>
+  skills: Array<{ name: string; path: string }>
+  mentions: Array<{ name: string; path: string; token?: string }>
+  mode: 'steer' | 'queue'
+}): void {
   const text = payload.text
   scheduleMobileConversationJumpToLatest()
   if (isHomeRoute.value) {
-    void submitFirstMessageForNewThread(text, payload.imageUrls, payload.skills, payload.fileAttachments)
+    void submitFirstMessageForNewThread(text, payload.imageUrls, payload.skills, payload.mentions, payload.fileAttachments)
     return
   }
-  void sendMessageToSelectedThread(text, payload.imageUrls, payload.skills, payload.mode, payload.fileAttachments)
+  void sendMessageToSelectedThread(text, payload.imageUrls, payload.skills, payload.mentions, payload.mode, payload.fileAttachments)
 }
 
 function scheduleMobileConversationJumpToLatest(): void {
@@ -1367,6 +1421,7 @@ async function initialize(): Promise<void> {
   await refreshAll({
     includeSelectedThreadMessages: true,
   })
+  await refreshComposerIntegrations()
   void loadAccountsState({ silent: true })
   await restoreLastActiveThreadRoute()
   hasInitialized.value = true
@@ -1596,6 +1651,7 @@ async function submitFirstMessageForNewThread(
   text: string,
   imageUrls: string[] = [],
   skills: Array<{ name: string; path: string }> = [],
+  mentions: Array<{ name: string; path: string; token?: string }> = [],
   fileAttachments: Array<{ label: string; path: string; fsPath: string }> = [],
 ): Promise<void> {
   try {
@@ -1621,7 +1677,7 @@ async function submitFirstMessageForNewThread(
         return
       }
     }
-    const threadId = await sendMessageToNewThread(text, targetCwd, imageUrls, skills, fileAttachments)
+    const threadId = await sendMessageToNewThread(text, targetCwd, imageUrls, skills, mentions, fileAttachments)
     if (!threadId) return
     await router.replace({ name: 'thread', params: { threadId } })
     scheduleMobileConversationJumpToLatest()
