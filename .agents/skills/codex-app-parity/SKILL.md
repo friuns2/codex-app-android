@@ -585,3 +585,14 @@ If a finding conflicts with current official docs or current official code, trea
 - In Codex CLI `0.120.0`, `codex app-server generate-ts --experimental` exposes a stable read-only filesystem baseline for UI work: `fs/readDirectory`, `fs/getMetadata`, and `fs/readFile`, plus write/watch methods that can be layered later.
 - The generated protocol is enough to implement an in-app file browser even when official public docs or official repo UI references do not provide a concrete desktop/web file-explorer spec.
 - `fs/watch` is explicitly connection-scoped via `watchId`; for web clients that use stateless HTTP RPC plus a separate notification transport, treating watch support as a later phase is safer than coupling it into an MVP explorer.
+
+## Findings: Pulse Surface Constraints (2026-04-18)
+
+- Official Help Center docs for ChatGPT Pulse state that the feature is available on web, iOS, and Android, and explicitly unavailable in desktop apps as of the April 2026 help copy.
+- The same docs expose two user-visible controls that are worth mirroring in desktop-adjacent UIs even before live delivery exists:
+  - `Show Pulse in new chats`
+  - `Reference memory in suggestions`
+- `openai/codex` does not currently expose a first-party Pulse implementation or Pulse-specific API schema, so parity work in this repo should treat the Help Center behavior as the source of truth and keep desktop implementations conservative:
+  - add the Today/Pulse entry point and settings
+  - preserve curate/feedback history affordances
+  - do not claim official desktop support when only a local preview/cache-backed version exists

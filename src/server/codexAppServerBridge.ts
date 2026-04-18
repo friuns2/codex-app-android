@@ -85,6 +85,37 @@ type SessionRecoveredTurnFileChanges = {
   fileChanges: SessionRecoveredFileChange[]
 }
 
+type PulseSettings = {
+  showInNewChats: boolean
+  referenceMemoryInSuggestions: boolean
+}
+
+type StoredPulseFeedbackEntry = {
+  id: string
+  kind: 'curate' | 'feedback'
+  text: string
+  createdAtIso: string
+}
+
+type StoredPulseItem = {
+  id: string
+  title: string
+  summary: string
+  details: string
+  createdAtIso: string
+  tags: string[]
+}
+
+type StoredPulseState = {
+  settings: PulseSettings
+  feedbackHistory: StoredPulseFeedbackEntry[]
+}
+
+type StoredPulseFeed = {
+  lastDeliveredAtIso: string | null
+  items: StoredPulseItem[]
+}
+
 function asRecord(value: unknown): Record<string, unknown> | null {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
     ? (value as Record<string, unknown>)
@@ -590,6 +621,186 @@ function getCodexGlobalStatePath(): string {
 
 function getCodexSessionIndexPath(): string {
   return join(getCodexHomeDir(), 'session_index.jsonl')
+}
+
+function getCodexAccountsStatePath(): string {
+  return join(getCodexHomeDir(), 'accounts.json')
+}
+
+function getPulseStatePath(): string {
+  return join(getCodexHomeDir(), 'pulse.json')
+}
+
+function getPulseFeedPath(): string {
+  return join(getCodexHomeDir(), 'pulse-today.json')
+}
+
+const DEFAULT_PULSE_SETTINGS: PulseSettings = {
+  showInNewChats: true,
+  referenceMemoryInSuggestions: true,
+}
+
+const MAX_PULSE_FEEDBACK_HISTORY = 50
+
+function normalizePulseSettings(value: unknown): PulseSettings {
+  const record = asRecord(value)
+  return {
+    showInNewChats: record?.showInNewChats !== false,
+    referenceMemoryInSuggestions: record?.referenceMemoryInSuggestions !== false,
+  }
+}
+
+function normalizePulseFeedbackEntry(value: unknown): StoredPulseFeedbackEntry | null {
+  const record = asRecord(value)
+  const id = typeof record?.id === 'string' && record.id.length > 0 ? record.id : ''
+  const text = typeof record?.text === 'string' && record.text.trim().length > 0 ? record.text.trim() : ''
+  const createdAtIso = typeof record?.createdAtIso === 'string' && record.createdAtIso.length > 0 ? record.createdAtIso : ''
+  const kind = record?.kind === 'feedback' ? 'feedback' : 'curate'
+  if (!id || !text || !createdAtIso) return null
+  return {
+    id,
+    kind,
+    text,
+    createdAtIso,
+  }
+}
+
+function normalizePulseItem(value: unknown): StoredPulseItem | null {
+  const record = asRecord(value)
+  const id = typeof record?.id === 'string' && record.id.length > 0 ? record.id : ''
+  const title = typeof record?.title === 'string' && record.title.trim().length > 0 ? record.title.trim() : ''
+  const summary = typeof record?.summary === 'string' && record.summary.trim().length > 0 ? record.summary.trim() : ''
+  const details = typeof record?.details === 'string' && record.details.trim().length > 0 ? record.details.trim() : ''
+  const createdAtIso = typeof record?.createdAtIso === 'string' && record.createdAtIso.length > 0 ? record.createdAtIso : ''
+  if (!id || !title || !summary || !details || !createdAtIso) return null
+  const tags = Array.isArray(record?.tags)
+    ? record.tags.filter((item): item is string => typeof item === 'string' && item.trim().length > 0).map((item) => item.trim())
+    : []
+  return {
+    id,
+    title,
+    summary,
+    details,
+    createdAtIso,
+    tags,
+  }
+}
+
+function normalizePulseState(value: unknown): StoredPulseState {
+  const record = asRecord(value)
+  const feedbackHistory = Array.isArray(record?.feedbackHistory)
+    ? record.feedbackHistory
+      .map((entry) => normalizePulseFeedbackEntry(entry))
+      .filter((entry): entry is StoredPulseFeedbackEntry => entry !== null)
+      .slice(0, MAX_PULSE_FEEDBACK_HISTORY)
+    : []
+  return {
+    settings: normalizePulseSettings(record?.settings),
+    feedbackHistory,
+  }
+}
+
+function normalizePulseFeed(value: unknown): StoredPulseFeed {
+  const record = asRecord(value)
+  const items = Array.isArray(record?.items)
+    ? record.items.map((entry) => normalizePulseItem(entry)).filter((entry): entry is StoredPulseItem => entry !== null)
+    : []
+  return {
+    lastDeliveredAtIso: typeof record?.lastDeliveredAtIso === 'string' && record.lastDeliveredAtIso.length > 0
+      ? record.lastDeliveredAtIso
+      : null,
+    items,
+  }
+}
+
+async function readPulseState(): Promise<StoredPulseState> {
+  try {
+    const raw = await readFile(getPulseStatePath(), 'utf8')
+    return normalizePulseState(JSON.parse(raw))
+  } catch {
+    return {
+      settings: { ...DEFAULT_PULSE_SETTINGS },
+      feedbackHistory: [],
+    }
+  }
+}
+
+async function writePulseState(state: StoredPulseState): Promise<void> {
+  await mkdir(getCodexHomeDir(), { recursive: true })
+  await writeFile(getPulseStatePath(), JSON.stringify(state, null, 2), 'utf8')
+}
+
+async function readPulseFeed(): Promise<StoredPulseFeed> {
+  try {
+    const raw = await readFile(getPulseFeedPath(), 'utf8')
+    return normalizePulseFeed(JSON.parse(raw))
+  } catch {
+    return { lastDeliveredAtIso: null, items: [] }
+  }
+}
+
+async function readActivePulseAccount(): Promise<{ planType: string | null }> {
+  try {
+    const raw = await readFile(getCodexAccountsStatePath(), 'utf8')
+    const parsed = asRecord(JSON.parse(raw))
+    const activeAccountId = typeof parsed?.activeAccountId === 'string' && parsed.activeAccountId.length > 0
+      ? parsed.activeAccountId
+      : ''
+    const accounts = Array.isArray(parsed?.accounts) ? parsed.accounts : []
+    const active = accounts
+      .map((entry) => asRecord(entry))
+      .find((entry) => typeof entry?.accountId === 'string' && entry.accountId === activeAccountId)
+    const planType = typeof active?.planType === 'string' && active.planType.trim().length > 0
+      ? active.planType.trim()
+      : null
+    return { planType }
+  } catch {
+    return { planType: null }
+  }
+}
+
+async function buildPulseResponse(): Promise<{
+  status: 'ready' | 'empty'
+  items: StoredPulseItem[]
+  feedbackHistory: StoredPulseFeedbackEntry[]
+  settings: PulseSettings
+  lastDeliveredAtIso: string | null
+  planType: string | null
+  availabilityNote: string
+  officialSupport: {
+    web: boolean
+    ios: boolean
+    android: boolean
+    desktop: boolean
+  }
+}> {
+  const [state, feed, account] = await Promise.all([
+    readPulseState(),
+    readPulseFeed(),
+    readActivePulseAccount(),
+  ])
+
+  const availabilityNote = state.settings.referenceMemoryInSuggestions
+    ? (feed.items.length > 0
+      ? 'Official Pulse is currently shipped on web, iOS, and Android. This desktop preview is rendering the latest cached daily feed.'
+      : 'Official Pulse is currently shipped on web, iOS, and Android, not the desktop app. This desktop preview keeps Today, curation, and settings ready while waiting for a daily feed.')
+    : 'Reference memory in suggestions is turned off, so Pulse cards are paused until you turn it back on.'
+
+  return {
+    status: feed.items.length > 0 && state.settings.referenceMemoryInSuggestions ? 'ready' : 'empty',
+    items: state.settings.referenceMemoryInSuggestions ? feed.items : [],
+    feedbackHistory: state.feedbackHistory,
+    settings: state.settings,
+    lastDeliveredAtIso: feed.lastDeliveredAtIso,
+    planType: account.planType,
+    availabilityNote,
+    officialSupport: {
+      web: true,
+      ios: true,
+      android: true,
+      desktop: false,
+    },
+  }
 }
 
 type ThreadTitleCache = { titles: Record<string, string>; order: string[] }
@@ -1565,6 +1776,62 @@ export function createCodexBridgeMiddleware(): CodexBridgeMiddleware {
             codexCliVersion: readCodexCliVersion(),
           },
         })
+        return
+      }
+
+      if (req.method === 'GET' && url.pathname === '/codex-api/pulse') {
+        setJson(res, 200, { data: await buildPulseResponse() })
+        return
+      }
+
+      if (req.method === 'PUT' && url.pathname === '/codex-api/pulse/settings') {
+        const payload = asRecord(await readJsonBody(req))
+        const currentState = await readPulseState()
+        const nextState: StoredPulseState = {
+          ...currentState,
+          settings: {
+            showInNewChats: typeof payload?.showInNewChats === 'boolean'
+              ? payload.showInNewChats
+              : currentState.settings.showInNewChats,
+            referenceMemoryInSuggestions: typeof payload?.referenceMemoryInSuggestions === 'boolean'
+              ? payload.referenceMemoryInSuggestions
+              : currentState.settings.referenceMemoryInSuggestions,
+          },
+        }
+        await writePulseState(nextState)
+        setJson(res, 200, { data: await buildPulseResponse() })
+        return
+      }
+
+      if (req.method === 'POST' && url.pathname === '/codex-api/pulse/feedback') {
+        const payload = asRecord(await readJsonBody(req))
+        const text = typeof payload?.text === 'string' ? payload.text.trim() : ''
+        if (!text) {
+          setJson(res, 400, { error: 'Missing text' })
+          return
+        }
+        const currentState = await readPulseState()
+        const entry: StoredPulseFeedbackEntry = {
+          id: randomBytes(6).toString('hex'),
+          kind: payload?.kind === 'feedback' ? 'feedback' : 'curate',
+          text,
+          createdAtIso: new Date().toISOString(),
+        }
+        await writePulseState({
+          ...currentState,
+          feedbackHistory: [entry, ...currentState.feedbackHistory].slice(0, MAX_PULSE_FEEDBACK_HISTORY),
+        })
+        setJson(res, 200, { data: await buildPulseResponse() })
+        return
+      }
+
+      if (req.method === 'DELETE' && url.pathname === '/codex-api/pulse/feedback-history') {
+        const currentState = await readPulseState()
+        await writePulseState({
+          ...currentState,
+          feedbackHistory: [],
+        })
+        setJson(res, 200, { data: await buildPulseResponse() })
         return
       }
 

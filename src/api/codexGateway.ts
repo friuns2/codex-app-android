@@ -31,6 +31,11 @@ import type {
   UiCreditsSnapshot,
   UiFileChange,
   UiMessage,
+  UiPulseFeedbackEntry,
+  UiPulseFeedbackKind,
+  UiPulseItem,
+  UiPulseSettings,
+  UiPulseState,
   UiProjectGroup,
   UiReviewAction,
   UiReviewActionLevel,
@@ -1241,6 +1246,128 @@ export async function getRuntimeInfo(): Promise<RuntimeInfo> {
   return {
     codexCliVersion: typeof data.codexCliVersion === 'string' ? data.codexCliVersion.trim() || 'unknown' : 'unknown',
   }
+}
+
+function normalizePulseItem(value: unknown): UiPulseItem | null {
+  const record = asRecord(value)
+  const id = readString(record?.id)
+  const title = readString(record?.title)
+  const summary = readString(record?.summary)
+  const details = readString(record?.details)
+  const createdAtIso = readString(record?.createdAtIso)
+  if (!id || !title || !summary || !details || !createdAtIso) return null
+  return {
+    id,
+    title,
+    summary,
+    details,
+    createdAtIso,
+    tags: readStringArray(record?.tags),
+  }
+}
+
+function normalizePulseFeedbackKind(value: unknown): UiPulseFeedbackKind {
+  return value === 'feedback' ? 'feedback' : 'curate'
+}
+
+function normalizePulseFeedbackEntry(value: unknown): UiPulseFeedbackEntry | null {
+  const record = asRecord(value)
+  const id = readString(record?.id)
+  const text = readString(record?.text)
+  const createdAtIso = readString(record?.createdAtIso)
+  if (!id || !text || !createdAtIso) return null
+  return {
+    id,
+    kind: normalizePulseFeedbackKind(record?.kind),
+    text,
+    createdAtIso,
+  }
+}
+
+function normalizePulseSettings(value: unknown): UiPulseSettings {
+  const record = asRecord(value)
+  return {
+    showInNewChats: readBoolean(record?.showInNewChats) ?? true,
+    referenceMemoryInSuggestions: readBoolean(record?.referenceMemoryInSuggestions) ?? true,
+  }
+}
+
+function normalizePulseState(payload: unknown): UiPulseState {
+  const record = asRecord(payload)
+  const officialSupportRecord = asRecord(record?.officialSupport)
+  const items = Array.isArray(record?.items)
+    ? record.items.map((entry) => normalizePulseItem(entry)).filter((entry): entry is UiPulseItem => entry !== null)
+    : []
+  const feedbackHistory = Array.isArray(record?.feedbackHistory)
+    ? record.feedbackHistory
+      .map((entry) => normalizePulseFeedbackEntry(entry))
+      .filter((entry): entry is UiPulseFeedbackEntry => entry !== null)
+    : []
+  return {
+    status: record?.status === 'ready' ? 'ready' : 'empty',
+    items,
+    feedbackHistory,
+    settings: normalizePulseSettings(record?.settings),
+    lastDeliveredAtIso: readString(record?.lastDeliveredAtIso),
+    planType: readString(record?.planType),
+    availabilityNote: readString(record?.availabilityNote) ?? 'Pulse is unavailable right now.',
+    officialSupport: {
+      web: readBoolean(officialSupportRecord?.web) ?? true,
+      ios: readBoolean(officialSupportRecord?.ios) ?? true,
+      android: readBoolean(officialSupportRecord?.android) ?? true,
+      desktop: readBoolean(officialSupportRecord?.desktop) ?? false,
+    },
+  }
+}
+
+export async function getPulseState(): Promise<UiPulseState> {
+  const response = await fetch('/codex-api/pulse')
+  const payload = (await response.json()) as unknown
+  if (!response.ok) {
+    throw new Error(getErrorMessageFromPayload(payload, 'Failed to load pulse'))
+  }
+  const envelope = asRecord(payload)
+  return normalizePulseState(envelope?.data)
+}
+
+export async function updatePulseSettings(settings: Partial<UiPulseSettings>): Promise<UiPulseState> {
+  const response = await fetch('/codex-api/pulse/settings', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(settings),
+  })
+  const payload = (await response.json()) as unknown
+  if (!response.ok) {
+    throw new Error(getErrorMessageFromPayload(payload, 'Failed to update pulse settings'))
+  }
+  const envelope = asRecord(payload)
+  return normalizePulseState(envelope?.data)
+}
+
+export async function createPulseFeedback(text: string, kind: UiPulseFeedbackKind = 'curate'): Promise<UiPulseState> {
+  const response = await fetch('/codex-api/pulse/feedback', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text, kind }),
+  })
+  const payload = (await response.json()) as unknown
+  if (!response.ok) {
+    throw new Error(getErrorMessageFromPayload(payload, 'Failed to save pulse feedback'))
+  }
+  const envelope = asRecord(payload)
+  return normalizePulseState(envelope?.data)
+}
+
+export async function clearPulseFeedbackHistory(): Promise<UiPulseState> {
+  const response = await fetch('/codex-api/pulse/feedback-history', {
+    method: 'DELETE',
+  })
+  const payload = (await response.json()) as unknown
+  if (!response.ok) {
+    throw new Error(getErrorMessageFromPayload(payload, 'Failed to clear pulse feedback history'))
+  }
+  const envelope = asRecord(payload)
+  return normalizePulseState(envelope?.data)
 }
 
 export async function setWorkspaceRootsState(nextState: WorkspaceRootsState): Promise<void> {

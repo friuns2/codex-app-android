@@ -230,6 +230,45 @@ export type UiProjectGroup = {
   threads: UiThread[]
 }
 
+export type UiPulseItem = {
+  id: string
+  title: string
+  summary: string
+  details: string
+  createdAtIso: string
+  tags: string[]
+}
+
+export type UiPulseFeedbackKind = 'curate' | 'feedback'
+
+export type UiPulseFeedbackEntry = {
+  id: string
+  kind: UiPulseFeedbackKind
+  text: string
+  createdAtIso: string
+}
+
+export type UiPulseSettings = {
+  showInNewChats: boolean
+  referenceMemoryInSuggestions: boolean
+}
+
+export type UiPulseState = {
+  status: 'ready' | 'empty'
+  items: UiPulseItem[]
+  feedbackHistory: UiPulseFeedbackEntry[]
+  settings: UiPulseSettings
+  lastDeliveredAtIso: string | null
+  planType: string | null
+  availabilityNote: string
+  officialSupport: {
+    web: boolean
+    ios: boolean
+    android: boolean
+    desktop: boolean
+  }
+}
+
 export type UiRateLimitWindow = {
   usedPercent: number
   windowMinutes: number | null
