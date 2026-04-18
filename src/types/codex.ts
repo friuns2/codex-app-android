@@ -237,6 +237,11 @@ export type UiPulseItem = {
   details: string
   createdAtIso: string
   tags: string[]
+  reaction: 'up' | 'down' | null
+  savedAtIso: string | null
+  savedThreadId: string | null
+  followUpAtIso: string | null
+  followUpThreadId: string | null
 }
 
 export type UiPulseFeedbackKind = 'curate' | 'feedback'

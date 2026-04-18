@@ -106,9 +106,18 @@ type StoredPulseItem = {
   tags: string[]
 }
 
+type StoredPulseItemState = {
+  reaction: 'up' | 'down' | null
+  savedAtIso: string | null
+  savedThreadId: string | null
+  followUpAtIso: string | null
+  followUpThreadId: string | null
+}
+
 type StoredPulseState = {
   settings: PulseSettings
   feedbackHistory: StoredPulseFeedbackEntry[]
+  itemStates: Record<string, StoredPulseItemState>
 }
 
 type StoredPulseFeed = {
@@ -642,6 +651,16 @@ const DEFAULT_PULSE_SETTINGS: PulseSettings = {
 
 const MAX_PULSE_FEEDBACK_HISTORY = 50
 
+function createDefaultPulseItemState(): StoredPulseItemState {
+  return {
+    reaction: null,
+    savedAtIso: null,
+    savedThreadId: null,
+    followUpAtIso: null,
+    followUpThreadId: null,
+  }
+}
+
 function normalizePulseSettings(value: unknown): PulseSettings {
   const record = asRecord(value)
   return {
@@ -686,6 +705,17 @@ function normalizePulseItem(value: unknown): StoredPulseItem | null {
   }
 }
 
+function normalizePulseItemState(value: unknown): StoredPulseItemState {
+  const record = asRecord(value)
+  return {
+    reaction: record?.reaction === 'up' || record?.reaction === 'down' ? record.reaction : null,
+    savedAtIso: typeof record?.savedAtIso === 'string' && record.savedAtIso.length > 0 ? record.savedAtIso : null,
+    savedThreadId: typeof record?.savedThreadId === 'string' && record.savedThreadId.length > 0 ? record.savedThreadId : null,
+    followUpAtIso: typeof record?.followUpAtIso === 'string' && record.followUpAtIso.length > 0 ? record.followUpAtIso : null,
+    followUpThreadId: typeof record?.followUpThreadId === 'string' && record.followUpThreadId.length > 0 ? record.followUpThreadId : null,
+  }
+}
+
 function normalizePulseState(value: unknown): StoredPulseState {
   const record = asRecord(value)
   const feedbackHistory = Array.isArray(record?.feedbackHistory)
@@ -694,9 +724,18 @@ function normalizePulseState(value: unknown): StoredPulseState {
       .filter((entry): entry is StoredPulseFeedbackEntry => entry !== null)
       .slice(0, MAX_PULSE_FEEDBACK_HISTORY)
     : []
+  const rawItemStates = asRecord(record?.itemStates)
+  const itemStates: Record<string, StoredPulseItemState> = {}
+  if (rawItemStates) {
+    for (const [itemId, itemState] of Object.entries(rawItemStates)) {
+      if (itemId.trim().length === 0) continue
+      itemStates[itemId] = normalizePulseItemState(itemState)
+    }
+  }
   return {
     settings: normalizePulseSettings(record?.settings),
     feedbackHistory,
+    itemStates,
   }
 }
 
@@ -721,6 +760,7 @@ async function readPulseState(): Promise<StoredPulseState> {
     return {
       settings: { ...DEFAULT_PULSE_SETTINGS },
       feedbackHistory: [],
+      itemStates: {},
     }
   }
 }
@@ -737,6 +777,20 @@ async function readPulseFeed(): Promise<StoredPulseFeed> {
   } catch {
     return { lastDeliveredAtIso: null, items: [] }
   }
+}
+
+function isSameLocalDate(left: Date, right: Date): boolean {
+  return left.getFullYear() === right.getFullYear()
+    && left.getMonth() === right.getMonth()
+    && left.getDate() === right.getDate()
+}
+
+function isPulseFeedCurrent(feed: StoredPulseFeed): boolean {
+  const candidateIso = feed.lastDeliveredAtIso ?? feed.items[0]?.createdAtIso ?? ''
+  if (!candidateIso) return false
+  const candidateDate = new Date(candidateIso)
+  if (Number.isNaN(candidateDate.getTime())) return false
+  return isSameLocalDate(candidateDate, new Date())
 }
 
 async function readActivePulseAccount(): Promise<{ planType: string | null }> {
@@ -761,7 +815,7 @@ async function readActivePulseAccount(): Promise<{ planType: string | null }> {
 
 async function buildPulseResponse(): Promise<{
   status: 'ready' | 'empty'
-  items: StoredPulseItem[]
+  items: Array<StoredPulseItem & StoredPulseItemState>
   feedbackHistory: StoredPulseFeedbackEntry[]
   settings: PulseSettings
   lastDeliveredAtIso: string | null
@@ -779,19 +833,24 @@ async function buildPulseResponse(): Promise<{
     readPulseFeed(),
     readActivePulseAccount(),
   ])
+  const currentFeed = isPulseFeedCurrent(feed) ? feed : { lastDeliveredAtIso: null, items: [] }
+  const items = currentFeed.items.map((item) => ({
+    ...item,
+    ...normalizePulseItemState(state.itemStates[item.id]),
+  }))
 
   const availabilityNote = state.settings.referenceMemoryInSuggestions
-    ? (feed.items.length > 0
+    ? (items.length > 0
       ? 'Official Pulse is currently shipped on web, iOS, and Android. This desktop preview is rendering the latest cached daily feed.'
       : 'Official Pulse is currently shipped on web, iOS, and Android, not the desktop app. This desktop preview keeps Today, curation, and settings ready while waiting for a daily feed.')
     : 'Reference memory in suggestions is turned off, so Pulse cards are paused until you turn it back on.'
 
   return {
-    status: feed.items.length > 0 && state.settings.referenceMemoryInSuggestions ? 'ready' : 'empty',
-    items: state.settings.referenceMemoryInSuggestions ? feed.items : [],
+    status: items.length > 0 && state.settings.referenceMemoryInSuggestions ? 'ready' : 'empty',
+    items: state.settings.referenceMemoryInSuggestions ? items : [],
     feedbackHistory: state.feedbackHistory,
     settings: state.settings,
-    lastDeliveredAtIso: feed.lastDeliveredAtIso,
+    lastDeliveredAtIso: currentFeed.lastDeliveredAtIso,
     planType: account.planType,
     availabilityNote,
     officialSupport: {
@@ -1820,6 +1879,77 @@ export function createCodexBridgeMiddleware(): CodexBridgeMiddleware {
         await writePulseState({
           ...currentState,
           feedbackHistory: [entry, ...currentState.feedbackHistory].slice(0, MAX_PULSE_FEEDBACK_HISTORY),
+        })
+        setJson(res, 200, { data: await buildPulseResponse() })
+        return
+      }
+
+      if (req.method === 'POST' && url.pathname === '/codex-api/pulse/items/reaction') {
+        const payload = asRecord(await readJsonBody(req))
+        const itemId = typeof payload?.itemId === 'string' ? payload.itemId.trim() : ''
+        const reaction = payload?.reaction === 'up' || payload?.reaction === 'down' ? payload.reaction : null
+        if (!itemId) {
+          setJson(res, 400, { error: 'Missing itemId' })
+          return
+        }
+        const currentState = await readPulseState()
+        await writePulseState({
+          ...currentState,
+          itemStates: {
+            ...currentState.itemStates,
+            [itemId]: {
+              ...normalizePulseItemState(currentState.itemStates[itemId]),
+              reaction,
+            },
+          },
+        })
+        setJson(res, 200, { data: await buildPulseResponse() })
+        return
+      }
+
+      if (req.method === 'POST' && url.pathname === '/codex-api/pulse/items/save') {
+        const payload = asRecord(await readJsonBody(req))
+        const itemId = typeof payload?.itemId === 'string' ? payload.itemId.trim() : ''
+        const threadId = typeof payload?.threadId === 'string' ? payload.threadId.trim() : ''
+        if (!itemId || !threadId) {
+          setJson(res, 400, { error: 'Missing itemId or threadId' })
+          return
+        }
+        const currentState = await readPulseState()
+        await writePulseState({
+          ...currentState,
+          itemStates: {
+            ...currentState.itemStates,
+            [itemId]: {
+              ...normalizePulseItemState(currentState.itemStates[itemId]),
+              savedAtIso: new Date().toISOString(),
+              savedThreadId: threadId,
+            },
+          },
+        })
+        setJson(res, 200, { data: await buildPulseResponse() })
+        return
+      }
+
+      if (req.method === 'POST' && url.pathname === '/codex-api/pulse/items/follow-up') {
+        const payload = asRecord(await readJsonBody(req))
+        const itemId = typeof payload?.itemId === 'string' ? payload.itemId.trim() : ''
+        const threadId = typeof payload?.threadId === 'string' ? payload.threadId.trim() : ''
+        if (!itemId || !threadId) {
+          setJson(res, 400, { error: 'Missing itemId or threadId' })
+          return
+        }
+        const currentState = await readPulseState()
+        await writePulseState({
+          ...currentState,
+          itemStates: {
+            ...currentState.itemStates,
+            [itemId]: {
+              ...normalizePulseItemState(currentState.itemStates[itemId]),
+              followUpAtIso: new Date().toISOString(),
+              followUpThreadId: threadId,
+            },
+          },
         })
         setJson(res, 200, { data: await buildPulseResponse() })
         return

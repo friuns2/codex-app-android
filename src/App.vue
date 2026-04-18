@@ -236,7 +236,12 @@
 
         <section class="content-body">
           <template v-if="isPulseRoute">
-            <PulseToday :key="pulseViewKey" />
+            <PulseToday
+              :key="pulseViewKey"
+              :default-cwd="pulseDefaultCwd"
+              :save-item-to-chat="savePulseItemToChat"
+              :follow-up-on-item="followUpPulseItem"
+            />
           </template>
           <template v-else-if="isPluginsRoute">
             <PluginsHub @skills-changed="onSkillsChanged" />
@@ -252,7 +257,15 @@
           </template>
           <template v-else-if="isHomeRoute">
             <div class="content-grid">
-              <PulseToday v-if="pulseSettings.showInNewChats" :key="pulseViewKey" embedded class="home-pulse" />
+              <PulseToday
+                v-if="pulseSettings.showInNewChats"
+                :key="pulseViewKey"
+                embedded
+                class="home-pulse"
+                :default-cwd="pulseDefaultCwd"
+                :save-item-to-chat="savePulseItemToChat"
+                :follow-up-on-item="followUpPulseItem"
+              />
               <div class="new-thread-empty">
                 <p class="new-thread-hero">Let's build</p>
                 <ComposerDropdown class="new-thread-folder-dropdown" :model-value="newThreadCwd"
@@ -387,7 +400,7 @@ import {
   switchAccount,
   updatePulseSettings,
 } from './api/codexGateway'
-import type { ReasoningEffort, ThreadScrollState, UiAccountEntry, UiPulseSettings, UiRateLimitSnapshot, UiRateLimitWindow } from './types/codex'
+import type { ReasoningEffort, ThreadScrollState, UiAccountEntry, UiPulseItem, UiPulseSettings, UiRateLimitSnapshot, UiRateLimitWindow } from './types/codex'
 import { buildFilesRouteLocation } from './utils/fileExplorer'
 
 const ThreadConversation = defineAsyncComponent(() => import('./components/content/ThreadConversation.vue'))
@@ -533,6 +546,13 @@ const isAutomationsRoute = computed(() => route.name === 'automations')
 const isSkillsRoute = computed(() => route.name === 'skills')
 const isFilesRoute = computed(() => route.name === 'files')
 const pulseViewKey = computed(() => `${pulseSettings.value.showInNewChats ? '1' : '0'}:${pulseSettings.value.referenceMemoryInSuggestions ? '1' : '0'}`)
+const pulseDefaultCwd = computed(() => {
+  const selectedCwd = selectedThread.value?.cwd?.trim() ?? ''
+  if (selectedCwd) return selectedCwd
+  const pendingCwd = newThreadCwd.value.trim()
+  if (pendingCwd) return pendingCwd
+  return workspaceRootOptionsState.value.order[0]?.trim() ?? ''
+})
 const contentTitle = computed(() => {
   if (isPulseRoute.value) return 'Today'
   if (isPluginsRoute.value) return 'Plugins'
@@ -1453,6 +1473,57 @@ function togglePulseMemorySuggestions(): void {
         referenceMemoryInSuggestions: !nextValue,
       }
     })
+}
+
+function buildPulseCardContext(item: UiPulseItem): string {
+  const lines = [
+    `Pulse title: ${item.title}`,
+    `Pulse summary: ${item.summary}`,
+    `Pulse details: ${item.details}`,
+  ]
+  if (item.tags.length > 0) {
+    lines.push(`Pulse tags: ${item.tags.join(', ')}`)
+  }
+  return lines.join('\n')
+}
+
+async function savePulseItemToChat(item: UiPulseItem): Promise<string> {
+  const targetCwd = pulseDefaultCwd.value.trim()
+  const text = [
+    'Save this Pulse card as a chat for later reference.',
+    'Keep the answer short and preserve the key facts for future follow-up.',
+    '',
+    buildPulseCardContext(item),
+  ].join('\n')
+  const threadId = await sendMessageToNewThread(text, targetCwd)
+  if (!threadId) {
+    throw new Error('Failed to create a thread from this Pulse card')
+  }
+  await router.push({ name: 'thread', params: { threadId } })
+  if (selectedThreadId.value !== threadId) {
+    await selectThread(threadId)
+  }
+  return threadId
+}
+
+async function followUpPulseItem(item: UiPulseItem, prompt: string): Promise<string> {
+  const targetCwd = pulseDefaultCwd.value.trim()
+  const text = [
+    'Use this Pulse card as context and answer the follow-up question.',
+    '',
+    buildPulseCardContext(item),
+    '',
+    `Follow-up question: ${prompt.trim()}`,
+  ].join('\n')
+  const threadId = await sendMessageToNewThread(text, targetCwd)
+  if (!threadId) {
+    throw new Error('Failed to start a follow-up thread from this Pulse card')
+  }
+  await router.push({ name: 'thread', params: { threadId } })
+  if (selectedThreadId.value !== threadId) {
+    await selectThread(threadId)
+  }
+  return threadId
 }
 
 function cycleInProgressSendMode(): void {

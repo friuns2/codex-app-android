@@ -596,3 +596,9 @@ If a finding conflicts with current official docs or current official code, trea
   - add the Today/Pulse entry point and settings
   - preserve curate/feedback history affordances
   - do not claim official desktop support when only a local preview/cache-backed version exists
+- Additional Pulse interaction cues documented in the public help copy and release notes:
+  - Pulse is a once-daily card surface rather than a persistent inbox
+  - users can give thumbs up/down feedback on cards
+  - users can save a card into chat history for later
+  - users can ask a follow-up directly from a card
+  - cards that are not saved or interacted with should not be treated as long-lived history

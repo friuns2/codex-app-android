@@ -1263,6 +1263,11 @@ function normalizePulseItem(value: unknown): UiPulseItem | null {
     details,
     createdAtIso,
     tags: readStringArray(record?.tags),
+    reaction: record?.reaction === 'up' || record?.reaction === 'down' ? record.reaction : null,
+    savedAtIso: readString(record?.savedAtIso),
+    savedThreadId: readString(record?.savedThreadId),
+    followUpAtIso: readString(record?.followUpAtIso),
+    followUpThreadId: readString(record?.followUpThreadId),
   }
 }
 
@@ -1353,6 +1358,48 @@ export async function createPulseFeedback(text: string, kind: UiPulseFeedbackKin
   const payload = (await response.json()) as unknown
   if (!response.ok) {
     throw new Error(getErrorMessageFromPayload(payload, 'Failed to save pulse feedback'))
+  }
+  const envelope = asRecord(payload)
+  return normalizePulseState(envelope?.data)
+}
+
+export async function setPulseItemReaction(itemId: string, reaction: 'up' | 'down' | null): Promise<UiPulseState> {
+  const response = await fetch('/codex-api/pulse/items/reaction', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ itemId, reaction }),
+  })
+  const payload = (await response.json()) as unknown
+  if (!response.ok) {
+    throw new Error(getErrorMessageFromPayload(payload, 'Failed to update Pulse reaction'))
+  }
+  const envelope = asRecord(payload)
+  return normalizePulseState(envelope?.data)
+}
+
+export async function markPulseItemSaved(itemId: string, threadId: string): Promise<UiPulseState> {
+  const response = await fetch('/codex-api/pulse/items/save', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ itemId, threadId }),
+  })
+  const payload = (await response.json()) as unknown
+  if (!response.ok) {
+    throw new Error(getErrorMessageFromPayload(payload, 'Failed to mark Pulse item as saved'))
+  }
+  const envelope = asRecord(payload)
+  return normalizePulseState(envelope?.data)
+}
+
+export async function markPulseItemFollowUp(itemId: string, threadId: string): Promise<UiPulseState> {
+  const response = await fetch('/codex-api/pulse/items/follow-up', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ itemId, threadId }),
+  })
+  const payload = (await response.json()) as unknown
+  if (!response.ok) {
+    throw new Error(getErrorMessageFromPayload(payload, 'Failed to mark Pulse item follow-up'))
   }
   const envelope = asRecord(payload)
   return normalizePulseState(envelope?.data)
