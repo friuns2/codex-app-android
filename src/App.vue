@@ -1008,8 +1008,8 @@ const accountActionError = ref('')
 const SEND_WITH_ENTER_KEY = 'codex-web-local.send-with-enter.v1'
 const IN_PROGRESS_SEND_MODE_KEY = 'codex-web-local.in-progress-send-mode.v1'
 const DARK_MODE_KEY = 'codex-web-local.dark-mode.v1'
-const DICTATION_CLICK_TO_TOGGLE_KEY = 'codex-web-local.dictation-click-to-toggle.v1'
-const DICTATION_AUTO_SEND_KEY = 'codex-web-local.dictation-auto-send.v1'
+const DICTATION_CLICK_TO_TOGGLE_KEY = 'codex-web-local.dictation-click-to-toggle.v2'
+const DICTATION_AUTO_SEND_KEY = 'codex-web-local.dictation-auto-send.v2'
 const DICTATION_LANGUAGE_KEY = 'codex-web-local.dictation-language.v1'
 
 const GITHUB_TRENDING_PROJECTS_KEY = 'codex-web-local.github-trending-projects.v1'
@@ -1019,8 +1019,8 @@ const sendWithEnter = ref(loadBoolPref(SEND_WITH_ENTER_KEY, true))
 const inProgressSendMode = ref<'steer' | 'queue'>(loadInProgressSendModePref())
 const darkMode = ref<'system' | 'light' | 'dark'>(loadDarkModePref())
 const chatWidth = ref<ChatWidthMode>(loadChatWidthPref())
-const dictationClickToToggle = ref(loadBoolPref(DICTATION_CLICK_TO_TOGGLE_KEY, false))
-const dictationAutoSend = ref(loadBoolPref(DICTATION_AUTO_SEND_KEY, true))
+const dictationClickToToggle = ref(loadBoolPref(DICTATION_CLICK_TO_TOGGLE_KEY, true))
+const dictationAutoSend = ref(loadBoolPref(DICTATION_AUTO_SEND_KEY, false))
 const dictationLanguage = ref(loadDictationLanguagePref())
 const dictationLanguageOptions = computed(() => buildDictationLanguageOptions())
 

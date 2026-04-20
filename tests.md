@@ -2484,6 +2484,34 @@ Test Codex CLI with Big Pickle model via OpenCode Zen provider.
 #### Rollback/Cleanup notes
 - No cleanup required.
 
+### Feature: Tap-to-toggle dictation with transcribe-and-send flow
+
+#### Prerequisites/Setup
+- App is running from this repository.
+- The browser has microphone permission.
+- An existing thread is open so the composer is enabled.
+
+#### Step-by-step actions
+1. Open Settings and verify `Click to toggle dictation` is enabled by default.
+2. Verify `Auto send dictation` is disabled by default.
+3. Click the microphone once and confirm recording starts without holding the button.
+4. Speak a short phrase and click the microphone again to stop recording.
+5. Start dictation again and immediately click the microphone a second time before recording fully starts.
+6. While transcription is pending, confirm the microphone button shows a loading spinner and cannot be clicked again.
+7. Verify the transcript is inserted into the composer and is not auto-sent.
+8. Start dictation again, speak another short phrase, and click the send arrow while recording is still active.
+9. Repeat the same flow in a touch viewport and confirm a tap starts recording and the next tap stops it without press-and-hold.
+
+#### Expected result(s)
+- Dictation uses tap-to-toggle by default for users without saved legacy preferences.
+- A rapid second tap during startup still queues a stop request instead of leaving recording stuck on.
+- Stopping with the microphone inserts the transcript into the composer and keeps it editable.
+- The microphone shows a transcribing spinner while `/codex-api/transcribe` is in progress.
+- Clicking the send arrow during recording transcribes the audio and submits the message automatically.
+
+#### Rollback/Cleanup notes
+- Clear the draft or delete the test message created during verification if needed.
+
 ### Feature: Plain filesystem paths are never auto-linked
 
 #### Prerequisites/Setup

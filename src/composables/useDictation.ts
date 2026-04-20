@@ -1,13 +1,14 @@
 import { onBeforeUnmount, ref } from 'vue'
 
 export type DictationState = 'idle' | 'recording' | 'transcribing'
+export type DictationStopMode = 'insert' | 'send'
 const DICTATION_SILENCE_THRESHOLD = 0.0025
 const DICTATION_BAR_WIDTH = 3
 const DICTATION_BAR_GAP = 2
 const MAX_WAVEFORM_SAMPLES = 256
 
 export function useDictation(options: {
-  onTranscript: (text: string) => void
+  onTranscript: (text: string, mode: DictationStopMode) => void
   getLanguage?: () => string
   onEmpty?: () => void
   onError?: (error: unknown) => void
@@ -28,6 +29,7 @@ export function useDictation(options: {
   let isStartingRecording = false
   let stopRequestedBeforeStart = false
   let transcribeAbortController: AbortController | null = null
+  let pendingStopMode: DictationStopMode = 'insert'
 
   function cancelTranscription(): void {
     if (transcribeAbortController) {
@@ -149,6 +151,7 @@ export function useDictation(options: {
     if (state.value !== 'idle' || !isSupported.value || isStartingRecording) return
     isStartingRecording = true
     stopRequestedBeforeStart = false
+    pendingStopMode = 'insert'
 
     try {
       mediaStream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1 } })
@@ -160,17 +163,22 @@ export function useDictation(options: {
       mediaRecorder.onstop = () => {
         const recordedChunks = chunks
         const recordedMimeType = mediaRecorder?.mimeType || recordedChunks[0]?.type || 'audio/webm'
+        const stopMode = pendingStopMode
+        pendingStopMode = 'insert'
         cleanup()
-        void transcribe(recordedChunks, recordedMimeType)
+        void transcribe(recordedChunks, recordedMimeType, stopMode)
       }
       startWaveformCapture(mediaStream)
       mediaRecorder.start(250)
       state.value = 'recording'
       if (stopRequestedBeforeStart) {
-        stopRecording()
+        const stopMode = pendingStopMode
+        stopRequestedBeforeStart = false
+        stopRecording(stopMode)
       }
     } catch (error) {
       cleanup()
+      stopRequestedBeforeStart = false
       state.value = 'idle'
       options.onError?.(error)
     } finally {
@@ -178,13 +186,15 @@ export function useDictation(options: {
     }
   }
 
-  function stopRecording() {
+  function stopRecording(mode: DictationStopMode = 'insert') {
     if (isStartingRecording && state.value === 'idle') {
       stopRequestedBeforeStart = true
+      pendingStopMode = mode
       return
     }
     if (state.value !== 'recording' || !mediaRecorder) return
     if (mediaRecorder.state !== 'inactive') {
+      pendingStopMode = mode
       state.value = 'transcribing'
       try {
         mediaRecorder.requestData()
@@ -197,12 +207,13 @@ export function useDictation(options: {
 
   function cancel() {
     stopRequestedBeforeStart = false
+    pendingStopMode = 'insert'
     cancelTranscription()
     cleanup()
     state.value = 'idle'
   }
 
-  async function transcribe(recordedChunks: Blob[], mimeType: string) {
+  async function transcribe(recordedChunks: Blob[], mimeType: string, mode: DictationStopMode) {
     if (recordedChunks.length === 0) {
       options.onEmpty?.()
       state.value = 'idle'
@@ -246,7 +257,7 @@ export function useDictation(options: {
 
       const text = (data?.text ?? '').trim()
       if (text.length > 0) {
-        options.onTranscript(text)
+        options.onTranscript(text, mode)
       } else {
         options.onEmpty?.()
       }
@@ -268,6 +279,7 @@ export function useDictation(options: {
   function cleanup() {
     stopWaveformCapture()
     resetWaveformDisplay()
+    pendingStopMode = 'insert'
     if (mediaRecorder) {
       mediaRecorder.ondataavailable = null
       mediaRecorder.onstop = null
@@ -285,7 +297,7 @@ export function useDictation(options: {
   })
 
   function toggleRecording() {
-    if (state.value === 'recording') {
+    if (state.value === 'recording' || (isStartingRecording && state.value === 'idle')) {
       stopRecording()
       return
     }

@@ -1455,7 +1455,7 @@ function trimLinkWrappers(value: string): { core: string; leading: string; trail
 
   while (core.length > 0) {
     const opening = core[0]
-    const closing = Object.hasOwn(wrapperPairs, opening) ? wrapperPairs[opening] : ''
+    const closing = Object.prototype.hasOwnProperty.call(wrapperPairs, opening) ? wrapperPairs[opening] : ''
     if (!closing || !core.endsWith(closing)) break
     leading += opening
     trailing += closing
