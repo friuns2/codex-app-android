@@ -592,7 +592,9 @@ function areMessageFieldsEqual(first: UiMessage, second: UiMessage): boolean {
     areCommandExecutionsEqual(first.commandExecution, second.commandExecution) &&
     arePlanDataEqual(first.plan, second.plan) &&
     first.turnId === second.turnId &&
-    first.turnIndex === second.turnIndex
+    first.turnIndex === second.turnIndex &&
+    first.isAutomationRun === second.isAutomationRun &&
+    first.automationDisplayName === second.automationDisplayName
   )
 }
 
@@ -688,6 +690,12 @@ function removeRedundantLiveAgentMessages(previous: UiMessage[], incoming: UiMes
     return !incomingAssistantTexts.has(normalized)
   })
 
+  return next.length === previous.length ? previous : next
+}
+
+function removePersistedLiveMessages(previous: UiMessage[], incoming: UiMessage[]): UiMessage[] {
+  const incomingIds = new Set(incoming.map((message) => message.id))
+  const next = previous.filter((message) => !incomingIds.has(message.id))
   return next.length === previous.length ? previous : next
 }
 
@@ -2985,6 +2993,7 @@ export function useDesktopState() {
       text: '',
       images: [imageUrl],
       messageType: 'imageView',
+
     }
   }
 
@@ -3323,6 +3332,7 @@ export function useDesktopState() {
     const completedImageView = readCompletedImageView(notification)
     if (completedImageView) {
       upsertLiveAgentMessage(notificationThreadId, completedImageView)
+
     }
 
     const startedReasoningItemId = readReasoningStartedItemId(notification)

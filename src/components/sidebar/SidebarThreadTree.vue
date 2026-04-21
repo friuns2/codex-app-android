@@ -31,6 +31,13 @@
                   <span class="thread-row-title">{{ thread.title }}</span>
                   <IconTablerGitFork v-if="thread.hasWorktree" class="thread-row-worktree-icon" title="Worktree thread" />
                   <span
+                    v-if="threadHasAutomation(thread.id)"
+                    class="thread-row-automation-chip"
+                    :title="threadAutomationTooltip(thread.id)"
+                  >
+                    Auto
+                  </span>
+                  <span
                     v-if="thread.pendingRequestState"
                     class="thread-row-request-chip"
                     :data-state="thread.pendingRequestState"
@@ -137,6 +144,13 @@
               <span class="thread-row-title-line">
                 <span class="thread-row-title">{{ thread.title }}</span>
                 <IconTablerGitFork v-if="thread.hasWorktree" class="thread-row-worktree-icon" title="Worktree thread" />
+                <span
+                  v-if="threadHasAutomation(thread.id)"
+                  class="thread-row-automation-chip"
+                  :title="threadAutomationTooltip(thread.id)"
+                >
+                  Auto
+                </span>
                 <span
                   v-if="thread.pendingRequestState"
                   class="thread-row-request-chip"
@@ -295,6 +309,13 @@
                       <span class="thread-row-title">{{ thread.title }}</span>
                       <IconTablerGitFork v-if="thread.hasWorktree" class="thread-row-worktree-icon" title="Worktree thread" />
                       <span
+                        v-if="threadHasAutomation(thread.id)"
+                        class="thread-row-automation-chip"
+                        :title="threadAutomationTooltip(thread.id)"
+                      >
+                        Auto
+                      </span>
+                      <span
                         v-if="thread.pendingRequestState"
                         class="thread-row-request-chip"
                         :data-state="thread.pendingRequestState"
@@ -350,6 +371,9 @@
         :data-open-direction="getThreadMenuDirection(openThreadMenuThread.id)"
         @click.stop
       >
+        <button class="thread-menu-item" type="button" @click="openAutomationDialog(openThreadMenuThread.id)">
+          {{ threadHasAutomation(openThreadMenuThread.id) ? 'Edit automation…' : 'Add automation…' }}
+        </button>
         <button class="thread-menu-item" type="button" @click="onBrowseThreadFiles(openThreadMenuThread.id)">
           Browse files
         </button>
@@ -393,13 +417,77 @@
     <Teleport to="body">
       <div v-if="deleteThreadDialogVisible" class="rename-thread-overlay" @click.self="closeDeleteThreadDialog">
         <div class="rename-thread-panel" role="dialog" aria-modal="true" aria-label="Delete thread">
-          <h3 class="rename-thread-title">Delete thread?</h3>
+          <h3 class="rename-thread-title">{{ deleteThreadHasAutomation ? 'Archive chat and remove automation?' : 'Delete thread?' }}</h3>
           <p class="rename-thread-subtitle">
-            This will archive the thread "{{ deleteThreadTitle }}". You can find it later in archived threads.
+            <template v-if="deleteThreadHasAutomation">
+              This will archive the thread "{{ deleteThreadTitle }}" and remove the attached heartbeat automation.
+            </template>
+            <template v-else>
+              This will archive the thread "{{ deleteThreadTitle }}". You can find it later in archived threads.
+            </template>
           </p>
           <div class="rename-thread-actions">
             <button class="rename-thread-button" type="button" @click="closeDeleteThreadDialog">Cancel</button>
-            <button class="rename-thread-button rename-thread-button-danger" type="button" @click="submitDeleteThread">Delete</button>
+            <button class="rename-thread-button rename-thread-button-danger" type="button" @click="submitDeleteThread">
+              {{ deleteThreadHasAutomation ? 'Archive and remove' : 'Delete' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <Teleport to="body">
+      <div v-if="automationDialogVisible" class="rename-thread-overlay" @click.self="closeAutomationDialog">
+        <div class="rename-thread-panel automation-thread-panel" role="dialog" aria-modal="true" aria-label="Thread automation">
+          <h3 class="rename-thread-title">{{ automationDialogMode === 'edit' ? 'Edit automation' : 'Add automation' }}</h3>
+          <p class="rename-thread-subtitle">This creates a heartbeat automation attached to the selected thread.</p>
+
+          <label class="automation-thread-field">
+            <span class="automation-thread-label">Name</span>
+            <input v-model="automationDraft.name" class="rename-thread-input" type="text" placeholder="Automation name" />
+          </label>
+
+          <label class="automation-thread-field">
+            <span class="automation-thread-label">Prompt</span>
+            <textarea v-model="automationDraft.prompt" class="automation-thread-textarea" rows="6" placeholder="Describe what the automation should do"></textarea>
+          </label>
+
+          <label class="automation-thread-field">
+            <span class="automation-thread-label">Schedule (RRULE)</span>
+            <input
+              v-model="automationDraft.rrule"
+              class="rename-thread-input"
+              type="text"
+              placeholder="FREQ=DAILY;BYHOUR=9;BYMINUTE=0"
+            />
+          </label>
+
+          <label class="automation-thread-field">
+            <span class="automation-thread-label">Status</span>
+            <select v-model="automationDraft.status" class="automation-thread-select">
+              <option value="ACTIVE">Active</option>
+              <option value="PAUSED">Paused</option>
+            </select>
+          </label>
+
+          <p v-if="automationDialogError" class="rename-thread-subtitle automation-thread-error">{{ automationDialogError }}</p>
+
+          <div class="rename-thread-actions">
+            <button
+              v-if="automationDialogMode === 'edit'"
+              class="rename-thread-button rename-thread-button-danger"
+              type="button"
+              :disabled="isSavingAutomation"
+              @click="onDeleteAutomationFromDialog"
+            >
+              Remove
+            </button>
+            <button class="rename-thread-button" type="button" :disabled="isSavingAutomation" @click="closeAutomationDialog">
+              Cancel
+            </button>
+            <button class="rename-thread-button rename-thread-button-primary" type="button" :disabled="isSavingAutomation" @click="submitAutomationDialog">
+              {{ isSavingAutomation ? 'Saving…' : 'Save' }}
+            </button>
           </div>
         </div>
       </div>
@@ -410,8 +498,14 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import type { ComponentPublicInstance } from 'vue'
-import { getPinnedThreadState, persistPinnedThreadIds } from '../../api/codexGateway'
-import type { UiProjectGroup, UiThread } from '../../types/codex'
+import {
+  deleteThreadAutomation,
+  getPinnedThreadState,
+  getThreadAutomationMap,
+  persistPinnedThreadIds,
+  upsertThreadAutomation,
+} from '../../api/codexGateway'
+import type { UiProjectGroup, UiThread, UiThreadAutomation, UiThreadAutomationStatus } from '../../types/codex'
 import IconTablerChevronDown from '../icons/IconTablerChevronDown.vue'
 import IconTablerChevronRight from '../icons/IconTablerChevronRight.vue'
 import IconTablerDots from '../icons/IconTablerDots.vue'
@@ -495,6 +589,23 @@ const renameThreadInputRef = ref<HTMLInputElement | null>(null)
 const deleteThreadDialogVisible = ref(false)
 const deleteThreadDialogThreadId = ref('')
 const deleteThreadTitle = ref('')
+const automationByThreadId = ref<Record<string, UiThreadAutomation>>({})
+const automationDialogVisible = ref(false)
+const automationDialogThreadId = ref('')
+const automationDialogMode = ref<'create' | 'edit'>('create')
+const automationDialogError = ref('')
+const isSavingAutomation = ref(false)
+const automationDraft = ref<{
+  name: string
+  prompt: string
+  rrule: string
+  status: UiThreadAutomationStatus
+}>({
+  name: '',
+  prompt: '',
+  rrule: 'FREQ=DAILY;BYHOUR=9;BYMINUTE=0',
+  status: 'ACTIVE',
+})
 const groupsContainerRef = ref<HTMLElement | null>(null)
 const pendingProjectDrag = ref<PendingProjectDrag | null>(null)
 const activeProjectDrag = ref<ActiveProjectDrag | null>(null)
@@ -647,8 +758,15 @@ onMounted(async () => {
   if (normalized.length > 0) {
     pinnedThreadIds.value = normalized
   }
+  try {
+    automationByThreadId.value = await getThreadAutomationMap()
+  } catch {
+    automationByThreadId.value = {}
+  }
   hasLoadedPinnedThreadState = true
 })
+
+const deleteThreadHasAutomation = computed(() => threadHasAutomation(deleteThreadDialogThreadId.value))
 
 const threadProjectNameById = computed(() => {
   const map = new Map<string, string>()
@@ -783,6 +901,21 @@ function onSelect(threadId: string): void {
   emit('select', threadId)
 }
 
+function threadHasAutomation(threadId: string): boolean {
+  return Boolean(automationByThreadId.value[threadId])
+}
+
+function threadAutomationTooltip(threadId: string): string {
+  const automation = automationByThreadId.value[threadId]
+  if (!automation) return ''
+  const nextRunLabel = automation.status === 'PAUSED'
+    ? '-'
+    : automation.nextRunAtMs
+      ? new Date(automation.nextRunAtMs).toLocaleString()
+      : 'Not scheduled'
+  return `${automation.name} • Next run: ${nextRunLabel}`
+}
+
 function onExportThread(threadId: string): void {
   emit('export-thread', threadId)
   closeThreadMenu()
@@ -882,12 +1015,85 @@ function closeDeleteThreadDialog(): void {
   deleteThreadTitle.value = ''
 }
 
-function submitDeleteThread(): void {
+async function submitDeleteThread(): Promise<void> {
   const threadId = deleteThreadDialogThreadId.value
   if (!threadId) return
+  if (threadHasAutomation(threadId)) {
+    try {
+      await deleteThreadAutomation(threadId)
+    } catch {
+      // Keep thread archive usable even if automation cleanup fails.
+    }
+    automationByThreadId.value = Object.fromEntries(
+      Object.entries(automationByThreadId.value).filter(([id]) => id !== threadId),
+    )
+  }
   pinnedThreadIds.value = pinnedThreadIds.value.filter((id) => id !== threadId)
   emit('archive', threadId)
   closeDeleteThreadDialog()
+}
+
+function openAutomationDialog(threadId: string): void {
+  const existing = automationByThreadId.value[threadId]
+  automationDialogThreadId.value = threadId
+  automationDialogMode.value = existing ? 'edit' : 'create'
+  automationDialogError.value = ''
+  automationDraft.value = {
+    name: existing?.name ?? 'Thread automation',
+    prompt: existing?.prompt ?? '',
+    rrule: existing?.rrule ?? 'FREQ=DAILY;BYHOUR=9;BYMINUTE=0',
+    status: existing?.status ?? 'ACTIVE',
+  }
+  automationDialogVisible.value = true
+  closeThreadMenu()
+}
+
+function closeAutomationDialog(): void {
+  automationDialogVisible.value = false
+  automationDialogThreadId.value = ''
+  automationDialogError.value = ''
+  isSavingAutomation.value = false
+}
+
+async function submitAutomationDialog(): Promise<void> {
+  const threadId = automationDialogThreadId.value
+  if (!threadId) return
+  isSavingAutomation.value = true
+  automationDialogError.value = ''
+  try {
+    const saved = await upsertThreadAutomation({
+      threadId,
+      name: automationDraft.value.name,
+      prompt: automationDraft.value.prompt,
+      rrule: automationDraft.value.rrule,
+      status: automationDraft.value.status,
+    })
+    automationByThreadId.value = {
+      ...automationByThreadId.value,
+      [threadId]: saved,
+    }
+    closeAutomationDialog()
+  } catch (error) {
+    automationDialogError.value = error instanceof Error ? error.message : 'Failed to save automation'
+    isSavingAutomation.value = false
+  }
+}
+
+async function onDeleteAutomationFromDialog(): Promise<void> {
+  const threadId = automationDialogThreadId.value
+  if (!threadId) return
+  isSavingAutomation.value = true
+  automationDialogError.value = ''
+  try {
+    await deleteThreadAutomation(threadId)
+    automationByThreadId.value = Object.fromEntries(
+      Object.entries(automationByThreadId.value).filter(([id]) => id !== threadId),
+    )
+    closeAutomationDialog()
+  } catch (error) {
+    automationDialogError.value = error instanceof Error ? error.message : 'Failed to remove automation'
+    isSavingAutomation.value = false
+  }
 }
 
 function getProjectDisplayName(projectName: string): string {
@@ -1857,6 +2063,10 @@ onBeforeUnmount(() => {
   @apply block mx-auto rounded-lg px-2 py-0.5 text-sm font-normal text-zinc-600 transition hover:text-zinc-800 hover:bg-zinc-200;
 }
 
+.thread-row-automation-chip {
+  @apply rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-amber-800;
+}
+
 .project-header-row:hover .project-icon-folder {
   @apply opacity-0;
 }
@@ -1938,5 +2148,26 @@ onBeforeUnmount(() => {
 
 .rename-thread-button-danger {
   @apply bg-rose-600 text-white hover:bg-rose-700;
+}
+
+.automation-thread-panel {
+  @apply max-w-lg;
+}
+
+.automation-thread-field {
+  @apply mb-3 flex flex-col gap-1;
+}
+
+.automation-thread-label {
+  @apply text-xs font-medium uppercase tracking-wide text-zinc-500;
+}
+
+.automation-thread-textarea,
+.automation-thread-select {
+  @apply w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-zinc-500;
+}
+
+.automation-thread-error {
+  @apply mb-0 text-rose-600;
 }
 </style>

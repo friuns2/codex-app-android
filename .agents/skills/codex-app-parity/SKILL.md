@@ -502,3 +502,17 @@ After each feature implementation session that uses this skill:
   - `thread/compact/start`
   - `feedback/upload`
   - `fuzzyFileSearch`
+
+## Findings: Thread Heartbeat Automations (2026-04-21)
+
+- Codex.app exposes thread heartbeat automation affordances in the sidebar:
+  - thread menu copy: `Add automation…` and `Edit automation…`
+  - attached heartbeat rows show a next-run tooltip via `sidebarTaskRow.heartbeatAutomation.nextRun`
+  - archive confirmation copy changes to `Archive chat and remove automation?`
+- Desktop heartbeat automation payloads use:
+  - `<heartbeat>`
+  - `<automation_id>`
+  - `<current_time_iso>`
+  - `<instructions>`
+- Local automation storage uses `$CODEX_HOME/automations/<id>/automation.toml`; heartbeat records include `kind = "heartbeat"` and `target_thread_id`.
+

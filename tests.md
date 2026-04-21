@@ -19,6 +19,30 @@ This file tracks manual regression and feature verification steps.
 #### Rollback/Cleanup
 - <cleanup action, if any>
 
+### Feature: Thread heartbeat automations
+
+#### Prerequisites
+- App is running from this repository.
+- At least one local thread exists in the sidebar.
+- Local Codex home is writable (`$CODEX_HOME` or `~/.codex`).
+
+#### Steps
+1. Open the sidebar thread menu for a thread without an attached automation.
+2. Confirm the menu shows `Add automation…`.
+3. Click `Add automation…`.
+4. Fill name, prompt, RRULE schedule, and set status to `Paused`.
+5. Save the automation and reopen the same thread menu.
+6. Confirm the menu now shows `Edit automation…` and the thread row shows an automation chip.
+7. Open `Edit automation…`, confirm the saved values are prefilled, then remove the automation.
+
+#### Expected Results
+- Thread-scoped heartbeat automations are created under the Codex automations store and attached by `target_thread_id`.
+- The automation editor is hosted from the thread menu and uses Codex.app wording.
+- Removing the automation removes the thread row automation chip and returns the menu to `Add automation…`.
+
+#### Rollback/Cleanup
+- Remove any test automation from the thread automation dialog or delete its folder under `$CODEX_HOME/automations/<automation-id>/`.
+
 ### Feature: Telegram bot token stored in dedicated global file
 
 #### Prerequisites

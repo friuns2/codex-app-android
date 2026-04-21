@@ -88,11 +88,36 @@ function toImageGenerationUrl(value: string): string {
   return `data:image/png;base64,${compact}`
 }
 
+function readHeartbeatField(value: string, field: string): string {
+  const match = new RegExp(`<${field}>\\s*([\\s\\S]*?)\\s*</${field}>`, 'iu').exec(value)
+  return match?.[1]?.trim() ?? ''
+}
+
+function parseHeartbeatEnvelope(value: string): { automationId: string; instructions: string } | null {
+  const trimmed = value.trim()
+  if (!trimmed.startsWith('<heartbeat>') || !trimmed.endsWith('</heartbeat>')) return null
+  const instructions = readHeartbeatField(trimmed, 'instructions')
+  if (!instructions) return null
+  return {
+    automationId: readHeartbeatField(trimmed, 'automation_id'),
+    instructions,
+  }
+}
+
 function parseUserMessageContent(
   itemId: string,
   content: UserInput[] | undefined,
-): { text: string; images: string[]; fileAttachments: UiFileAttachment[]; rawBlocks: UiMessage[] } {
-  if (!Array.isArray(content)) return { text: '', images: [], fileAttachments: [], rawBlocks: [] }
+): {
+  text: string
+  images: string[]
+  fileAttachments: UiFileAttachment[]
+  rawBlocks: UiMessage[]
+  isAutomationRun: boolean
+  automationDisplayName: string | null
+} {
+  if (!Array.isArray(content)) {
+    return { text: '', images: [], fileAttachments: [], rawBlocks: [], isAutomationRun: false, automationDisplayName: null }
+  }
 
   const textChunks: string[] = []
   const images: string[] = []
@@ -123,12 +148,15 @@ function parseUserMessageContent(
 
   const fullText = textChunks.join('\n')
   const fileAttachments = extractFileAttachments(fullText)
+  const heartbeat = parseHeartbeatEnvelope(fullText)
 
   return {
-    text: extractCodexUserRequestText(fullText),
+    text: heartbeat?.instructions ?? extractCodexUserRequestText(fullText),
     images,
     fileAttachments,
     rawBlocks,
+    isAutomationRun: heartbeat !== null,
+    automationDisplayName: heartbeat?.automationId || null,
   }
 }
 
@@ -367,11 +395,13 @@ function toUiMessages(item: ThreadItem): UiMessage[] {
     if (hasRenderableUserContent) {
       messages.push({
         id: item.id,
-        role: 'user',
+        role: parsed.isAutomationRun ? 'system' : 'user',
         text: parsed.text,
         images: parsed.images,
         fileAttachments: parsed.fileAttachments.length > 0 ? parsed.fileAttachments : undefined,
         messageType: item.type,
+        isAutomationRun: parsed.isAutomationRun,
+        automationDisplayName: parsed.automationDisplayName,
       })
     }
 
@@ -417,6 +447,7 @@ function toUiMessages(item: ThreadItem): UiMessage[] {
   if (item.type === 'reasoning') {
     return []
   }
+
 
   if (item.type === 'plan') {
     const text = typeof item.text === 'string' ? item.text : ''
