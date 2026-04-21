@@ -47,16 +47,6 @@
           <button
             v-if="!isSidebarCollapsed"
             class="sidebar-skills-link"
-            :class="{ 'is-active': isPulseRoute }"
-            type="button"
-            @click="router.push({ name: 'pulse' }); isMobile && setSidebarCollapsed(true)"
-          >
-            Today
-          </button>
-
-          <button
-            v-if="!isSidebarCollapsed"
-            class="sidebar-skills-link"
             :class="{ 'is-active': isPluginsRoute }"
             type="button"
             @click="router.push({ name: 'plugins' }); isMobile && setSidebarCollapsed(true)"
@@ -81,7 +71,7 @@
             type="button"
             @click="router.push({ name: 'skills' }); isMobile && setSidebarCollapsed(true)"
           >
-            Skills
+            Skills Hub
           </button>
 
           <SidebarThreadTree :groups="projectGroups" :project-display-name-by-id="projectDisplayNameById"
@@ -175,14 +165,6 @@
                 <span class="sidebar-settings-label">Require ⌘ + enter to send</span>
                 <span class="sidebar-settings-toggle" :class="{ 'is-on': !sendWithEnter }" />
               </button>
-              <button class="sidebar-settings-row" type="button" @click="toggleShowPulseInNewChats">
-                <span class="sidebar-settings-label">Show Pulse in new chats</span>
-                <span class="sidebar-settings-toggle" :class="{ 'is-on': pulseSettings.showInNewChats }" />
-              </button>
-              <button class="sidebar-settings-row" type="button" @click="togglePulseMemorySuggestions">
-                <span class="sidebar-settings-label">Reference memory in suggestions</span>
-                <span class="sidebar-settings-toggle" :class="{ 'is-on': pulseSettings.referenceMemoryInSuggestions }" />
-              </button>
               <button class="sidebar-settings-row" type="button" @click="cycleInProgressSendMode">
                 <span class="sidebar-settings-label">When busy, send as</span>
                 <span class="sidebar-settings-value">{{ inProgressSendMode === 'steer' ? 'Steer' : 'Queue' }}</span>
@@ -235,15 +217,7 @@
         </ContentHeader>
 
         <section class="content-body">
-          <template v-if="isPulseRoute">
-            <PulseToday
-              :key="pulseViewKey"
-              :default-cwd="pulseDefaultCwd"
-              :save-item-to-chat="savePulseItemToChat"
-              :follow-up-on-item="followUpPulseItem"
-            />
-          </template>
-          <template v-else-if="isPluginsRoute">
+          <template v-if="isPluginsRoute">
             <PluginsHub @skills-changed="onSkillsChanged" />
           </template>
           <template v-else-if="isAutomationsRoute">
@@ -257,15 +231,6 @@
           </template>
           <template v-else-if="isHomeRoute">
             <div class="content-grid">
-              <PulseToday
-                v-if="pulseSettings.showInNewChats"
-                :key="pulseViewKey"
-                embedded
-                class="home-pulse"
-                :default-cwd="pulseDefaultCwd"
-                :save-item-to-chat="savePulseItemToChat"
-                :follow-up-on-item="followUpPulseItem"
-              />
               <div class="new-thread-empty">
                 <p class="new-thread-hero">Let's build</p>
                 <ComposerDropdown class="new-thread-folder-dropdown" :model-value="newThreadCwd"
@@ -387,7 +352,6 @@ import {
   createWorktree,
   getAccounts,
   getHomeDirectory,
-  getPulseState,
   getProjectRootSuggestion,
   getRuntimeInfo,
   listApps,
@@ -398,9 +362,8 @@ import {
   refreshAccountsFromAuth,
   searchThreads,
   switchAccount,
-  updatePulseSettings,
 } from './api/codexGateway'
-import type { ReasoningEffort, ThreadScrollState, UiAccountEntry, UiPulseItem, UiPulseSettings, UiRateLimitSnapshot, UiRateLimitWindow } from './types/codex'
+import type { ReasoningEffort, ThreadScrollState, UiAccountEntry, UiRateLimitSnapshot, UiRateLimitWindow } from './types/codex'
 import { buildFilesRouteLocation } from './utils/fileExplorer'
 
 const ThreadConversation = defineAsyncComponent(() => import('./components/content/ThreadConversation.vue'))
@@ -408,7 +371,6 @@ const ReviewPane = defineAsyncComponent(() => import('./components/content/Revie
 const SkillsHub = defineAsyncComponent(() => import('./components/content/SkillsHub.vue'))
 const PluginsHub = defineAsyncComponent(() => import('./components/content/PluginsHub.vue'))
 const AutomationsHub = defineAsyncComponent(() => import('./components/content/AutomationsHub.vue'))
-const PulseToday = defineAsyncComponent(() => import('./components/content/PulseToday.vue'))
 
 const SIDEBAR_COLLAPSED_STORAGE_KEY = 'codex-web-local.sidebar-collapsed.v1'
 const LAST_ACTIVE_THREAD_ROUTE_STORAGE_KEY = 'codex-web-local.last-active-thread-route.v1'
@@ -504,10 +466,6 @@ const sendWithEnter = ref(loadBoolPref(SEND_WITH_ENTER_KEY, true))
 const inProgressSendMode = ref<'steer' | 'queue'>(loadInProgressSendModePref())
 const darkMode = ref<'system' | 'light' | 'dark'>(loadDarkModePref())
 const dictationClickToToggle = ref(loadBoolPref(DICTATION_CLICK_TO_TOGGLE_KEY, false))
-const pulseSettings = ref<UiPulseSettings>({
-  showInNewChats: true,
-  referenceMemoryInSuggestions: true,
-})
 const mobileHiddenAtMs = ref<number | null>(null)
 const mobileResumeReloadTriggered = ref(false)
 const mobileResumeSyncInProgress = ref(false)
@@ -540,21 +498,11 @@ const knownThreadIdSet = computed(() => {
 })
 
 const isHomeRoute = computed(() => route.name === 'home')
-const isPulseRoute = computed(() => route.name === 'pulse')
 const isPluginsRoute = computed(() => route.name === 'plugins')
 const isAutomationsRoute = computed(() => route.name === 'automations')
 const isSkillsRoute = computed(() => route.name === 'skills')
 const isFilesRoute = computed(() => route.name === 'files')
-const pulseViewKey = computed(() => `${pulseSettings.value.showInNewChats ? '1' : '0'}:${pulseSettings.value.referenceMemoryInSuggestions ? '1' : '0'}`)
-const pulseDefaultCwd = computed(() => {
-  const selectedCwd = selectedThread.value?.cwd?.trim() ?? ''
-  if (selectedCwd) return selectedCwd
-  const pendingCwd = newThreadCwd.value.trim()
-  if (pendingCwd) return pendingCwd
-  return workspaceRootOptionsState.value.order[0]?.trim() ?? ''
-})
 const contentTitle = computed(() => {
-  if (isPulseRoute.value) return 'Today'
   if (isPluginsRoute.value) return 'Plugins'
   if (isAutomationsRoute.value) return 'Automations'
   if (isSkillsRoute.value) return 'Skills'
@@ -630,7 +578,6 @@ onMounted(() => {
   void applyLaunchProjectPathFromUrl()
   void loadHomeDirectory()
   void loadRuntimeInfo()
-  void loadPulseSettings()
   void loadWorkspaceRootOptionsState()
   void refreshDefaultProjectName()
 })
@@ -1274,18 +1221,6 @@ async function loadRuntimeInfo(): Promise<void> {
   }
 }
 
-async function loadPulseSettings(): Promise<void> {
-  try {
-    const pulseState = await getPulseState()
-    pulseSettings.value = pulseState.settings
-  } catch {
-    pulseSettings.value = {
-      showInNewChats: true,
-      referenceMemoryInSuggestions: true,
-    }
-  }
-}
-
 async function loadWorkspaceRootOptionsState(): Promise<void> {
   try {
     const state = await getWorkspaceRootsState()
@@ -1327,7 +1262,7 @@ function onInterruptTurn(): void {
 }
 
 function onExportChat(): void {
-  if (isHomeRoute.value || isPulseRoute.value || isPluginsRoute.value || isAutomationsRoute.value || isSkillsRoute.value || typeof document === 'undefined') return
+  if (isHomeRoute.value || isPluginsRoute.value || isAutomationsRoute.value || isSkillsRoute.value || typeof document === 'undefined') return
   if (!selectedThread.value || filteredMessages.value.length === 0) return
   const markdown = buildThreadMarkdown()
   const fileName = buildExportFileName()
@@ -1437,93 +1372,6 @@ function loadInProgressSendModePref(): 'steer' | 'queue' {
 function toggleSendWithEnter(): void {
   sendWithEnter.value = !sendWithEnter.value
   window.localStorage.setItem(SEND_WITH_ENTER_KEY, sendWithEnter.value ? '1' : '0')
-}
-
-function toggleShowPulseInNewChats(): void {
-  const nextValue = !pulseSettings.value.showInNewChats
-  pulseSettings.value = {
-    ...pulseSettings.value,
-    showInNewChats: nextValue,
-  }
-  void updatePulseSettings({ showInNewChats: nextValue })
-    .then((nextState) => {
-      pulseSettings.value = nextState.settings
-    })
-    .catch(() => {
-      pulseSettings.value = {
-        ...pulseSettings.value,
-        showInNewChats: !nextValue,
-      }
-    })
-}
-
-function togglePulseMemorySuggestions(): void {
-  const nextValue = !pulseSettings.value.referenceMemoryInSuggestions
-  pulseSettings.value = {
-    ...pulseSettings.value,
-    referenceMemoryInSuggestions: nextValue,
-  }
-  void updatePulseSettings({ referenceMemoryInSuggestions: nextValue })
-    .then((nextState) => {
-      pulseSettings.value = nextState.settings
-    })
-    .catch(() => {
-      pulseSettings.value = {
-        ...pulseSettings.value,
-        referenceMemoryInSuggestions: !nextValue,
-      }
-    })
-}
-
-function buildPulseCardContext(item: UiPulseItem): string {
-  const lines = [
-    `Pulse title: ${item.title}`,
-    `Pulse summary: ${item.summary}`,
-    `Pulse details: ${item.details}`,
-  ]
-  if (item.tags.length > 0) {
-    lines.push(`Pulse tags: ${item.tags.join(', ')}`)
-  }
-  return lines.join('\n')
-}
-
-async function savePulseItemToChat(item: UiPulseItem): Promise<string> {
-  const targetCwd = pulseDefaultCwd.value.trim()
-  const text = [
-    'Save this Pulse card as a chat for later reference.',
-    'Keep the answer short and preserve the key facts for future follow-up.',
-    '',
-    buildPulseCardContext(item),
-  ].join('\n')
-  const threadId = await sendMessageToNewThread(text, targetCwd)
-  if (!threadId) {
-    throw new Error('Failed to create a thread from this Pulse card')
-  }
-  await router.push({ name: 'thread', params: { threadId } })
-  if (selectedThreadId.value !== threadId) {
-    await selectThread(threadId)
-  }
-  return threadId
-}
-
-async function followUpPulseItem(item: UiPulseItem, prompt: string): Promise<string> {
-  const targetCwd = pulseDefaultCwd.value.trim()
-  const text = [
-    'Use this Pulse card as context and answer the follow-up question.',
-    '',
-    buildPulseCardContext(item),
-    '',
-    `Follow-up question: ${prompt.trim()}`,
-  ].join('\n')
-  const threadId = await sendMessageToNewThread(text, targetCwd)
-  if (!threadId) {
-    throw new Error('Failed to start a follow-up thread from this Pulse card')
-  }
-  await router.push({ name: 'thread', params: { threadId } })
-  if (selectedThreadId.value !== threadId) {
-    await selectThread(threadId)
-  }
-  return threadId
 }
 
 function cycleInProgressSendMode(): void {
@@ -1666,7 +1514,7 @@ async function syncThreadSelectionWithRoute(): Promise<void> {
   isRouteSyncInProgress.value = true
 
   try {
-    if (route.name === 'home' || route.name === 'pulse' || route.name === 'plugins' || route.name === 'automations' || route.name === 'skills') {
+    if (route.name === 'home' || route.name === 'plugins' || route.name === 'automations' || route.name === 'skills') {
       if (selectedThreadId.value !== '') {
         await selectThread('')
       }
@@ -1733,7 +1581,7 @@ watch(
   async (threadId) => {
     if (!hasInitialized.value) return
     if (isRouteSyncInProgress.value) return
-    if (isHomeRoute.value || isPulseRoute.value || isPluginsRoute.value || isAutomationsRoute.value || isSkillsRoute.value || isFilesRoute.value) return
+    if (isHomeRoute.value || isPluginsRoute.value || isAutomationsRoute.value || isSkillsRoute.value || isFilesRoute.value) return
 
     if (!threadId) {
       if (route.name !== 'home') {
@@ -1934,10 +1782,6 @@ async function submitFirstMessageForNewThread(
 
 .content-grid {
   @apply flex-1 min-h-0 flex flex-col gap-3;
-}
-
-.home-pulse {
-  @apply mx-auto w-full max-w-5xl;
 }
 
 .content-thread {

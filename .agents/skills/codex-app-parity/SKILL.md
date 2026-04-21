@@ -218,12 +218,6 @@ If a finding conflicts with current official docs or current official code, trea
   - Run build/typecheck.
   - Run Playwright in headless mode and capture a screenshot showing sidebar order.
 
-## Findings: Skills Scope Metadata (2026-04-17)
-
-- The app-server `skills/list` response carries per-skill `scope` plus the parent entry `cwd`.
-- Current schema values are `user`, `repo`, `system`, and `admin`.
-- For UI labeling in this workspace, `repo` scope can be mapped to a project badge by deriving the project name from the entry `cwd`, while non-`repo` scopes should stay unlabeled to avoid noisy global badges.
-
 ## Findings: Plugin Runtime Surface (2026-04-17)
 
 - On `codex-cli 0.121.0`, `meta/methods` exposes stable plugin-related RPCs through the app bridge:
@@ -585,20 +579,3 @@ If a finding conflicts with current official docs or current official code, trea
 - In Codex CLI `0.120.0`, `codex app-server generate-ts --experimental` exposes a stable read-only filesystem baseline for UI work: `fs/readDirectory`, `fs/getMetadata`, and `fs/readFile`, plus write/watch methods that can be layered later.
 - The generated protocol is enough to implement an in-app file browser even when official public docs or official repo UI references do not provide a concrete desktop/web file-explorer spec.
 - `fs/watch` is explicitly connection-scoped via `watchId`; for web clients that use stateless HTTP RPC plus a separate notification transport, treating watch support as a later phase is safer than coupling it into an MVP explorer.
-
-## Findings: Pulse Surface Constraints (2026-04-18)
-
-- Official Help Center docs for ChatGPT Pulse state that the feature is available on web, iOS, and Android, and explicitly unavailable in desktop apps as of the April 2026 help copy.
-- The same docs expose two user-visible controls that are worth mirroring in desktop-adjacent UIs even before live delivery exists:
-  - `Show Pulse in new chats`
-  - `Reference memory in suggestions`
-- `openai/codex` does not currently expose a first-party Pulse implementation or Pulse-specific API schema, so parity work in this repo should treat the Help Center behavior as the source of truth and keep desktop implementations conservative:
-  - add the Today/Pulse entry point and settings
-  - preserve curate/feedback history affordances
-  - do not claim official desktop support when only a local preview/cache-backed version exists
-- Additional Pulse interaction cues documented in the public help copy and release notes:
-  - Pulse is a once-daily card surface rather than a persistent inbox
-  - users can give thumbs up/down feedback on cards
-  - users can save a card into chat history for later
-  - users can ask a follow-up directly from a card
-  - cards that are not saved or interacted with should not be treated as long-lived history
