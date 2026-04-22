@@ -1,13 +1,13 @@
 <template>
   <div class="skills-hub">
     <div class="skills-hub-header">
-      <h2 class="skills-hub-title">Skills Hub</h2>
-      <p class="skills-hub-subtitle">Browse and discover skills from the OpenClaw community</p>
+      <h2 class="skills-hub-title">{{ t('Skills Hub') }}</h2>
+      <p class="skills-hub-subtitle">{{ t('Browse and discover skills from the OpenClaw community') }}</p>
     </div>
 
     <div class="skills-sync-panel">
       <div class="skills-sync-header">
-        <strong>Skills Sync (GitHub)</strong>
+        <strong>{{ t('Skills Sync (GitHub)') }}</strong>
         <a
           v-if="syncStatus.configured && githubRepoUrl"
           class="skills-sync-badge skills-sync-badge-link"
@@ -15,36 +15,36 @@
           target="_blank"
           rel="noopener noreferrer"
         >
-          Connected: {{ syncStatus.repoOwner }}/{{ syncStatus.repoName }}
+          {{ t('Connected') }}: {{ syncStatus.repoOwner }}/{{ syncStatus.repoName }}
         </a>
-        <span v-else-if="syncStatus.loggedIn" class="skills-sync-badge">Logged in as {{ syncStatus.githubUsername }}</span>
-        <span v-else class="skills-sync-badge">Not connected</span>
+        <span v-else-if="syncStatus.loggedIn" class="skills-sync-badge">{{ t('Logged in as') }} {{ syncStatus.githubUsername }}</span>
+        <span v-else class="skills-sync-badge">{{ t('Not connected') }}</span>
       </div>
       <div class="skills-sync-meta">
-        <span>Startup: {{ syncStatus.startup.mode }}</span>
-        <span>Branch: {{ syncStatus.startup.branch }}</span>
-        <span>Action: {{ syncStatus.startup.lastAction }}</span>
+        <span>{{ t('Startup') }}: {{ syncStatus.startup.mode }}</span>
+        <span>{{ t('Branch') }}: {{ syncStatus.startup.branch }}</span>
+        <span>{{ t('Action') }}: {{ syncStatus.startup.lastAction }}</span>
       </div>
       <div v-if="syncStatus.startup.lastError" class="skills-sync-error">
         {{ syncStatus.startup.lastError }}
       </div>
       <div v-if="syncActionStatus" class="skills-sync-meta">
-        <span>Manual sync: {{ syncActionStatus }}</span>
+        <span>{{ t('Manual sync') }}: {{ syncActionStatus }}</span>
       </div>
       <div v-if="syncActionError" class="skills-sync-error">
         {{ syncActionError }}
       </div>
       <div v-if="deviceLogin" class="skills-sync-device">
-        <span>Open <a :href="deviceLogin.verification_uri" target="_blank" rel="noreferrer">GitHub device login</a> and enter code:</span>
+        <span>{{ t('Open') }} <a :href="deviceLogin.verification_uri" target="_blank" rel="noreferrer">{{ t('GitHub device login') }}</a> {{ t('and enter code:') }}</span>
         <code>{{ deviceLogin.user_code }}</code>
       </div>
       <div class="skills-sync-actions">
-        <button v-if="!syncStatus.loggedIn" class="skills-hub-sort" type="button" @click="startGithubFirebaseLogin">Login with GitHub</button>
-        <button v-if="!syncStatus.loggedIn" class="skills-hub-sort" type="button" @click="startGithubLogin">Device Login</button>
-        <button v-if="syncStatus.loggedIn" class="skills-hub-sort" type="button" @click="logoutGithub" :disabled="isSyncActionInFlight">Logout GitHub</button>
-        <button class="skills-hub-sort" type="button" @click="startupSkillsSync" :disabled="isSyncActionInFlight">{{ isStartupSyncInFlight ? 'Syncing...' : 'Startup Sync' }}</button>
-        <button class="skills-hub-sort" type="button" @click="pullSkillsSync" :disabled="isSyncActionInFlight">{{ isPullInFlight ? 'Pulling...' : 'Pull' }}</button>
-        <button v-if="syncStatus.loggedIn" class="skills-hub-sort" type="button" @click="pushSkillsSync" :disabled="!syncStatus.configured || isSyncActionInFlight">{{ isPushInFlight ? 'Pushing...' : 'Push' }}</button>
+        <button v-if="!syncStatus.loggedIn" class="skills-hub-sort" type="button" @click="startGithubFirebaseLogin">{{ t('Login with GitHub') }}</button>
+        <button v-if="!syncStatus.loggedIn" class="skills-hub-sort" type="button" @click="startGithubLogin">{{ t('Device Login') }}</button>
+        <button v-if="syncStatus.loggedIn" class="skills-hub-sort" type="button" @click="logoutGithub" :disabled="isSyncActionInFlight">{{ t('Logout GitHub') }}</button>
+        <button class="skills-hub-sort" type="button" @click="startupSkillsSync" :disabled="isSyncActionInFlight">{{ isStartupSyncInFlight ? t('Syncing...') : t('Startup Sync') }}</button>
+        <button class="skills-hub-sort" type="button" @click="pullSkillsSync" :disabled="isSyncActionInFlight">{{ isPullInFlight ? t('Pulling...') : t('Pull') }}</button>
+        <button v-if="syncStatus.loggedIn" class="skills-hub-sort" type="button" @click="pushSkillsSync" :disabled="!syncStatus.configured || isSyncActionInFlight">{{ isPushInFlight ? t('Pushing...') : t('Push') }}</button>
       </div>
     </div>
 
@@ -52,7 +52,7 @@
 
     <div v-if="filteredInstalled.length > 0" class="skills-hub-section">
       <button class="skills-hub-section-toggle" type="button" @click="isInstalledOpen = !isInstalledOpen">
-        <span class="skills-hub-section-title">Installed ({{ filteredInstalled.length }})</span>
+        <span class="skills-hub-section-title">{{ t('Installed ({count})', { count: filteredInstalled.length }) }}</span>
         <IconTablerChevronRight class="skills-hub-section-chevron" :class="{ 'is-open': isInstalledOpen }" />
       </button>
       <div v-if="isInstalledOpen" class="skills-hub-grid">
@@ -73,11 +73,11 @@
           v-model="query"
           class="skills-hub-search"
           type="text"
-          placeholder="Search skills... (e.g. flight, docker, react)"
+          :placeholder="t('Search skills... (e.g. flight, docker, react)')"
           @keyup.enter.prevent="onSearchSubmit"
         />
-        <button class="skills-hub-search-btn" type="button" @click="onSearchSubmit">Search</button>
-        <span v-if="totalCount > 0" class="skills-hub-count">{{ totalCount }} skills</span>
+        <button class="skills-hub-search-btn" type="button" @click="onSearchSubmit">{{ t('Search') }}</button>
+        <span v-if="totalCount > 0" class="skills-hub-count">{{ t('{count} skills', { count: totalCount }) }}</span>
       </div>
       <button class="skills-hub-sort" type="button" @click="toggleSort">
         {{ sortLabel }}
@@ -85,7 +85,7 @@
     </div>
 
     <div class="skills-hub-section">
-      <div v-if="isLoading" class="skills-hub-loading">Loading skills...</div>
+      <div v-if="isLoading" class="skills-hub-loading">{{ t('Loading skills...') }}</div>
       <div v-else-if="error" class="skills-hub-error">{{ error }}</div>
       <template v-else>
         <div v-if="browseSkills.length > 0" class="skills-hub-grid">
@@ -96,7 +96,7 @@
             @select="(skill) => openDetail(skill as HubSkill)"
           />
         </div>
-        <div v-else-if="activeQuery.trim()" class="skills-hub-empty">No skills found for "{{ activeQuery }}"</div>
+        <div v-else-if="activeQuery.trim()" class="skills-hub-empty">{{ t('No skills found for "{query}"', { query: activeQuery }) }}</div>
       </template>
     </div>
 
@@ -120,6 +120,7 @@ import IconTablerChevronRight from '../icons/IconTablerChevronRight.vue'
 import SkillCard from './SkillCard.vue'
 import SkillDetailModal, { type HubSkill } from './SkillDetailModal.vue'
 import { useGithubSkillsSync } from '../../composables/useGithubSkillsSync'
+import { useUiLanguage } from '../../composables/useUiLanguage'
 
 const EMPTY_SKILL: HubSkill = { name: '', owner: '', description: '', url: '', installed: false }
 const SKILLS_HUB_CACHE_KEY = 'codex-web-local.skills-hub.cache.v1'
@@ -142,12 +143,13 @@ const actionSkillKey = ref('')
 const isInstallActionInFlight = ref(false)
 const isUninstallActionInFlight = ref(false)
 let toastTimer: ReturnType<typeof setTimeout> | null = null
+const { t } = useUiLanguage()
 
 const emit = defineEmits<{
   'skills-changed': []
 }>()
 
-const sortLabel = computed(() => sortMode.value === 'date' ? 'Newest' : 'A-Z')
+const sortLabel = computed(() => sortMode.value === 'date' ? t('Newest') : t('A-Z'))
 const toastClass = computed(() => toast.value?.type === 'error' ? 'skills-hub-toast-error' : 'skills-hub-toast-success')
 const currentDetailSkillKey = computed(() => `${detailSkill.value.owner}/${detailSkill.value.name}`)
 const isDetailInstalling = computed(() =>

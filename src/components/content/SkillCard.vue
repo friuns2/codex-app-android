@@ -18,8 +18,8 @@
       <div class="skill-card-info">
         <div class="skill-card-header">
           <span class="skill-card-name">{{ skill.displayName || skill.name }}</span>
-          <span v-if="skill.installed && skill.enabled === false" class="skill-card-badge-disabled">Disabled</span>
-          <span v-else-if="skill.installed" class="skill-card-badge">Installed</span>
+          <span v-if="skill.installed && skill.enabled === false" class="skill-card-badge-disabled">{{ t('Disabled') }}</span>
+          <span v-else-if="skill.installed" class="skill-card-badge">{{ t('Installed') }}</span>
         </div>
         <span class="skill-card-owner">{{ skill.owner }}</span>
       </div>
@@ -27,7 +27,7 @@
         v-if="skill.installed && skillDirPath"
         class="skill-card-browse"
         type="button"
-        title="Browse files"
+        :title="t('Browse files')"
         @click.stop="onBrowse"
       >
         <IconTablerFolder class="skill-card-browse-icon" />
@@ -40,6 +40,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useUiLanguage } from '../../composables/useUiLanguage'
 import IconTablerFolder from '../icons/IconTablerFolder.vue'
 
 const props = defineProps<{
@@ -58,6 +59,7 @@ const props = defineProps<{
 }>()
 
 defineEmits<{ select: [skill: unknown] }>()
+const { t } = useUiLanguage()
 
 const skillDirPath = computed(() => {
   const p = props.skill.path

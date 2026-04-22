@@ -8,14 +8,14 @@
         </button>
       </div>
       <div class="thread-terminal-actions">
-        <button class="thread-terminal-action" type="button" title="New terminal" @click="onNewTerminal">
-          New terminal
+        <button class="thread-terminal-action" type="button" :title="t('New terminal')" @click="onNewTerminal">
+          {{ t('New terminal') }}
         </button>
-        <button class="thread-terminal-action" type="button" title="Hide terminal" @click="$emit('hide')">
-          Hide
+        <button class="thread-terminal-action" type="button" :title="t('Hide terminal')" @click="$emit('hide')">
+          {{ t('Hide') }}
         </button>
-        <button class="thread-terminal-action" type="button" title="Close" @click="onCloseTerminal">
-          Close
+        <button class="thread-terminal-action" type="button" :title="t('Close')" @click="onCloseTerminal">
+          {{ t('Close') }}
         </button>
       </div>
     </header>
@@ -29,6 +29,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
 import '@xterm/xterm/css/xterm.css'
+import { useUiLanguage } from '../../composables/useUiLanguage'
 import {
   attachThreadTerminal,
   closeThreadTerminal,
@@ -58,6 +59,7 @@ let fitAddon: FitAddon | null = null
 let resizeObserver: ResizeObserver | null = null
 let unsubscribeNotifications: (() => void) | null = null
 let resizeFrame = 0
+const { t } = useUiLanguage()
 
 const terminalStatus = computed(() => {
   if (errorMessage.value) return 'error'
@@ -66,7 +68,7 @@ const terminalStatus = computed(() => {
 
 const terminalTitle = computed(() => {
   if (shellLabel.value && shellLabel.value !== 'terminal') return shellLabel.value
-  return 'Terminal'
+  return t('Terminal')
 })
 
 onMounted(() => {
@@ -125,7 +127,7 @@ function createTerminal(): void {
   terminal.onData((data) => {
     if (!sessionId.value) return
     void sendThreadTerminalInput(sessionId.value, data).catch((error: unknown) => {
-      errorMessage.value = error instanceof Error ? error.message : 'Terminal input failed'
+      errorMessage.value = error instanceof Error ? error.message : t('Terminal input failed')
     })
   })
 
@@ -158,7 +160,7 @@ async function attachToThread(newSession: boolean): Promise<void> {
     }
     isAttached.value = true
   } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : 'Terminal attach failed'
+    errorMessage.value = error instanceof Error ? error.message : t('Terminal attach failed')
   }
 }
 

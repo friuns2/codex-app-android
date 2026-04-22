@@ -15,8 +15,8 @@
               class="sidebar-search-toggle"
               type="button"
               :aria-pressed="isSidebarSearchVisible"
-              aria-label="Search threads"
-              title="Search threads"
+              :aria-label="t('Search threads')"
+              :title="t('Search threads')"
               @click="toggleSidebarSearch"
             >
               <IconTablerSearch class="sidebar-search-toggle-icon" />
@@ -30,14 +30,14 @@
               v-model="sidebarSearchQuery"
               class="sidebar-search-input"
               type="text"
-              placeholder="Filter threads..."
+              :placeholder="t('Filter threads...')"
               @keydown="onSidebarSearchKeydown"
             />
             <button
               v-if="sidebarSearchQuery.length > 0"
               class="sidebar-search-clear"
               type="button"
-              aria-label="Clear search"
+              :aria-label="t('Clear search')"
               @click="clearSidebarSearch"
             >
               <IconTablerX class="sidebar-search-clear-icon" />
@@ -51,7 +51,7 @@
             type="button"
             @click="router.push({ name: 'skills' }); isMobile && setSidebarCollapsed(true)"
           >
-            Skills Hub
+            {{ t('Skills Hub') }}
           </button>
 
           <SidebarThreadTree :groups="projectGroups" :project-display-name-by-id="projectDisplayNameById"
@@ -88,12 +88,12 @@
                       class="sidebar-settings-account-collapse"
                       type="button"
                       :aria-expanded="!isAccountsSectionCollapsed"
-                      :title="isAccountsSectionCollapsed ? 'Expand accounts' : 'Collapse accounts'"
+                      :title="isAccountsSectionCollapsed ? t('Expand accounts') : t('Collapse accounts')"
                       @click="toggleAccountsSectionCollapsed"
                     >
                       <span class="sidebar-settings-account-collapse-icon">{{ isAccountsSectionCollapsed ? '▸' : '▾' }}</span>
                     </button>
-                    <span class="sidebar-settings-account-title">Accounts</span>
+                    <span class="sidebar-settings-account-title">{{ t('Accounts') }}</span>
                     <span class="sidebar-settings-account-count">{{ accounts.length }}</span>
                   </div>
                   <button
@@ -102,13 +102,13 @@
                     :disabled="isRefreshingAccounts || isSwitchingAccounts"
                     @click="onRefreshAccounts"
                   >
-                    {{ isRefreshingAccounts ? 'Reloading…' : 'Reload' }}
+                    {{ isRefreshingAccounts ? t('Reloading…') : t('Reload') }}
                   </button>
                 </div>
                 <template v-if="!isAccountsSectionCollapsed">
                   <p v-if="accountActionError" class="sidebar-settings-account-error">{{ accountActionError }}</p>
                   <p v-if="accounts.length === 0" class="sidebar-settings-account-empty">
-                    Run `codex login`, then click reload.
+                    {{ t('Run `codex login`, then click reload.') }}
                   </p>
                   <div v-else class="sidebar-settings-account-list">
                   <article
@@ -126,7 +126,7 @@
                     @mouseleave="onAccountCardPointerLeave(account.accountId)"
                   >
                     <div class="sidebar-settings-account-main">
-                      <p class="sidebar-settings-account-email">{{ account.email || 'Account' }}</p>
+                      <p class="sidebar-settings-account-email">{{ account.email || t('Account') }}</p>
                       <p class="sidebar-settings-account-meta">
                         {{ formatAccountMeta(account) }}
                       </p>
@@ -164,36 +164,46 @@
                 </template>
               </div>
               <button class="sidebar-settings-row" type="button" :title="SETTINGS_HELP.sendWithEnter" @click="toggleSendWithEnter">
-                <span class="sidebar-settings-label">Require ⌘ + enter to send</span>
+                <span class="sidebar-settings-label">{{ t('Require ⌘ + enter to send') }}</span>
                 <span class="sidebar-settings-toggle" :class="{ 'is-on': !sendWithEnter }" />
               </button>
               <button class="sidebar-settings-row" type="button" :title="SETTINGS_HELP.inProgressSendMode" @click="cycleInProgressSendMode">
-                <span class="sidebar-settings-label">When busy, send as</span>
-                <span class="sidebar-settings-value">{{ inProgressSendMode === 'steer' ? 'Steer' : 'Queue' }}</span>
+                <span class="sidebar-settings-label">{{ t('When busy, send as') }}</span>
+                <span class="sidebar-settings-value">{{ inProgressSendMode === 'steer' ? t('Steer') : t('Queue') }}</span>
               </button>
               <button class="sidebar-settings-row" type="button" :title="SETTINGS_HELP.appearance" @click="cycleDarkMode">
-                <span class="sidebar-settings-label">Appearance</span>
-                <span class="sidebar-settings-value">{{ darkMode === 'system' ? 'System' : darkMode === 'dark' ? 'Dark' : 'Light' }}</span>
+                <span class="sidebar-settings-label">{{ t('Appearance') }}</span>
+                <span class="sidebar-settings-value">{{ darkMode === 'system' ? t('System') : darkMode === 'dark' ? t('Dark') : t('Light') }}</span>
               </button>
+              <div class="sidebar-settings-row sidebar-settings-row--select" :title="t('Choose the interface language for the app.')">
+                <span class="sidebar-settings-label">{{ t('UI language') }}</span>
+                <select
+                  class="sidebar-settings-provider-select"
+                  :value="uiLanguage"
+                  @change="setUiLanguage(($event.target as HTMLSelectElement).value as 'en' | 'zh-CN')"
+                >
+                  <option v-for="option in uiLanguageOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
+                </select>
+              </div>
               <button class="sidebar-settings-row" type="button" :title="SETTINGS_HELP.chatWidth" @click="cycleChatWidth">
-                <span class="sidebar-settings-label">Chat width</span>
+                <span class="sidebar-settings-label">{{ t('Chat width') }}</span>
                 <span class="sidebar-settings-value">{{ chatWidthLabel }}</span>
               </button>
               <button class="sidebar-settings-row" type="button" :title="SETTINGS_HELP.dictationClickToToggle" @click="toggleDictationClickToToggle">
-                <span class="sidebar-settings-label">Click to toggle dictation</span>
+                <span class="sidebar-settings-label">{{ t('Click to toggle dictation') }}</span>
                 <span class="sidebar-settings-toggle" :class="{ 'is-on': dictationClickToToggle }" />
               </button>
               <button class="sidebar-settings-row" type="button" :title="SETTINGS_HELP.dictationAutoSend" @click="toggleDictationAutoSend">
-                <span class="sidebar-settings-label">Auto send dictation</span>
+                <span class="sidebar-settings-label">{{ t('Auto send dictation') }}</span>
                 <span class="sidebar-settings-toggle" :class="{ 'is-on': dictationAutoSend }" />
               </button>
 
               <button class="sidebar-settings-row" type="button" :title="SETTINGS_HELP.githubTrendingProjects" @click="toggleGithubTrendingProjects">
-                <span class="sidebar-settings-label">GitHub trending projects</span>
+                <span class="sidebar-settings-label">{{ t('GitHub trending projects') }}</span>
                 <span class="sidebar-settings-toggle" :class="{ 'is-on': showGithubTrendingProjects }" />
               </button>
-              <div class="sidebar-settings-row sidebar-settings-row--select" title="Choose the API provider for the Codex backend">
-                <span class="sidebar-settings-label">Provider</span>
+              <div class="sidebar-settings-row sidebar-settings-row--select" :title="t('Choose the API provider for the Codex backend')">
+                <span class="sidebar-settings-label">{{ t('Provider') }}</span>
                 <select
                   class="sidebar-settings-provider-select"
                   :value="selectedProvider"
@@ -211,13 +221,13 @@
               </div>
               <div v-if="selectedProvider === 'openrouter'" class="sidebar-settings-row sidebar-settings-row--input">
                 <div class="sidebar-settings-provider-info">
-                  <span class="sidebar-settings-label">OpenRouter API key</span>
+                  <span class="sidebar-settings-label">{{ t('OpenRouter API key') }}</span>
                   <a
                     class="sidebar-settings-provider-link"
                     href="https://openrouter.ai/keys"
                     target="_blank"
                     rel="noopener noreferrer"
-                  >Get API key</a>
+                  >{{ t('Get API key') }}</a>
                 </div>
                 <div class="sidebar-settings-key-group">
                   <template v-if="freeModeHasCustomKey && !freeModeCustomKey">
@@ -226,7 +236,7 @@
                       class="sidebar-settings-key-clear"
                       type="button"
                       :disabled="freeModeCustomKeySaving"
-                      title="Remove custom key, use community keys"
+                      :title="t('Remove custom key, use community keys')"
                       @click="clearFreeModeCustomKey"
                     >&#x2715;</button>
                   </template>
@@ -235,7 +245,7 @@
                       v-model="freeModeCustomKey"
                       class="sidebar-settings-key-input"
                       type="password"
-                      placeholder="sk-or-v1-... (optional, uses free keys if empty)"
+                      :placeholder="t('sk-or-v1-... (optional, uses free keys if empty)')"
                       @keydown.enter="saveFreeModeCustomKey"
                     />
                     <button
@@ -243,12 +253,12 @@
                       type="button"
                       :disabled="freeModeCustomKeySaving || !freeModeCustomKey.trim()"
                       @click="saveFreeModeCustomKey"
-                    >{{ freeModeCustomKeySaving ? '...' : 'Set' }}</button>
+                    >{{ freeModeCustomKeySaving ? '...' : t('Set') }}</button>
                   </template>
                 </div>
                 <div class="sidebar-settings-row sidebar-settings-row--select" style="margin-top: 4px; padding: 0">
-                  <span class="sidebar-settings-label">API format</span>
-                  <div class="sidebar-settings-segmented" role="group" aria-label="OpenRouter API format">
+                  <span class="sidebar-settings-label">{{ t('API format') }}</span>
+                  <div class="sidebar-settings-segmented" role="group" :aria-label="t('OpenRouter API format')">
                     <button
                       type="button"
                       class="sidebar-settings-segmented-option"
@@ -272,20 +282,20 @@
               </div>
               <div v-if="selectedProvider === 'opencode-zen'" class="sidebar-settings-row sidebar-settings-row--input">
                 <div class="sidebar-settings-provider-info">
-                  <span class="sidebar-settings-label">OpenCode Zen API key</span>
+                  <span class="sidebar-settings-label">{{ t('OpenCode Zen API key') }}</span>
                   <a
                     class="sidebar-settings-provider-link"
                     href="https://opencode.ai/auth"
                     target="_blank"
                     rel="noopener noreferrer"
-                  >Get API key</a>
+                  >{{ t('Get API key') }}</a>
                 </div>
                 <div class="sidebar-settings-key-group">
                   <input
                     v-model="opencodeZenKey"
                     class="sidebar-settings-key-input"
                     type="password"
-                    placeholder="sk-..."
+                    :placeholder="t('sk-...')"
                     @keydown.enter="saveOpencodeZen"
                   />
                   <button
@@ -293,27 +303,27 @@
                     type="button"
                     :disabled="freeModeCustomKeySaving || !opencodeZenKey.trim()"
                     @click="saveOpencodeZen"
-                  >{{ freeModeCustomKeySaving ? '...' : 'Save' }}</button>
+                  >{{ freeModeCustomKeySaving ? '...' : t('Save') }}</button>
                 </div>
               </div>
               <div v-if="selectedProvider === 'custom'" class="sidebar-settings-row sidebar-settings-row--input">
-                <span class="sidebar-settings-label">Custom endpoint URL</span>
+                <span class="sidebar-settings-label">{{ t('Custom endpoint URL') }}</span>
                 <div class="sidebar-settings-key-group">
                   <input
                     v-model="customEndpointUrl"
                     class="sidebar-settings-key-input"
                     type="url"
-                    placeholder="https://api.example.com/v1"
+                    :placeholder="t('https://api.example.com/v1')"
                     @keydown.enter="saveCustomEndpoint"
                   />
                 </div>
-                <span class="sidebar-settings-label" style="margin-top: 4px">API key</span>
+                <span class="sidebar-settings-label" style="margin-top: 4px">{{ t('API key') }}</span>
                 <div class="sidebar-settings-key-group">
                   <input
                     v-model="customEndpointKey"
                     class="sidebar-settings-key-input"
                     type="password"
-                    placeholder="Bearer token (optional)"
+                    :placeholder="t('Bearer token (optional)')"
                     @keydown.enter="saveCustomEndpoint"
                   />
                   <button
@@ -321,11 +331,11 @@
                     type="button"
                     :disabled="freeModeCustomKeySaving || !customEndpointUrl.trim()"
                     @click="saveCustomEndpoint"
-                  >{{ freeModeCustomKeySaving ? '...' : 'Save' }}</button>
+                  >{{ freeModeCustomKeySaving ? '...' : t('Save') }}</button>
                 </div>
                 <div class="sidebar-settings-row sidebar-settings-row--select" style="margin-top: 4px; padding: 0">
-                  <span class="sidebar-settings-label">API format</span>
-                  <div class="sidebar-settings-segmented" role="group" aria-label="Custom endpoint API format">
+                  <span class="sidebar-settings-label">{{ t('API format') }}</span>
+                  <div class="sidebar-settings-segmented" role="group" :aria-label="t('Custom endpoint API format')">
                     <button
                       type="button"
                       class="sidebar-settings-segmented-option"
@@ -346,25 +356,25 @@
                 </div>
               </div>
               <div class="sidebar-settings-row sidebar-settings-row--select" :title="SETTINGS_HELP.dictationLanguage">
-                <span class="sidebar-settings-label">Dictation language</span>
+                <span class="sidebar-settings-label">{{ t('Dictation language') }}</span>
                 <ComposerDropdown
                   class="sidebar-settings-language-dropdown"
                   :model-value="dictationLanguage"
                   :options="dictationLanguageOptions"
-                  placeholder="Auto-detect"
+                  :placeholder="t('Auto-detect')"
                   open-direction="up"
                   :enable-search="true"
-                  search-placeholder="Search language..."
+                  :search-placeholder="t('Search language...')"
                   @update:model-value="onDictationLanguageChange"
                 />
               </div>
               <button class="sidebar-settings-row" type="button" aria-live="polite" @click="isTelegramConfigOpen = !isTelegramConfigOpen">
-                <span class="sidebar-settings-label">Telegram</span>
+                <span class="sidebar-settings-label">{{ t('Telegram') }}</span>
                 <span class="sidebar-settings-value">{{ telegramStatusText }}</span>
               </button>
               <div v-if="isTelegramConfigOpen" class="sidebar-settings-telegram-panel">
                 <label class="sidebar-settings-field">
-                  <span class="sidebar-settings-field-label">Bot token</span>
+                  <span class="sidebar-settings-field-label">{{ t('Bot token') }}</span>
                   <input
                     v-model="telegramBotTokenDraft"
                     class="sidebar-settings-input"
@@ -375,7 +385,7 @@
                   >
                 </label>
                 <label class="sidebar-settings-field">
-                  <span class="sidebar-settings-field-label">Allowed Telegram user IDs</span>
+                  <span class="sidebar-settings-field-label">{{ t('Allowed Telegram user IDs') }}</span>
                   <textarea
                     v-model="telegramAllowedUserIdsDraft"
                     class="sidebar-settings-textarea"
@@ -385,7 +395,7 @@
                   />
                 </label>
                 <div class="sidebar-settings-field-help">
-                  Put one Telegram user ID per line or separate them with commas. Use `*` to allow all Telegram users. Unauthorized users will see their own ID in the rejection message so they can copy it here.
+                  {{ t('Put one Telegram user ID per line or separate them with commas. Use `*` to allow all Telegram users. Unauthorized users will see their own ID in the rejection message so they can copy it here.') }}
                 </div>
                 <div v-if="telegramConfigError" class="sidebar-settings-telegram-error">
                   {{ telegramConfigError }}
@@ -397,7 +407,7 @@
                     :disabled="isTelegramSaving"
                     @click="saveTelegramConfig"
                   >
-                    {{ isTelegramSaving ? 'Saving…' : 'Save Telegram config' }}
+                    {{ isTelegramSaving ? t('Saving…') : t('Save Telegram config') }}
                   </button>
                 </div>
               </div>
@@ -407,7 +417,7 @@
                 :data-state="threadContextBadgeState"
                 :title="threadContextTooltip"
               >
-                <span class="sidebar-settings-label">Context</span>
+                <span class="sidebar-settings-label">{{ t('Context') }}</span>
                 <span class="sidebar-settings-context-value" :data-state="threadContextBadgeState">
                   {{ threadContextPrimaryText }}
                   <span class="sidebar-settings-context-meta">{{ threadContextSecondaryText }}</span>
@@ -416,7 +426,7 @@
               <div class="sidebar-settings-rate-limits">
                 <RateLimitStatus :snapshots="accountRateLimitSnapshots" />
               </div>
-              <div class="sidebar-settings-build-label" aria-label="Worktree name and version">
+              <div class="sidebar-settings-build-label" :aria-label="t('Worktree name and version')">
                 WT {{ worktreeName }} · v{{ appVersion }}
               </div>
             </div>
@@ -428,7 +438,7 @@
             @click.stop="isSettingsOpen = !isSettingsOpen"
           >
             <IconTablerSettings class="sidebar-settings-icon" />
-            <span>Settings</span>
+            <span>{{ t('Settings') }}</span>
             <span class="sidebar-settings-button-version">
               {{ worktreeName }} · v{{ appVersion }}
             </span>
@@ -456,8 +466,8 @@
               class="content-header-terminal-toggle"
               type="button"
               :aria-pressed="selectedThreadTerminalOpen"
-              :title="`Toggle terminal (${terminalShortcutLabel})`"
-              aria-label="Toggle terminal"
+              :title="`${t('Toggle terminal')} (${terminalShortcutLabel})`"
+              :aria-label="t('Toggle terminal')"
               @click="toggleSelectedThreadTerminal"
             >
               <IconTablerTerminal class="content-header-terminal-toggle-icon" />
@@ -471,7 +481,7 @@
               :options="contentHeaderBranchDropdownOptions"
               :disabled="isLoadingThreadBranches || isSwitchingThreadBranch"
               :enable-search="true"
-              search-placeholder="Search branches..."
+              :search-placeholder="t('Search branches...')"
               @update:model-value="onSelectContentHeaderBranch"
             />
           </template>
@@ -484,36 +494,36 @@
           <template v-else-if="isHomeRoute">
             <div class="content-grid content-grid-home">
               <div class="new-thread-empty">
-                <p class="new-thread-hero">Let's build</p>
+                <p class="new-thread-hero">{{ t("Let's build") }}</p>
                 <ComposerDropdown class="new-thread-folder-dropdown" :model-value="newThreadCwd"
-                  :options="newThreadFolderOptions" placeholder="Choose folder"
+                  :options="newThreadFolderOptions" :placeholder="t('Choose folder')"
                   :enable-search="true"
-                  search-placeholder="Quick search project"
+                  :search-placeholder="t('Quick search project')"
                   :disabled="false" @update:model-value="onSelectNewThreadFolder" />
                 <p v-if="newThreadCwd" class="new-thread-folder-selected" :title="newThreadCwd">
-                  Selected folder: {{ newThreadCwd }}
+                  {{ t('Selected folder') }}: {{ newThreadCwd }}
                 </p>
                 <div class="new-thread-folder-actions">
                   <button class="new-thread-folder-action new-thread-folder-action-primary" type="button" @click="onOpenExistingFolder">
-                    Select folder
+                    {{ t('Select folder') }}
                   </button>
                   <button class="new-thread-folder-action" type="button" @click="onCreateProject">
-                    Create Project
+                    {{ t('Create Project') }}
                   </button>
                 </div>
                 <Teleport to="body">
                   <div v-if="isExistingFolderPickerOpen" class="new-thread-open-folder-overlay" @click.self="onCloseExistingFolderPanel">
-                    <div class="new-thread-open-folder" role="dialog" aria-modal="true" aria-label="Select folder" @keydown.esc.prevent="onCloseExistingFolderPanel">
+                    <div class="new-thread-open-folder" role="dialog" aria-modal="true" :aria-label="t('Select folder')" @keydown.esc.prevent="onCloseExistingFolderPanel">
                       <div class="new-thread-open-folder-header">
-                        <p class="new-thread-open-folder-title">Select folder</p>
+                        <p class="new-thread-open-folder-title">{{ t('Select folder') }}</p>
                         <button class="new-thread-open-folder-close" type="button" @click="onCloseExistingFolderPanel">
-                          Cancel
+                          {{ t('Cancel') }}
                         </button>
                       </div>
-                      <p class="new-thread-open-folder-label">Current folder</p>
+                      <p class="new-thread-open-folder-label">{{ t('Current folder') }}</p>
                       <div class="new-thread-open-folder-current">
-                        <p class="new-thread-open-folder-path" :title="existingFolderBrowsePath || 'Unavailable'">
-                          {{ existingFolderBrowsePath || 'Unavailable' }}
+                        <p class="new-thread-open-folder-path" :title="existingFolderBrowsePath || t('Unavailable')">
+                          {{ existingFolderBrowsePath || t('Unavailable') }}
                         </p>
                         <button
                           class="new-thread-folder-action new-thread-folder-action-primary"
@@ -521,7 +531,7 @@
                           :disabled="!existingFolderBrowsePath || !!existingFolderError || isExistingFolderLoading || isOpeningExistingFolder"
                           @click="onConfirmExistingFolder()"
                         >
-                          {{ isOpeningExistingFolder ? 'Opening…' : 'Open' }}
+                          {{ isOpeningExistingFolder ? t('Opening…') : t('Open') }}
                         </button>
                       </div>
                       <div class="new-thread-open-folder-actions">
@@ -532,7 +542,7 @@
                             type="checkbox"
                             @change="onToggleHiddenFolders"
                           />
-                          <span>Show hidden folders</span>
+                          <span>{{ t('Show hidden folders') }}</span>
                         </label>
                         <button
                           class="new-thread-folder-action"
@@ -542,7 +552,7 @@
                           :disabled="!existingFolderBrowsePath || isExistingFolderLoading || isOpeningExistingFolder || isCreatingFolder || (!!existingFolderError && !isCreateFolderOpen)"
                           @click="onOpenCreateFolderPanel"
                         >
-                          New folder
+                          {{ t('New folder') }}
                         </button>
                       </div>
                       <div v-if="isCreateFolderOpen" class="new-thread-open-folder-create">
@@ -552,7 +562,7 @@
                             v-model="createFolderDraft"
                             class="new-thread-open-folder-create-input"
                             type="text"
-                            placeholder="Folder name"
+                            :placeholder="t('Folder name')"
                             @keydown.enter.prevent="onCreateFolder"
                             @keydown.esc.prevent="onCloseCreateFolderPanel"
                           />
@@ -572,7 +582,7 @@
                         v-model="existingFolderFilter"
                         class="new-thread-open-folder-filter"
                         type="text"
-                        placeholder="Filter folders..."
+                        :placeholder="t('Filter folders...')"
                         @keydown.esc.prevent="onCloseExistingFolderPanel"
                       />
                       <div v-if="existingFolderError" class="new-thread-open-folder-error-actions">
@@ -583,12 +593,12 @@
                           :disabled="isExistingFolderLoading || isOpeningExistingFolder"
                           @click="onRetryExistingFolderBrowse"
                         >
-                          Retry
+                          {{ t('Retry') }}
                         </button>
                       </div>
-                      <p v-if="isExistingFolderLoading" class="new-thread-open-folder-status">Loading folders…</p>
+                      <p v-if="isExistingFolderLoading" class="new-thread-open-folder-status">{{ t('Loading folders…') }}</p>
                       <p v-else-if="!existingFolderError && existingFolderFilteredEntries.length === 0" class="new-thread-open-folder-status">
-                        {{ existingFolderFilter.trim() ? 'No folders match this filter.' : 'No subfolders found here.' }}
+                        {{ existingFolderFilter.trim() ? t('No folders match this filter.') : t('No subfolders found here.') }}
                       </p>
                       <ul v-else-if="existingFolderFilteredEntries.length > 0" class="new-thread-open-folder-list">
                         <li v-for="entry in existingFolderFilteredEntries" :key="entry.key" class="new-thread-open-folder-item">
@@ -608,7 +618,7 @@
                             :disabled="isExistingFolderLoading || isOpeningExistingFolder"
                             @click="onConfirmExistingFolder(entry.path)"
                           >
-                            Open
+                            {{ t('Open') }}
                           </button>
                         </li>
                       </ul>
@@ -620,29 +630,29 @@
                   v-model="newThreadRuntime"
                 />
                 <div v-if="newThreadRuntime === 'worktree'" class="new-thread-branch-select">
-                  <p class="new-thread-branch-select-label">Base branch</p>
+                  <p class="new-thread-branch-select-label">{{ t('Base branch') }}</p>
                   <ComposerDropdown
                     class="new-thread-branch-dropdown"
                     :model-value="newWorktreeBaseBranch"
                     :options="newWorktreeBranchDropdownOptions"
-                    placeholder="Select branch"
+                    :placeholder="t('Select branch')"
                     :enable-search="true"
-                    search-placeholder="Search branches..."
+                    :search-placeholder="t('Search branches...')"
                     :disabled="isLoadingWorktreeBranches || newWorktreeBranchDropdownOptions.length === 0"
                     @update:model-value="onSelectNewWorktreeBranch"
                   />
                   <p class="new-thread-branch-select-help">
                     {{
                       isLoadingWorktreeBranches
-                        ? 'Loading branches…'
+                        ? t('Loading branches…')
                         : selectedWorktreeBranchLabel
-                          ? `New worktree branch will start from ${selectedWorktreeBranchLabel}.`
-                          : 'No Git branches found for this folder.'
+                          ? t('New worktree branch will start from {branch}.', { branch: selectedWorktreeBranchLabel })
+                          : t('No Git branches found for this folder.')
                     }}
                   </p>
                 </div>
                 <p class="new-thread-runtime-help">
-                  <code>Local project</code> uses the selected folder directly. <code>New worktree</code> creates an isolated Git worktree before the first prompt.
+                  {{ t('Local project uses the selected folder directly. New worktree creates an isolated Git worktree before the first prompt.') }}
                 </p>
                 <div
                   v-if="worktreeInitStatus.phase !== 'idle'"
@@ -657,7 +667,7 @@
                 </div>
                 <div v-if="showGithubTrendingProjects" class="new-thread-trending">
                   <div class="new-thread-trending-header">
-                    <p class="new-thread-trending-title">Trending GitHub projects</p>
+                    <p class="new-thread-trending-title">{{ t('Trending GitHub projects') }}</p>
                     <ComposerDropdown
                       class="new-thread-trending-scope-dropdown"
                       :model-value="githubTipsScope"
@@ -665,9 +675,9 @@
                       @update:model-value="onGithubTipsScopeChange"
                     />
                   </div>
-                  <p v-if="isTrendingProjectsLoading" class="new-thread-trending-empty">Loading trending projects...</p>
+                  <p v-if="isTrendingProjectsLoading" class="new-thread-trending-empty">{{ t('Loading trending projects...') }}</p>
                   <p v-else-if="trendingProjects.length === 0" class="new-thread-trending-empty">
-                    Trending repos are unavailable right now.
+                    {{ t('Trending repos are unavailable right now.') }}
                   </p>
                   <div v-else class="new-thread-trending-list">
                     <button
@@ -689,7 +699,7 @@
                       </span>
                       <span class="new-thread-trending-tip-meta">{{ formatTrendingTipMeta(project) }}</span>
                       <span class="new-thread-trending-tip-description">
-                        {{ project.description || 'No description available.' }}
+                        {{ project.description || t('No description available.') }}
                       </span>
                     </button>
                   </div>
@@ -817,6 +827,7 @@ import IconTablerTerminal from './components/icons/IconTablerTerminal.vue'
 import IconTablerX from './components/icons/IconTablerX.vue'
 import { useDesktopState } from './composables/useDesktopState'
 import { useMobile } from './composables/useMobile'
+import { useUiLanguage } from './composables/useUiLanguage'
 import {
   checkoutGitBranch,
   configureTelegramBot,
@@ -848,21 +859,21 @@ const ThreadConversation = defineAsyncComponent(() => import('./components/conte
 const ThreadTerminalPanel = defineAsyncComponent(() => import('./components/content/ThreadTerminalPanel.vue'))
 const ReviewPane = defineAsyncComponent(() => import('./components/content/ReviewPane.vue'))
 const SkillsHub = defineAsyncComponent(() => import('./components/content/SkillsHub.vue'))
+const { t, uiLanguage, uiLanguageOptions, setUiLanguage } = useUiLanguage()
 
 const SIDEBAR_COLLAPSED_STORAGE_KEY = 'codex-web-local.sidebar-collapsed.v1'
 const ACCOUNTS_SECTION_COLLAPSED_STORAGE_KEY = 'codex-web-local.accounts-section-collapsed.v1'
 const worktreeName = import.meta.env.VITE_WORKTREE_NAME ?? 'unknown'
 const appVersion = import.meta.env.VITE_APP_VERSION ?? 'unknown'
 const SETTINGS_HELP = {
-  sendWithEnter: 'When enabled, press Enter to send. When disabled, use Command+Enter to send.',
-  inProgressSendMode: 'If a turn is still running, choose whether a new prompt should steer the current turn or be queued.',
-  appearance: 'Switch between system theme, light mode, and dark mode.',
-  chatWidth: 'Choose how wide the conversation column and composer can grow on desktop screens.',
-  dictationClickToToggle: 'Use click-to-start and click-to-stop dictation instead of hold-to-talk.',
-  dictationAutoSend: 'Automatically send transcribed dictation when recording stops.',
-
-  githubTrendingProjects: 'Show or hide GitHub trending project cards on the new thread screen.',
-  dictationLanguage: 'Choose transcription language or keep auto-detect.',
+  sendWithEnter: t('When enabled, press Enter to send. When disabled, use Command+Enter to send.'),
+  inProgressSendMode: t('If a turn is still running, choose whether a new prompt should steer the current turn or be queued.'),
+  appearance: t('Switch between system theme, light mode, and dark mode.'),
+  chatWidth: t('Choose how wide the conversation column and composer can grow on desktop screens.'),
+  dictationClickToToggle: t('Use click-to-start and click-to-stop dictation instead of hold-to-talk.'),
+  dictationAutoSend: t('Automatically send transcribed dictation when recording stops.'),
+  githubTrendingProjects: t('Show or hide GitHub trending project cards on the new thread screen.'),
+  dictationLanguage: t('Choose transcription language or keep auto-detect.'),
 } as const
 
 type ChatWidthMode = 'standard' | 'wide' | 'extra-wide'
@@ -1180,9 +1191,9 @@ const routeThreadId = computed(() => {
 const isHomeRoute = computed(() => route.name === 'home')
 const isSkillsRoute = computed(() => route.name === 'skills')
 const contentTitle = computed(() => {
-  if (isSkillsRoute.value) return 'Skills'
-  if (isHomeRoute.value) return 'New thread'
-  return selectedThread.value?.title ?? 'Choose a thread'
+  if (isSkillsRoute.value) return t('Skills Hub')
+  if (isHomeRoute.value) return t('Start new thread')
+  return selectedThread.value?.title ?? t('Choose a thread')
 })
 const browserHostName =
   typeof window !== 'undefined'
@@ -1239,19 +1250,19 @@ function formatCompactTokenCount(value: number): string {
 
 function buildThreadContextTooltip(usage: UiThreadTokenUsage | null): string {
   if (!usage) {
-    return 'Waiting for Codex thread/tokenUsage/updated events for this thread.'
+    return t('Waiting for Codex thread/tokenUsage/updated events for this thread.')
   }
 
   const lines = [
-    `Current context usage: ${usage.currentContextTokens.toLocaleString()} tokens`,
-    `Cumulative thread usage: ${usage.total.totalTokens.toLocaleString()} tokens`,
+    `${t('Current context usage')}: ${usage.currentContextTokens.toLocaleString()} ${t('tokens')}`,
+    `${t('Cumulative thread usage')}: ${usage.total.totalTokens.toLocaleString()} ${t('tokens')}`,
   ]
 
   if (typeof usage.modelContextWindow === 'number') {
-    lines.unshift(`Model context window: ${usage.modelContextWindow.toLocaleString()} tokens`)
-    lines.push(`Remaining context: ${(usage.remainingContextTokens ?? 0).toLocaleString()} tokens`)
+    lines.unshift(`${t('Model context window')}: ${usage.modelContextWindow.toLocaleString()} ${t('tokens')}`)
+    lines.push(`${t('Remaining context')}: ${(usage.remainingContextTokens ?? 0).toLocaleString()} ${t('tokens')}`)
   } else {
-    lines.push('Model context window is unavailable in the latest usage event.')
+    lines.push(t('Model context window is unavailable in the latest usage event.'))
   }
 
   return lines.join('\n')
@@ -1267,20 +1278,20 @@ const threadContextBadgeState = computed(() => {
 
 const threadContextPrimaryText = computed(() => {
   const usage = selectedThreadTokenUsage.value
-  if (!usage) return 'Awaiting data'
+  if (!usage) return t('Awaiting data')
   if (typeof usage.remainingContextTokens === 'number') {
-    return `${formatCompactTokenCount(usage.remainingContextTokens)} left`
+    return `${formatCompactTokenCount(usage.remainingContextTokens)} ${t('left')}`
   }
-  return `${formatCompactTokenCount(usage.currentContextTokens)} used`
+  return `${formatCompactTokenCount(usage.currentContextTokens)} ${t('used')}`
 })
 
 const threadContextSecondaryText = computed(() => {
   const usage = selectedThreadTokenUsage.value
-  if (!usage) return 'Updates after the next token usage event'
+  if (!usage) return t('Updates after the next token usage event')
   if (typeof usage.modelContextWindow === 'number') {
-    return `${formatCompactTokenCount(usage.currentContextTokens)} used / ${formatCompactTokenCount(usage.modelContextWindow)}`
+    return `${formatCompactTokenCount(usage.currentContextTokens)} ${t('used')} / ${formatCompactTokenCount(usage.modelContextWindow)}`
   }
-  return 'Window size unavailable'
+  return t('Window size unavailable')
 })
 
 const threadContextTooltip = computed(() => buildThreadContextTooltip(selectedThreadTokenUsage.value))
@@ -1404,14 +1415,14 @@ const existingFolderFilteredEntries = computed(() => {
 })
 const darkModeMediaQuery = typeof window !== 'undefined' ? window.matchMedia('(prefers-color-scheme: dark)') : null
 const githubTipsScopeOptions = computed<Array<{ value: GithubTipsScope; label: string }>>(() => [
-  { value: 'search-daily', label: 'Search daily' },
-  { value: 'search-weekly', label: 'Search weekly' },
-  { value: 'search-monthly', label: 'Search monthly' },
-  { value: 'trending-daily', label: 'Trending daily' },
-  { value: 'trending-weekly', label: 'Trending weekly' },
-  { value: 'trending-monthly', label: 'Trending monthly' },
+  { value: 'search-daily', label: t('Search daily') },
+  { value: 'search-weekly', label: t('Search weekly') },
+  { value: 'search-monthly', label: t('Search monthly') },
+  { value: 'trending-daily', label: t('Trending daily') },
+  { value: 'trending-weekly', label: t('Trending weekly') },
+  { value: 'trending-monthly', label: t('Trending monthly') },
 ])
-const chatWidthLabel = computed(() => CHAT_WIDTH_PRESETS[chatWidth.value].label)
+const chatWidthLabel = computed(() => t(CHAT_WIDTH_PRESETS[chatWidth.value].label))
 const terminalShortcutLabel = computed(() => {
   if (typeof navigator !== 'undefined' && /mac|iphone|ipad|ipod/i.test(navigator.platform)) {
     return '⌘J'
@@ -1426,13 +1437,13 @@ const contentStyle = computed(() => {
   }
 })
 const telegramStatusText = computed(() => {
-  if (!telegramStatus.value.configured) return 'Not configured'
-  const base = telegramStatus.value.active ? 'Online' : 'Configured (offline)'
+  if (!telegramStatus.value.configured) return t('Not configured')
+  const base = telegramStatus.value.active ? t('Online') : t('Configured (offline)')
   const allowlist = telegramStatus.value.allowAllUsers
-    ? 'allow all users'
-    : `${telegramStatus.value.allowedUsers} allowed user(s)`
-  const mapped = `${telegramStatus.value.mappedChats} chat(s), ${telegramStatus.value.mappedThreads} thread(s), ${allowlist}`
-  const error = telegramStatus.value.lastError ? `, error: ${telegramStatus.value.lastError}` : ''
+    ? t('allow all users')
+    : `${telegramStatus.value.allowedUsers} ${t('allowed user(s)')}`
+  const mapped = `${telegramStatus.value.mappedChats} ${t('chat(s)')}, ${telegramStatus.value.mappedThreads} ${t('thread(s)')}, ${allowlist}`
+  const error = telegramStatus.value.lastError ? `, ${t('error')}: ${telegramStatus.value.lastError}` : ''
   return `${base}, ${mapped}${error}`
 })
 
@@ -1566,11 +1577,11 @@ async function saveTelegramConfig(): Promise<void> {
   const botToken = telegramBotTokenDraft.value.trim()
   const allowedUserIds = parseTelegramAllowedUserIdsInput(telegramAllowedUserIdsDraft.value)
   if (!botToken) {
-    telegramConfigError.value = 'Telegram bot token is required.'
+    telegramConfigError.value = t('Telegram bot token is required.')
     return
   }
   if (allowedUserIds.length === 0) {
-    telegramConfigError.value = 'At least one allowed Telegram user ID or * is required.'
+    telegramConfigError.value = t('At least one allowed Telegram user ID or * is required.')
     return
   }
 
@@ -1583,9 +1594,9 @@ async function saveTelegramConfig(): Promise<void> {
       refreshTelegramConfig(),
       refreshTelegramStatus(),
     ])
-    window.alert('Telegram bot configured. Only allowlisted Telegram users can use the bridge.')
+    window.alert(t('Telegram bot configured. Only allowlisted Telegram users can use the bridge.'))
   } catch (error) {
-    telegramConfigError.value = error instanceof Error ? error.message : 'Failed to connect Telegram bot'
+    telegramConfigError.value = error instanceof Error ? error.message : t('Failed to connect Telegram bot')
     void refreshTelegramStatus()
   } finally {
     isTelegramSaving.value = false
@@ -1635,7 +1646,7 @@ function shortAccountId(accountId: string): string {
 }
 
 function formatAccountMeta(account: UiAccountEntry): string {
-  const segments = [account.planType || 'unknown']
+  const segments = [account.planType || t('unknown')]
   if (account.authMode) {
     segments.unshift(account.authMode)
   }
@@ -1666,16 +1677,16 @@ function isRemoveVisible(account: UiAccountEntry): boolean {
 }
 
 function getAccountSwitchLabel(account: UiAccountEntry): string {
-  if (isAccountUnavailable(account)) return 'Unavailable'
-  if (account.isActive) return 'Active'
-  if (isSwitchingAccounts.value) return 'Switching…'
-  return 'Switch'
+  if (isAccountUnavailable(account)) return t('Unavailable')
+  if (account.isActive) return t('Active')
+  if (isSwitchingAccounts.value) return t('Switching…')
+  return t('Switch')
 }
 
 function getAccountRemoveLabel(account: UiAccountEntry): string {
-  if (removingAccountId.value === account.accountId) return 'Removing…'
-  if (isRemoveConfirmationActive(account)) return 'Click again to remove'
-  return 'Remove'
+  if (removingAccountId.value === account.accountId) return t('Removing…')
+  if (isRemoveConfirmationActive(account)) return t('Click again to remove')
+  return t('Remove')
 }
 
 function onAccountCardPointerEnter(accountId: string): void {
@@ -1717,7 +1728,7 @@ function formatResetDateCompact(resetsAt: number | null): string {
 
 function formatAccountQuota(account: UiAccountEntry): string {
   if (isAccountUnavailable(account)) {
-    return account.quotaError || '402 Payment Required'
+    return account.quotaError || t('402 Payment Required')
   }
   const quota = account.quotaSnapshot
   const window = pickWeeklyQuotaWindow(account)
@@ -1727,34 +1738,34 @@ function formatAccountQuota(account: UiAccountEntry): string {
     const remainingPercent = Math.max(0, Math.min(100, 100 - Math.round(displayWindow.usedPercent)))
     const refreshDate = formatResetDateCompact(displayWindow.resetsAt)
     return refreshDate
-      ? `${remainingPercent}% weekly remaining · ${refreshDate}`
-      : `${remainingPercent}% weekly remaining`
+      ? `${remainingPercent}% ${t('weekly remaining')} · ${refreshDate}`
+      : `${remainingPercent}% ${t('weekly remaining')}`
   }
   if (quota?.credits?.unlimited) {
-    return 'Unlimited credits'
+    return t('Unlimited credits')
   }
   if (quota?.credits?.hasCredits && quota.credits.balance) {
-    return `${quota.credits.balance} credits`
+    return `${quota.credits.balance} ${t('credits')}`
   }
   if (account.quotaStatus === 'loading') {
-    return 'Loading quota…'
+    return t('Loading quota…')
   }
   if (account.quotaStatus === 'error') {
-    return account.quotaError || 'Quota unavailable'
+    return account.quotaError || t('Quota unavailable')
   }
   if (account.quotaStatus === 'ready' || account.quotaStatus === 'idle') {
-    return 'Quota unavailable'
+    return t('Quota unavailable')
   }
-  return 'Fetching account details…'
+  return t('Fetching account details…')
 }
 
 function buildAccountTitle(account: UiAccountEntry): string {
   return [
-    account.email || 'Account',
+    account.email || t('Account'),
     formatAccountMeta(account),
-    isAccountUnavailable(account) ? 'Unavailable account' : null,
+    isAccountUnavailable(account) ? t('Unavailable account') : null,
     formatAccountQuota(account),
-    `Workspace ${account.accountId}`,
+    `${t('Workspace')} ${account.accountId}`,
   ].filter(Boolean).join('\n')
 }
 
@@ -1770,7 +1781,7 @@ async function loadAccountsState(options: { silent?: boolean } = {}): Promise<vo
     }
   } catch (error) {
     if (options.silent === true) return
-    accountActionError.value = error instanceof Error ? error.message : 'Failed to load accounts'
+    accountActionError.value = error instanceof Error ? error.message : t('Failed to load accounts')
   }
 }
 
@@ -1789,7 +1800,7 @@ async function onRefreshAccounts(): Promise<void> {
       includeSelectedThreadMessages: true,
     })
   } catch (error) {
-    accountActionError.value = error instanceof Error ? error.message : 'Failed to refresh accounts'
+    accountActionError.value = error instanceof Error ? error.message : t('Failed to refresh accounts')
   } finally {
     isRefreshingAccounts.value = false
   }
@@ -1798,7 +1809,7 @@ async function onRefreshAccounts(): Promise<void> {
 async function onSwitchAccount(accountId: string): Promise<void> {
   if (isSwitchingAccounts.value || isRefreshingAccounts.value) return
   if (isAccountSwitchBlocked.value) {
-    accountActionError.value = 'Finish the current turn and pending requests before switching accounts.'
+    accountActionError.value = t('Finish the current turn and pending requests before switching accounts.')
     return
   }
   accountActionError.value = ''
@@ -1819,7 +1830,7 @@ async function onSwitchAccount(accountId: string): Promise<void> {
     })
     void loadAccountsState({ silent: true })
   } catch (error) {
-    accountActionError.value = error instanceof Error ? error.message : 'Failed to switch account'
+    accountActionError.value = error instanceof Error ? error.message : t('Failed to switch account')
   } finally {
     isSwitchingAccounts.value = false
   }
@@ -1834,7 +1845,7 @@ async function onRemoveAccount(accountId: string): Promise<void> {
     return
   }
   if (targetAccount.isActive && isAccountSwitchBlocked.value) {
-    accountActionError.value = 'Finish the current turn and pending requests before removing the active account.'
+    accountActionError.value = t('Finish the current turn and pending requests before removing the active account.')
     return
   }
 
@@ -1854,7 +1865,7 @@ async function onRemoveAccount(accountId: string): Promise<void> {
     }
     void loadAccountsState({ silent: true })
   } catch (error) {
-    accountActionError.value = error instanceof Error ? error.message : 'Failed to remove account'
+    accountActionError.value = error instanceof Error ? error.message : t('Failed to remove account')
   } finally {
     removingAccountId.value = ''
   }
@@ -2935,7 +2946,7 @@ function loadDictationLanguagePref(): string {
 }
 
 function buildDictationLanguageOptions(): Array<{ value: string; label: string }> {
-  const options: Array<{ value: string; label: string }> = [{ value: 'auto', label: 'Auto-detect' }]
+  const options: Array<{ value: string; label: string }> = [{ value: 'auto', label: t('Auto-detect') }]
   const seen = new Set<string>(['auto'])
   function formatLanguageLabel(value: string): string {
     const languageName = WHISPER_LANGUAGES[value] || value
@@ -3258,8 +3269,8 @@ async function submitFirstMessageForNewThread(
     if (newThreadRuntime.value === 'worktree') {
       worktreeInitStatus.value = {
         phase: 'running',
-        title: 'Creating worktree',
-        message: 'Creating a worktree and running setup.',
+        title: t('Creating worktree'),
+        message: t('Creating a worktree and running setup.'),
       }
       try {
         const created = await createWorktree(newThreadCwd.value, newWorktreeBaseBranch.value)
@@ -3269,8 +3280,8 @@ async function submitFirstMessageForNewThread(
       } catch {
         worktreeInitStatus.value = {
           phase: 'error',
-          title: 'Worktree setup failed',
-          message: 'Unable to create worktree. Try again or switch to Local project.',
+          title: t('Worktree setup failed'),
+          message: t('Unable to create worktree. Try again or switch to Local project.'),
         }
         return
       }

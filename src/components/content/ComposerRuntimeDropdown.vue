@@ -1,5 +1,5 @@
 <template>
-  <div class="runtime-toggle" role="radiogroup" aria-label="Continue in">
+  <div class="runtime-toggle" role="radiogroup" :aria-label="t('Continue in')">
     <button
       v-for="option in options"
       :key="option.value"
@@ -17,6 +17,7 @@
 </template>
 
 <script setup lang="ts">
+import { useUiLanguage } from '../../composables/useUiLanguage'
 import IconTablerFolder from '../icons/IconTablerFolder.vue'
 import IconTablerGitFork from '../icons/IconTablerGitFork.vue'
 
@@ -29,10 +30,11 @@ defineProps<{
 const emit = defineEmits<{
   'update:modelValue': [value: RuntimeMode]
 }>()
+const { t } = useUiLanguage()
 
 const options = [
-  { value: 'local' as const, label: 'Local project', icon: IconTablerFolder },
-  { value: 'worktree' as const, label: 'New worktree', icon: IconTablerGitFork },
+  { value: 'local' as const, label: t('Local project'), icon: IconTablerFolder },
+  { value: 'worktree' as const, label: t('New worktree'), icon: IconTablerGitFork },
 ]
 
 function onSelect(value: RuntimeMode): void {

@@ -15,7 +15,7 @@
         </p>
 
         <section class="thread-pending-request-approval">
-          <div class="thread-pending-request-options" role="radiogroup" aria-label="Approval choices">
+          <div class="thread-pending-request-options" role="radiogroup" :aria-label="t('Approval choices')">
             <button
               v-for="(option, index) in approvalOptions"
               :key="option.id"
@@ -40,7 +40,7 @@
                 class="thread-pending-request-inline-control"
                 type="text"
                 :value="approvalFreeformText"
-                placeholder="No, and tell Codex what to do differently"
+                :placeholder="t('No, and tell Codex what to do differently')"
                 @focus="onFocusApprovalOther"
                 @input="onApprovalOtherInput"
                 @keydown.enter.prevent="onSubmitApproval(request)"
@@ -48,10 +48,10 @@
             </label>
 
             <button type="button" class="thread-pending-request-secondary" @click="onRespondApproval(request, 'cancel')">
-              Skip
+              {{ t('Skip') }}
             </button>
             <button type="button" class="thread-pending-request-primary" @click="onSubmitApproval(request)">
-              Send
+              {{ t('Send') }}
             </button>
           </footer>
         </section>
@@ -72,7 +72,7 @@
 
         <section v-if="request.method === 'mcpServer/elicitation/request'" class="thread-pending-request-user-input">
           <p v-if="readMcpElicitationServerName(request)" class="thread-pending-request-question-description">
-            Server: {{ readMcpElicitationServerName(request) }}
+            {{ t('Server') }}: {{ readMcpElicitationServerName(request) }}
           </p>
 
           <a
@@ -82,7 +82,7 @@
             target="_blank"
             rel="noopener noreferrer"
           >
-            Open authorization link
+            {{ t('Open authorization link') }}
           </a>
 
           <div
@@ -96,7 +96,7 @@
             <p v-if="field.description" class="thread-pending-request-question-text">{{ field.description }}</p>
 
             <label v-if="field.kind === 'string' || field.kind === 'number'" class="thread-pending-request-input-wrap">
-              <span class="thread-pending-request-select-label">Value</span>
+              <span class="thread-pending-request-select-label">{{ t('Value') }}</span>
               <input
                 class="thread-pending-request-input"
                 :type="field.inputType"
@@ -106,26 +106,26 @@
             </label>
 
             <label v-else-if="field.kind === 'boolean'" class="thread-pending-request-select-wrap">
-              <span class="thread-pending-request-select-label">Choice</span>
+              <span class="thread-pending-request-select-label">{{ t('Choice') }}</span>
               <select
                 class="thread-pending-request-select"
                 :value="serializeMcpBooleanValue(readMcpElicitationFieldValue(request.id, field))"
                 @change="onMcpElicitationBooleanChange(request.id, field, $event)"
               >
-                <option v-if="!field.hasExplicitDefault" value="">Select true or false</option>
-                <option value="true">True</option>
-                <option value="false">False</option>
+                <option v-if="!field.hasExplicitDefault" value="">{{ t('Select true or false') }}</option>
+                <option value="true">{{ t('True') }}</option>
+                <option value="false">{{ t('False') }}</option>
               </select>
             </label>
 
             <label v-else-if="field.kind === 'singleEnum'" class="thread-pending-request-select-wrap">
-              <span class="thread-pending-request-select-label">Choice</span>
+              <span class="thread-pending-request-select-label">{{ t('Choice') }}</span>
               <select
                 class="thread-pending-request-select"
                 :value="String(readMcpElicitationFieldValue(request.id, field) ?? '')"
                 @change="onMcpElicitationFieldInput(request.id, field, $event)"
               >
-                <option v-if="!field.hasExplicitDefault" value="">Select an option</option>
+                <option v-if="!field.hasExplicitDefault" value="">{{ t('Select an option') }}</option>
                 <option
                   v-for="option in field.options"
                   :key="`${request.id}:${field.key}:${option.value}`"
@@ -159,13 +159,13 @@
 
           <footer class="thread-pending-request-footer">
             <button type="button" class="thread-pending-request-secondary" @click="onRespondMcpElicitation(request, 'cancel')">
-              Cancel
+              {{ t('Cancel') }}
             </button>
             <button type="button" class="thread-pending-request-secondary" @click="onRespondMcpElicitation(request, 'decline')">
-              Decline
+              {{ t('Decline') }}
             </button>
             <button type="button" class="thread-pending-request-primary" @click="onRespondMcpElicitation(request, 'accept')">
-              Continue
+              {{ t('Continue') }}
             </button>
           </footer>
         </section>
@@ -181,7 +181,7 @@
 
             <div v-if="question.options.length > 0" class="thread-pending-request-question-options">
               <label class="thread-pending-request-select-wrap">
-                <span class="thread-pending-request-select-label">Choice</span>
+                <span class="thread-pending-request-select-label">{{ t('Choice') }}</span>
                 <select
                   class="thread-pending-request-select"
                   :value="readQuestionAnswer(request.id, question.id, question.options[0]?.label || '')"
@@ -206,12 +206,12 @@
             </div>
 
             <label v-if="question.isOther" class="thread-pending-request-input-wrap">
-              <span class="thread-pending-request-select-label">Other answer</span>
+              <span class="thread-pending-request-select-label">{{ t('Other answer') }}</span>
               <input
                 class="thread-pending-request-input"
                 type="text"
                 :value="readQuestionOtherAnswer(request.id, question.id)"
-                placeholder="Other answer"
+                :placeholder="t('Other answer')"
                 @input="onQuestionOtherAnswerInput(request.id, question.id, $event)"
               />
             </label>
@@ -219,26 +219,26 @@
 
           <footer class="thread-pending-request-footer">
             <button type="button" class="thread-pending-request-primary" @click="onRespondToolRequestUserInput(request)">
-              Send
+              {{ t('Send') }}
             </button>
           </footer>
         </section>
 
         <section v-else-if="request.method === 'item/tool/call'" class="thread-pending-request-actions">
           <button type="button" class="thread-pending-request-primary" @click="onRespondToolCallFailure(request)">
-            Fail Tool Call
+            {{ t('Fail Tool Call') }}
           </button>
           <button type="button" class="thread-pending-request-secondary" @click="onRespondToolCallSuccess(request)">
-            Success (Empty)
+            {{ t('Success (Empty)') }}
           </button>
         </section>
 
         <section v-else class="thread-pending-request-actions">
           <button type="button" class="thread-pending-request-primary" @click="onRespondEmptyResult(request)">
-            Return Empty Result
+            {{ t('Return Empty Result') }}
           </button>
           <button type="button" class="thread-pending-request-secondary" @click="onRejectUnknownRequest(request)">
-            Reject Request
+            {{ t('Reject Request') }}
           </button>
         </section>
       </template>
@@ -249,6 +249,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import type { UiServerRequest, UiServerRequestReply } from '../../types/codex'
+import { useUiLanguage } from '../../composables/useUiLanguage'
 
 type ApprovalDecision = 'accept' | 'acceptForSession' | 'decline' | 'cancel'
 
@@ -298,6 +299,7 @@ const toolQuestionAnswers = ref<Record<string, string>>({})
 const toolQuestionOtherAnswers = ref<Record<string, string>>({})
 const mcpElicitationAnswers = ref<Record<string, string | number | boolean | string[] | null>>({})
 const mcpElicitationValidationError = ref('')
+const { t } = useUiLanguage()
 
 function asRecord(value: unknown): Record<string, unknown> | null {
   return value !== null && typeof value === 'object' && !Array.isArray(value)

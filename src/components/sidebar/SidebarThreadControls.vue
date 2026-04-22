@@ -3,8 +3,8 @@
     <button
       class="sidebar-thread-controls-button"
       type="button"
-      :aria-label="isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'"
-      :title="isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'"
+      :aria-label="isSidebarCollapsed ? t('Expand sidebar') : t('Collapse sidebar')"
+      :title="isSidebarCollapsed ? t('Expand sidebar') : t('Collapse sidebar')"
       @click="$emit('toggle-sidebar')"
     >
       <IconTablerLayoutSidebarFilled v-if="isSidebarCollapsed" class="sidebar-thread-controls-icon" />
@@ -17,8 +17,8 @@
       v-if="showNewThreadButton"
       class="sidebar-thread-controls-button"
       type="button"
-      aria-label="Start new thread"
-      title="Start new thread"
+      :aria-label="t('Start new thread')"
+      :title="t('Start new thread')"
       @click="$emit('start-new-thread')"
     >
       <IconTablerFilePencil class="sidebar-thread-controls-icon" />
@@ -27,6 +27,7 @@
 </template>
 
 <script setup lang="ts">
+import { useUiLanguage } from '../../composables/useUiLanguage'
 import IconTablerFilePencil from '../icons/IconTablerFilePencil.vue'
 import IconTablerLayoutSidebar from '../icons/IconTablerLayoutSidebar.vue'
 import IconTablerLayoutSidebarFilled from '../icons/IconTablerLayoutSidebarFilled.vue'
@@ -40,6 +41,8 @@ defineEmits<{
   'toggle-sidebar': []
   'start-new-thread': []
 }>()
+
+const { t } = useUiLanguage()
 </script>
 
 <style scoped>

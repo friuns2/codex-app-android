@@ -50,13 +50,14 @@
           </button>
         </li>
       </ul>
-      <div v-else class="search-dropdown-empty">No results</div>
+      <div v-else class="search-dropdown-empty">{{ t('No results') }}</div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useUiLanguage } from '../../composables/useUiLanguage'
 import IconTablerChevronDown from '../icons/IconTablerChevronDown.vue'
 
 export type SearchDropdownOption = {
@@ -84,17 +85,18 @@ const searchRef = ref<HTMLInputElement | null>(null)
 const isOpen = ref(false)
 const searchQuery = ref('')
 const highlightIdx = ref(0)
+const { t } = useUiLanguage()
 
 const openDirection = computed(() => props.openDirection ?? 'down')
 const selected = computed(() => new Set(props.selectedValues))
 
 const displayLabel = computed(() => {
-  if (props.selectedValues.length === 0) return props.placeholder || 'Select...'
+  if (props.selectedValues.length === 0) return props.placeholder || t('Select...')
   if (props.selectedValues.length === 1) {
     const opt = props.options.find((o) => o.value === props.selectedValues[0])
-    return opt?.label || props.placeholder || 'Select...'
+    return opt?.label || props.placeholder || t('Select...')
   }
-  return `${props.selectedValues.length} selected`
+  return `${props.selectedValues.length} ${t('selected')}`
 })
 
 const filtered = computed(() => {

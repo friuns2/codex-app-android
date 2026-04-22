@@ -6,7 +6,7 @@
         v-model="query"
         class="skill-picker-search"
         type="text"
-        placeholder="Search skills..."
+        :placeholder="t('Search skills...')"
         @keydown.escape.prevent="$emit('close')"
         @keydown.enter.prevent="selectHighlighted"
         @keydown.arrow-down.prevent="moveHighlight(1)"
@@ -27,12 +27,13 @@
         </button>
       </li>
     </ul>
-    <div v-else class="skill-picker-empty">No skills found</div>
+    <div v-else class="skill-picker-empty">{{ t('No skills found') }}</div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
+import { useUiLanguage } from '../../composables/useUiLanguage'
 
 export type SkillOption = {
   name: string
@@ -56,6 +57,7 @@ const rootRef = ref<HTMLElement | null>(null)
 const searchInputRef = ref<HTMLInputElement | null>(null)
 const query = ref('')
 const highlightIndex = ref(0)
+const { t } = useUiLanguage()
 
 const filtered = computed(() => {
   const q = query.value.toLowerCase().trim()
