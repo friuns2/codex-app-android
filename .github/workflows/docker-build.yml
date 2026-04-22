@@ -1,0 +1,145 @@
+name: Build & Push Docker Image to GHCR
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build-and-push-arch:
+    strategy:
+      max-parallel: 2
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-latest
+          - arch: arm64
+            runner: ubuntu-22.04-arm
+
+    runs-on: ${{ matrix.runner }}
+
+    permissions:
+      contents: read
+      packages: write
+
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Get version tag
+        id: meta
+        run: |
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            VERSION="${{ github.ref_name }}"
+          else
+            VERSION="dev-$(git rev-parse --short HEAD)"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push (${{ matrix.arch }})
+        id: buildx1
+        continue-on-error: true
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/${{ matrix.arch }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ matrix.arch }}-${{ steps.meta.outputs.version }}
+          push: true
+          provenance: false
+          sbom: false
+          cache-from: type=gha,scope=${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.arch }}
+
+      - name: Retry build on failure
+        if: steps.buildx1.outcome != 'success'
+        run: sleep 10
+
+      - name: Build and push (retry)
+        if: steps.buildx1.outcome != 'success'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/${{ matrix.arch }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ matrix.arch }}-${{ steps.meta.outputs.version }}
+          push: true
+          provenance: false
+          sbom: false
+          cache-from: type=gha,scope=${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.arch }}
+
+  merge-manifest:
+    needs: build-and-push-arch
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create and push manifest lists
+        run: |
+          VERSION="${{ needs.build-and-push-arch.outputs.version }}"
+          IMAGE_BASE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
+
+          # Lowercase the image name (GHCR requires lowercase)
+          IMAGE_BASE=$(echo "$IMAGE_BASE" | tr '[:upper:]' '[:lower:]')
+
+          LATEST_TAG="${IMAGE_BASE}:latest"
+          VERSION_TAG="${IMAGE_BASE}:${VERSION}"
+
+          echo "Creating manifest for ${VERSION_TAG} and ${LATEST_TAG}..."
+
+          # Clean up old manifests
+          docker manifest rm ${LATEST_TAG} 2>/dev/null || true
+          docker manifest rm ${VERSION_TAG} 2>/dev/null || true
+
+          # Version tag manifest
+          docker manifest create ${VERSION_TAG} \
+            --amend ${IMAGE_BASE}:amd64-${VERSION} \
+            --amend ${IMAGE_BASE}:arm64-${VERSION}
+          docker manifest push ${VERSION_TAG}
+
+          # Latest tag manifest
+          docker manifest create ${LATEST_TAG} \
+            --amend ${IMAGE_BASE}:amd64-${VERSION} \
+            --amend ${IMAGE_BASE}:arm64-${VERSION}
+          docker manifest push ${LATEST_TAG}
+
+          echo "Manifests pushed successfully"
+
+      - name: Inspect final manifests
+        run: |
+          IMAGE_BASE=$(echo "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')
+          echo "--- Version Manifest ---"
+          docker manifest inspect ${IMAGE_BASE}:${{ needs.build-and-push-arch.outputs.version }}
+          echo "--- Latest Manifest ---"
+          docker manifest inspect ${IMAGE_BASE}:latest

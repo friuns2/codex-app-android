@@ -1,0 +1,25 @@
+services:
+  codexui:
+    image: ghcr.io/limlll/codexui:latest
+    # build: .
+    container_name: codexui
+    restart: unless-stopped
+    ports:
+      - "5900:5900"
+    volumes:
+      - codex-data:/root/.codex
+      - ./workspace:/workspace
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - CODEX_HOME=/root/.codex
+      - CODEX_WORKSPACE=/workspace
+      # - CODEXUI_SANDBOX_MODE=workspace-write
+      # - CODEXUI_APPROVAL_POLICY=suggest
+      # - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      # - TELEGRAM_ALLOWED_USER_IDS=${TELEGRAM_ALLOWED_USER_IDS}
+      # - TELEGRAM_DEFAULT_CWD=/workspace
+    env_file:
+      - .env
+
+volumes:
+  codex-data:

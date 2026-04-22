@@ -1,0 +1,8 @@
+node_modules
+dist
+dist-cli
+.git
+.idea
+.claude
+*.md
+!README.md
