@@ -750,13 +750,6 @@
                     @steer="steerQueuedMessage"
                     @delete="removeQueuedMessage"
                   />
-                  <ThreadPendingRequestPanel
-                    v-if="selectedThreadPendingRequest"
-                    :request="selectedThreadPendingRequest"
-                    :request-count="selectedThreadServerRequests.length"
-                    :has-queue-above="selectedThreadQueuedMessages.length > 0"
-                    @respond-server-request="onRespondServerRequest"
-                  />
                   <ThreadTerminalPanel
                     v-if="selectedThreadTerminalOpen && selectedThreadId && composerCwd"
                     class="content-thread-terminal-panel"
@@ -764,7 +757,17 @@
                     :cwd="composerCwd"
                     @hide="setThreadTerminalOpen(selectedThreadId, false)"
                   />
-                  <ThreadComposer v-else ref="threadComposerRef" :active-thread-id="composerThreadContextId"
+                  <ThreadPendingRequestPanel
+                    v-if="selectedThreadPendingRequest"
+                    :request="selectedThreadPendingRequest"
+                    :request-count="selectedThreadServerRequests.length"
+                    :has-queue-above="selectedThreadQueuedMessages.length > 0"
+                    @respond-server-request="onRespondServerRequest"
+                  />
+                  <ThreadComposer
+                    v-else
+                    ref="threadComposerRef"
+                    :active-thread-id="composerThreadContextId"
                     :cwd="composerCwd"
                     :collaboration-modes="availableCollaborationModes"
                     :selected-collaboration-mode="selectedCollaborationMode"
@@ -3244,7 +3247,7 @@ watch(isMobile, (mobile) => {
   if (mobile && !isSidebarCollapsed.value) {
     setSidebarCollapsed(true)
   }
-})
+}, { immediate: true })
 
 async function submitFirstMessageForNewThread(
   text: string,
