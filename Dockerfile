@@ -13,7 +13,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN corepack enable
 
 COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile && pnpm rebuild node-pty
 
 COPY . .
 RUN pnpm run build
@@ -46,8 +46,13 @@ RUN ARCH=$(uname -m) && \
     chmod +x /usr/local/bin/officecli
 
 # Install runtime dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ && rm -rf /var/lib/apt/lists/*
+
 COPY --from=builder /src/package.json /src/pnpm-lock.yaml /app/
-RUN pnpm install --prod --frozen-lockfile
+RUN pnpm install --prod --frozen-lockfile && pnpm rebuild node-pty
+
+# Clean up build tools no longer needed at runtime
+RUN apt-get purge -y python3 make g++ && apt-get autoremove -y
 
 # Copy build artifacts
 COPY --from=builder /src/dist /app/dist
