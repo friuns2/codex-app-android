@@ -527,7 +527,14 @@ const {
       dictationFeedback.value = t('composer.micDenied')
       return
     }
-    dictationFeedback.value = error instanceof Error ? error.message : t('composer.dictationFailed')
+    const msg = error instanceof Error ? error.message : ''
+    if (msg.includes('No auth token')) {
+      dictationFeedback.value = t('composer.noAuthToken')
+    } else if (msg.includes('Transcription failed')) {
+      dictationFeedback.value = t('composer.transcriptionFailed')
+    } else {
+      dictationFeedback.value = msg || t('composer.dictationFailed')
+    }
   },
 })
 const attachMenuRootRef = ref<HTMLElement | null>(null)

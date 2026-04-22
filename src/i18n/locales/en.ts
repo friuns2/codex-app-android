@@ -89,6 +89,8 @@ const en = {
     runtimeWorktree: 'New worktree',
     continueIn: 'Continue in',
     noMcpServers: 'No MCP servers configured',
+    noAuthToken: 'No auth token available for transcription.',
+    transcriptionFailed: 'Transcription failed.',
   },
 
   conversation: {

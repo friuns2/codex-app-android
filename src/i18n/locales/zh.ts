@@ -88,6 +88,8 @@ const zh = {
     runtimeWorktree: '新工作树',
     continueIn: '继续方式',
     noMcpServers: '未配置 MCP 服务器',
+    noAuthToken: '没有可用的转录认证令牌。',
+    transcriptionFailed: '语音转录失败。',
   },
 
   conversation: {
