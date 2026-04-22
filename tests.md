@@ -2821,3 +2821,10555 @@ The old rollback button is replaced with an `Edit message` action under each eli
 
 #### Rollback/Cleanup
 - None
+
+---
+
+### Settings parity diagnostics: Apps, MCPs, and experimental features
+
+#### Feature/Change Name
+Sidebar Settings now includes a Codex-app parity diagnostics section that loads app list, MCP server status, experimental features, and config requirements from app-server RPC.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Codex app-server reachable from the web UI
+
+#### Steps
+1. Open the web UI and open `Settings` in the sidebar
+2. Locate the `App parity` section
+3. Verify counts are shown for Apps, Experimental, and MCP
+4. Verify rows render for available Apps, Experimental features, and MCP servers
+5. Click `Reload MCP`
+6. Confirm MCP server rows refresh without breaking the settings panel
+
+#### Expected Results
+- `App parity` section is visible in Settings
+- The section shows loaded counts and config requirement summary (sandbox/approval)
+- App rows show enabled/accessibility status
+- Experimental feature rows show stage and on/off state
+- MCP rows show auth status and tool count
+- `Reload MCP` triggers MCP reload and refreshes server statuses
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Thread utility actions: compact and background terminal cleanup
+
+#### Feature/Change Name
+Settings now exposes two thread-level app-server actions for the selected thread: `Compact current thread` (`thread/compact/start`) and `Clean background terminals` (`thread/backgroundTerminals/clean`).
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Open any existing thread
+
+#### Steps
+1. Open sidebar `Settings`
+2. Confirm both buttons appear while a thread is selected:
+   - `Compact current thread`
+   - `Clean background terminals`
+3. Click `Compact current thread`
+4. Click `Clean background terminals`
+
+#### Expected Results
+- Both actions call the app-server without UI crashes
+- Thread view remains responsive after both actions
+- Thread/state refresh runs after each action
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Unarchive thread action
+
+#### Feature/Change Name
+Settings App parity section now exposes an `Unarchive` action backed by `thread/unarchive` using an input thread id.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. At least one archived thread id available
+
+#### Steps
+1. Open sidebar `Settings`
+2. In `App parity` -> `Archived threads`, enter an archived thread id
+3. Click `Unarchive`
+
+#### Expected Results
+- The app calls `thread/unarchive` successfully
+- Thread list refreshes and the unarchived thread becomes available again in active threads
+
+#### Rollback/Cleanup
+- Re-archive the thread from thread menu if needed
+
+---
+
+### Archived thread list with one-click unarchive
+
+#### Feature/Change Name
+Settings `App parity` now loads recent archived threads and provides one-click `Unarchive` actions per row.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. At least one archived thread exists
+
+#### Steps
+1. Open sidebar `Settings`
+2. Go to `App parity` -> `Archived threads`
+3. Verify archived thread rows appear
+4. Click `Unarchive` on one archived row
+
+#### Expected Results
+- Recent archived threads are listed without manual id lookup
+- Clicking `Unarchive` restores that thread to active threads
+- Archived list refreshes after action
+
+#### Rollback/Cleanup
+- Re-archive the thread if needed
+
+---
+
+### Command exec from settings parity panel
+
+#### Feature/Change Name
+Settings `App parity` now includes a `Command exec` control that calls `command/exec` in the selected thread cwd and shows stdout/stderr.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Select a thread with a valid cwd
+
+#### Steps
+1. Open sidebar `Settings`
+2. In `App parity` -> `Command exec`, enter `pwd`
+3. Click `Run`
+
+#### Expected Results
+- Command executes through app-server RPC
+- Output panel shows `exitCode`, plus stdout/stderr when available
+- UI remains responsive during and after execution
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Feedback upload from settings parity panel
+
+#### Feature/Change Name
+Settings `App parity` includes a `Feedback upload` form wired to `feedback/upload`.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Optional: select a thread so feedback includes current thread id
+
+#### Steps
+1. Open `Settings` -> `App parity`
+2. In `Feedback upload`, set classification (for example `bug`)
+3. Optionally enter reason text
+4. Click `Submit`
+
+#### Expected Results
+- Submission succeeds via app-server RPC
+- UI shows a success status line (including returned threadId when provided)
+- Settings panel remains usable after submit
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Refresh parity diagnostics
+
+#### Feature/Change Name
+Settings `App parity` includes `Refresh parity` to re-fetch apps, experimental features, MCP servers, config requirements, and archived threads.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+
+#### Steps
+1. Open `Settings` -> `App parity`
+2. Click `Refresh parity`
+
+#### Expected Results
+- Button enters loading state during fetch
+- Parity counts/lists refresh without closing Settings panel
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### MCP OAuth login from settings parity panel
+
+#### Feature/Change Name
+Settings `App parity` includes `MCP OAuth login` wired to `mcpServer/oauth/login`.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. MCP server name that supports OAuth is known
+
+#### Steps
+1. Open `Settings` -> `App parity`
+2. Enter MCP server name in `MCP OAuth login`
+3. Click `Start OAuth`
+
+#### Expected Results
+- OAuth start call succeeds via app-server RPC
+- Returned authorization URL is opened in a new tab/window
+- UI shows launch status text
+
+#### Rollback/Cleanup
+- Close opened auth tab if not needed
+
+---
+
+### Config value write from settings parity panel
+
+#### Feature/Change Name
+Settings `App parity` includes `Config write` controls for `approval_policy` and `sandbox_mode` via `config/value/write`.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. App-server allows config writes for current environment
+
+#### Steps
+1. Open `Settings` -> `App parity`
+2. Choose an approval policy and sandbox mode in `Config write`
+3. Click `Save`
+
+#### Expected Results
+- UI saves both config values via RPC
+- Success message shows selected values
+- No settings panel crash/regression
+
+#### Rollback/Cleanup
+- Restore previous approval/sandbox values using same controls
+
+---
+
+### Account logout from settings parity panel
+
+#### Feature/Change Name
+Settings `App parity` includes `Logout active account` wired to `account/logout`.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. At least one active logged-in account
+
+#### Steps
+1. Open `Settings` -> `App parity`
+2. Click `Logout active account`
+
+#### Expected Results
+- App-server receives `account/logout`
+- Account state refreshes in settings account list
+- Parity diagnostics refresh without UI crash
+
+#### Rollback/Cleanup
+- Log in again and refresh accounts if needed
+
+---
+
+### Account read visibility in parity panel
+
+#### Feature/Change Name
+Settings `App parity` shows active account details from `account/read` (email, plan type, account type, requiresOpenaiAuth).
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+
+#### Steps
+1. Open `Settings` -> `App parity`
+2. Locate `Account` section
+
+#### Expected Results
+- Account summary row is shown from latest `account/read` payload
+- `requiresOpenaiAuth` state is displayed
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Config read visibility in parity panel
+
+#### Feature/Change Name
+Settings `App parity` shows `config/read` summary: model, provider, approval policy, sandbox mode, and web search mode.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+
+#### Steps
+1. Open `Settings` -> `App parity`
+2. Locate `Config read` section
+
+#### Expected Results
+- Config read values are displayed from latest app-server snapshot
+- Unset values are shown as `(unset)`
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### In-progress steer uses turn/steer
+
+#### Feature/Change Name
+When a thread is in progress and composer mode is `Steer`, sending a new prompt now calls `turn/steer` with `expectedTurnId` instead of starting a new turn.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Existing thread with an active in-progress turn
+3. Composer in-progress mode set to `Steer`
+
+#### Steps
+1. Start a long-running turn in a thread
+2. While it is running, send a follow-up prompt with mode `Steer`
+
+#### Expected Results
+- App sends steer request to active turn (`turn/steer`)
+- No new independent turn is started for that follow-up message
+- Thread updates continue on the same active turn timeline
+
+#### Rollback/Cleanup
+- Switch in-progress mode to `Queue` if steer behavior is not desired
+
+---
+
+### Realtime thread compacted visibility
+
+#### Feature/Change Name
+When app-server emits `thread/compacted`, UI now immediately surfaces compacted status (`Context compacted`) and marks the thread as unread by event.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. A thread where compaction can be triggered
+
+#### Steps
+1. Trigger thread compaction (for example via `Compact current thread` in settings)
+2. Wait for realtime notification
+
+#### Expected Results
+- Thread receives immediate compacted activity state in UI
+- Thread is marked unread/event-updated in sidebar state
+- Normal sync still follows and does not regress
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Realtime app list update refreshes parity panel
+
+#### Feature/Change Name
+When app-server emits `app/list/updated`, the parity diagnostics panel auto-refreshes while Settings is open.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Settings panel open on `App parity`
+3. Trigger an app list update event from app-server (for example via app install/enable workflow)
+
+#### Steps
+1. Keep `Settings` -> `App parity` open
+2. Trigger `app/list/updated`
+
+#### Expected Results
+- Parity panel data refreshes automatically without manual button click
+- No duplicate/error spam in UI while updates arrive
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Realtime config/deprecation warning visibility
+
+#### Feature/Change Name
+Global warning notifications (`configWarning`, `deprecationNotice`, `windows/worldWritableWarning`) are surfaced in UI error state.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Ability to trigger one of these warning notifications from app-server
+
+#### Steps
+1. Trigger any of: `configWarning`, `deprecationNotice`, `windows/worldWritableWarning`
+2. Observe app-level error/warning presentation
+
+#### Expected Results
+- Warning text from notification is captured and shown via shared error state
+- No crash or notification processing regression
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### MCP OAuth completion realtime refresh
+
+#### Feature/Change Name
+When app-server emits `mcpServer/oauthLogin/completed`, parity diagnostics auto-refresh through the app-list revision signal.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Settings panel open on `App parity`
+3. Start and complete MCP OAuth flow
+
+#### Steps
+1. Trigger MCP OAuth login from parity panel
+2. Complete OAuth in browser
+3. Wait for `mcpServer/oauthLogin/completed` notification
+
+#### Expected Results
+- Parity panel refreshes automatically after OAuth completion
+- Updated MCP auth status appears without manual refresh
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Account realtime update refreshes parity diagnostics
+
+#### Feature/Change Name
+When app-server emits `account/updated` or `account/rateLimits/updated`, parity/account diagnostics auto-refresh through the shared app-list revision signal.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Settings panel open on `App parity`
+3. Trigger account update or rate-limit update notification
+
+#### Steps
+1. Keep `Settings` -> `App parity` open
+2. Trigger account state change (switch/login/logout/refresh) or quota update
+
+#### Expected Results
+- Parity panel refreshes automatically after account notifications
+- Account summary and quota-adjacent diagnostics stay current without manual refresh
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Realtime terminal interaction visibility
+
+#### Feature/Change Name
+When app-server emits `item/commandExecution/terminalInteraction`, UI now surfaces a live `Terminal interaction` activity state with the prompt/message.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Trigger a command flow that requests terminal interaction
+
+#### Steps
+1. Start a command that pauses for terminal interaction
+2. Wait for `item/commandExecution/terminalInteraction` notification
+
+#### Expected Results
+- Turn activity updates to `Terminal interaction`
+- Activity details include the prompt/message from notification
+- Thread is marked unread/event-updated
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Realtime MCP tool call progress visibility
+
+#### Feature/Change Name
+When app-server emits `item/mcpToolCall/progress`, UI now surfaces a live `MCP tool progress` activity state with tool/progress details.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Trigger an MCP tool call that emits progress notifications
+
+#### Steps
+1. Start a turn that invokes an MCP tool with progress updates
+2. Wait for `item/mcpToolCall/progress` notifications
+
+#### Expected Results
+- Turn activity updates to `MCP tool progress`
+- Activity details include tool/progress text from notification payload
+- Thread is marked unread/event-updated as progress arrives
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Realtime turn diff update visibility
+
+#### Feature/Change Name
+When app-server emits `turn/diff/updated`, UI now surfaces `Turn diff updated` activity state and marks thread unread/event-updated.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Trigger a turn that emits `turn/diff/updated`
+
+#### Steps
+1. Run a turn that performs file changes
+2. Wait for `turn/diff/updated` notification
+
+#### Expected Results
+- Activity label updates to `Turn diff updated`
+- Activity details indicate whether diff content is present
+- Thread unread/event indicator updates
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Realtime fuzzy file search session visibility
+
+#### Feature/Change Name
+When app-server emits `fuzzyFileSearch/sessionUpdated` or `fuzzyFileSearch/sessionCompleted`, UI now surfaces `Fuzzy file search` activity state with progress/completion details.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Trigger a fuzzy file search flow that emits session notifications
+
+#### Steps
+1. Start fuzzy file search
+2. Observe `sessionUpdated` notifications
+3. Observe `sessionCompleted` notification
+
+#### Expected Results
+- Activity label updates to `Fuzzy file search`
+- Activity details show progress/completion text (and match count when present)
+- Thread is marked unread/event-updated
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Realtime raw response item completion visibility
+
+#### Feature/Change Name
+When app-server emits `rawResponseItem/completed`, UI now surfaces `Raw response item` activity state with completion details.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Trigger a flow that emits `rawResponseItem/completed`
+
+#### Steps
+1. Run a turn that produces raw response item completion events
+2. Observe `rawResponseItem/completed` notifications
+
+#### Expected Results
+- Activity label updates to `Raw response item`
+- Activity details include completed item type (when available)
+- Thread is marked unread/event-updated
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Account login completion realtime refresh
+
+#### Feature/Change Name
+When app-server emits `account/login/completed`, parity/account diagnostics auto-refresh through the shared revision signal.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Settings panel open on `App parity`
+3. Trigger account login flow to completion
+
+#### Steps
+1. Start account login
+2. Complete login and wait for `account/login/completed`
+
+#### Expected Results
+- Parity panel refreshes automatically after login completion
+- Account summary and related diagnostics reflect new logged-in account
+
+#### Rollback/Cleanup
+- Logout if test login should be reverted
+
+---
+
+### Account login start from parity panel
+
+#### Feature/Change Name
+Settings `App parity` includes `Start ChatGPT login` wired to `account/login/start` and opens returned auth URL.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+
+#### Steps
+1. Open `Settings` -> `App parity`
+2. In `Account`, click `Start ChatGPT login`
+
+#### Expected Results
+- App-server receives `account/login/start` request
+- Browser opens returned `authUrl`
+- UI shows login start status with loginId when available
+
+#### Rollback/Cleanup
+- Close opened login tab/window if not needed
+
+---
+
+### Account login cancel from parity panel
+
+#### Feature/Change Name
+Settings `App parity` includes `Cancel login` wired to `account/login/cancel` using the latest started `loginId`.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Start login first via `Start ChatGPT login` so a loginId is present
+
+#### Steps
+1. In `Settings` -> `App parity`, click `Start ChatGPT login`
+2. Click `Cancel login`
+
+#### Expected Results
+- App-server receives `account/login/cancel` with current loginId
+- UI shows cancel status (`canceled` or `notFound`)
+- Active loginId state is cleared after cancel attempt
+
+#### Rollback/Cleanup
+- Restart login if you need to continue auth flow
+
+---
+
+### Legacy auth notification parity refresh
+
+#### Feature/Change Name
+Parity/account diagnostics auto-refresh when legacy auth lifecycle notifications arrive (`authStatusChange`, `loginChatGptComplete`, `sessionConfigured`).
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Settings panel open on `App parity`
+3. Trigger auth lifecycle notifications on a server that emits legacy events
+
+#### Steps
+1. Keep `Settings` -> `App parity` open
+2. Trigger legacy auth status/login/session events
+
+#### Expected Results
+- Parity panel refreshes automatically after each legacy auth event
+- Account-related diagnostics remain current without manual refresh
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Account login completed outcome visibility
+
+#### Feature/Change Name
+When app-server emits `account/login/completed`, UI now reads `success`/`error` and surfaces failure immediately via shared error state.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Trigger account login completion notifications with both success and failure cases (when possible)
+
+#### Steps
+1. Start account login flow
+2. Complete with success and observe state
+3. Trigger/observe a failed login completion payload (if available)
+
+#### Expected Results
+- Failed completion (`success: false`) sets a visible login error message
+- Successful completion does not leave stale login failure in shared error state
+- Existing parity auto-refresh still runs via revision signal
+
+#### Rollback/Cleanup
+- Retry login or logout/login cycle as needed
+
+---
+
+### Login completion clears stale parity login state
+
+#### Feature/Change Name
+After parity/account refresh confirms logged-in account email, parity login staging state is cleaned: tracked loginId is cleared and stale `Login started` status is replaced with `Login completed`.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Start ChatGPT login from parity panel and complete auth flow
+
+#### Steps
+1. Click `Start ChatGPT login` in parity account section
+2. Complete login externally and wait for parity refresh
+3. Re-open/check parity account section status
+
+#### Expected Results
+- `Cancel login` no longer remains enabled from stale loginId
+- Status message does not stay at `Login started`; it updates to `Login completed`
+- Account summary shows authenticated account info
+
+#### Rollback/Cleanup
+- Logout if needed to reset account state
+
+---
+
+### Realtime reasoning text delta visibility
+
+#### Feature/Change Name
+UI now processes both `item/reasoning/summaryTextDelta` and `item/reasoning/textDelta` as live reasoning stream updates.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Trigger a turn that emits `item/reasoning/textDelta`
+
+#### Steps
+1. Start a turn with reasoning streaming enabled
+2. Observe incoming reasoning deltas
+
+#### Expected Results
+- Live reasoning text updates for `item/reasoning/textDelta` events (not only summary deltas)
+- No regression in existing summary reasoning stream behavior
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Parity diagnostics pagination completeness
+
+#### Feature/Change Name
+`app/list`, `experimentalFeature/list`, and `mcpServerStatus/list` parity loaders now follow `nextCursor` to load multi-page inventories.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. App-server data large enough to paginate (or mocked to emit `nextCursor`)
+
+#### Steps
+1. Open `Settings` -> `App parity`
+2. Trigger `Refresh parity`
+3. Verify lists include entries beyond first page when pagination is present
+
+#### Expected Results
+- Diagnostics loaders request subsequent pages while `nextCursor` exists
+- Duplicates are deduplicated by id/name
+- Lists stop gracefully when cursor is absent
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### API key login start from parity panel
+
+#### Feature/Change Name
+Settings `App parity` account section now supports API key login via `account/login/start` with `type: apiKey`.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Valid API key available
+
+#### Steps
+1. Open `Settings` -> `App parity`
+2. In `Account`, enter API key in `OpenAI API key`
+3. Click `Login with API key`
+
+#### Expected Results
+- App-server receives API key login request
+- UI shows API key login start/result status
+- Account/parity data refreshes after successful login
+
+#### Rollback/Cleanup
+- Logout active account if needed
+
+---
+
+### Config write includes web_search mode
+
+#### Feature/Change Name
+Parity `Config write` now saves `web_search` along with `approval_policy` and `sandbox_mode`.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. App-server allows config writes
+
+#### Steps
+1. Open `Settings` -> `App parity`
+2. In `Config write`, choose approval, sandbox, and web_search modes
+3. Click `Save`
+
+#### Expected Results
+- UI writes all three config keys via `config/value/write`
+- Success status includes all saved values
+- No settings regression after write
+
+#### Rollback/Cleanup
+- Restore previous config values via same controls
+
+---
+
+### App enable/disable from parity panel
+
+#### Feature/Change Name
+Parity `Apps` list now supports enable/disable toggles via `config/value/write` on `apps.<id>.enabled`.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. At least one app entry visible in parity Apps list
+
+#### Steps
+1. Open `Settings` -> `App parity`
+2. In `Apps`, click `Disable` (or `Enable`) for a row
+
+#### Expected Results
+- App enabled state is written through config API
+- Row updates to reflect new enabled/disabled state
+- Success status message shows written key/value
+
+#### Rollback/Cleanup
+- Toggle the app back to previous state
+
+---
+
+### Experimental feature enable/disable from parity panel
+
+#### Feature/Change Name
+Parity `Experimental features` list now supports enable/disable toggles via config writes.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. At least one experimental feature visible in parity list
+
+#### Steps
+1. Open `Settings` -> `App parity`
+2. In `Experimental features`, click `Enable` or `Disable` for a row
+
+#### Expected Results
+- App attempts config write for selected feature flag
+- UI row updates optimistically to new on/off state on success
+- Write result or error appears in parity status area
+
+#### Rollback/Cleanup
+- Toggle feature back to prior state
+
+---
+
+### Realtime revision refresh updates settings account list
+
+#### Feature/Change Name
+When the shared realtime revision signal updates while Settings is open, the app now refreshes both parity diagnostics and the Settings account list.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Settings panel open
+3. Trigger notifications that increment revision signal (for example account/app auth events)
+
+#### Steps
+1. Keep Settings open on sidebar
+2. Trigger revision-driving notification
+
+#### Expected Results
+- Account cards refresh without manual Reload click
+- Parity panel refreshes as before
+- No duplicate error spam or UI freeze
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### MCP OAuth completion outcome visibility
+
+#### Feature/Change Name
+When app-server emits `mcpServer/oauthLogin/completed`, UI now parses success/error outcome and surfaces failure immediately via shared error state.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Trigger MCP OAuth completion notifications with both success and failure cases when possible
+
+#### Steps
+1. Start MCP OAuth login flow
+2. Complete OAuth with success and observe state
+3. Trigger/observe failed completion payload (if available)
+
+#### Expected Results
+- Failed completion (`success: false`) sets visible OAuth failure message
+- Successful completion clears stale OAuth error text if present
+- Existing parity auto-refresh still runs
+
+#### Rollback/Cleanup
+- Retry OAuth login for affected MCP server
+
+---
+
+### Config requirements extended visibility
+
+#### Feature/Change Name
+Parity `configRequirements/read` summary now includes allowed web-search modes, network requirement state, and residency requirement in addition to sandbox and approval.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Open `Settings` -> `App parity`
+
+#### Steps
+1. Locate config requirements summary line in parity panel
+
+#### Expected Results
+- Summary includes `sandbox`, `approval`, `web`, `network`, and `residency` fields
+- Values fall back to `any` when requirement fields are not constrained
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Atomic parity config writes via config/batchWrite
+
+#### Feature/Change Name
+Parity `Config write` now persists approval/sandbox/web_search in one `config/batchWrite` request instead of multiple independent writes.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Open `Settings` -> `App parity`
+
+#### Steps
+1. Pick values for approval, sandbox, and web_search
+2. Click `Save`
+
+#### Expected Results
+- One batch write request carries all three edits
+- Success message still reports all three saved values
+- No partial update behavior from sequential writes
+
+#### Rollback/Cleanup
+- Save previous values via same controls
+
+---
+
+### Parity compact current thread action
+
+#### Feature/Change Name
+Settings `App parity` panel now exposes `Compact current thread`, wiring to `thread/compact/start` for the selected thread.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Open an existing thread
+3. Open `Settings` -> `App parity`
+
+#### Steps
+1. In `Archived threads`, click `Compact current thread`
+
+#### Expected Results
+- Button shows `Compacting…` while request is in flight
+- Success meta line appears: `Compaction started for <thread-id>`
+- If request fails, parity error message is shown
+
+#### Rollback/Cleanup
+- None (compaction is a thread operation)
+
+---
+
+### Parity steer active turn control
+
+#### Feature/Change Name
+Settings `App parity` now includes `Steer active turn`, sending steer text to the in-progress thread turn via existing `turn/steer` path.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Open a thread with an active in-progress turn
+3. Open `Settings` -> `App parity`
+
+#### Steps
+1. Enter steer text in `Steer active turn`
+2. Click `Steer`
+
+#### Expected Results
+- Button is enabled only when selected thread is in progress
+- UI shows `Steer message sent` on success
+- Input clears on success
+- Errors are surfaced in parity error line on failure
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Parity interrupt active turn control
+
+#### Feature/Change Name
+Settings `App parity` now includes `Interrupt active turn`, using the same active turn interrupt path as the main composer (`turn/interrupt`).
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Open a thread with an in-progress turn
+3. Open `Settings` -> `App parity`
+
+#### Steps
+1. Click `Interrupt` in `Interrupt active turn`
+
+#### Expected Results
+- Button is enabled only while the selected thread is in progress
+- Button shows `Interrupting…` while request is in flight
+- UI shows `Interrupt signal sent` on success
+- Errors are surfaced in parity error line on failure
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Parity clean background terminals control
+
+#### Feature/Change Name
+Settings `App parity` now includes `Clean background terminals`, calling `thread/backgroundTerminals/clean` for the selected thread.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Open any thread
+3. Open `Settings` -> `App parity`
+
+#### Steps
+1. Click `Clean background terminals` in `Archived threads` parity block
+
+#### Expected Results
+- Button shows `Cleaning…` while request is in flight
+- Success meta line appears: `Background terminals cleaned for <thread-id>`
+- If request fails, parity error message is shown
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Parity refresh account from auth control
+
+#### Feature/Change Name
+Settings `App parity` Account block now includes `Refresh account from auth`, reloading account/auth state and parity account summary in place.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Open `Settings` -> `App parity`
+
+#### Steps
+1. Click `Refresh account from auth`
+
+#### Expected Results
+- Button shows `Refreshing…` while in flight
+- Account list/state and parity account summary refresh
+- Result line shows `Account refreshed from auth state`
+- Errors show in parity error line on failure
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Parity protocol catalog viewer
+
+#### Feature/Change Name
+Settings `App parity` now includes `Protocol catalog`, loading app-server method and notification catalogs.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Open `Settings` -> `App parity`
+
+#### Steps
+1. Click `Load methods/notifications`
+
+#### Expected Results
+- Button shows `Loading…` while in flight
+- Methods line appears with total count and sample entries
+- Notifications line appears with total count and sample entries
+- Errors show in parity error line on failure
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Parity pending server requests viewer
+
+#### Feature/Change Name
+Settings `App parity` now includes `Pending server requests`, loading current server request queue summaries (`id` + `method`).
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Open `Settings` -> `App parity`
+
+#### Steps
+1. Click `Load pending requests`
+
+#### Expected Results
+- Button shows `Loading…` while in flight
+- Count line updates to current queue size
+- Up to five request summaries are shown as `id=<id> · <method>`
+- Errors show in parity error line on failure
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Parity thread state cache viewer
+
+#### Feature/Change Name
+Settings `App parity` now includes `Thread state cache`, loading thread title cache size and pinned-thread count from bridge endpoints.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Open `Settings` -> `App parity`
+
+#### Steps
+1. Click `Load title/pin cache`
+
+#### Expected Results
+- Button shows `Loading…` while in flight
+- `thread title cache entries` updates to cached title count
+- `pinned thread ids` updates to pin count
+- Errors show in parity error line on failure
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Parity generate thread title tool
+
+#### Feature/Change Name
+Settings `App parity` now includes `Generate thread title`, calling `generate-thread-title` and showing the generated title preview.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Open `Settings` -> `App parity`
+
+#### Steps
+1. Enter a prompt in `Generate thread title`
+2. Click `Generate`
+
+#### Expected Results
+- Button shows `Generating…` while request is in flight
+- `generated:` line displays returned title text (or `(empty title)` when empty)
+- Errors show in parity error line on failure
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Parity thread search diagnostics
+
+#### Feature/Change Name
+Settings `App parity` now includes `Thread search diagnostics`, calling `searchThreads` with a manual query and showing matched thread-id count.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Open `Settings` -> `App parity`
+
+#### Steps
+1. Enter a search query
+2. Click `Search`
+
+#### Expected Results
+- Button shows `Searching…` while in flight
+- `matched thread ids` displays the count returned by search API
+- Errors show in parity error line on failure
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Parity set default model control
+
+#### Feature/Change Name
+Settings `App parity` now includes `Set default model`, allowing direct `setDefaultModel` calls from available model IDs.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Open `Settings` -> `App parity`
+
+#### Steps
+1. Select a model in `Set default model`
+2. Click `Set model`
+
+#### Expected Results
+- Button shows `Saving…` while in flight
+- Success line shows `Saved default model=<model-id>`
+- Config read section reflects updated model value
+- Errors show in parity error line on failure
+
+#### Rollback/Cleanup
+- Re-run with previous model ID
+
+---
+
+### Parity set speed mode control
+
+#### Feature/Change Name
+Settings `App parity` now includes `Set speed mode`, calling `setCodexSpeedMode` (`standard`/`fast`) and showing saved state.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Open `Settings` -> `App parity`
+
+#### Steps
+1. Choose `standard` or `fast` in `Set speed mode`
+2. Click `Set speed`
+
+#### Expected Results
+- Button shows `Saving…` while in flight
+- Success line shows `Saved speed mode=<mode>`
+- Errors show in parity error line on failure
+
+#### Rollback/Cleanup
+- Set mode back to previous value
+
+---
+
+### Parity rate limit reader
+
+#### Feature/Change Name
+Settings `App parity` now includes `Read rate limits`, calling `account/rateLimits/read` and showing primary/secondary usage summaries.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Open `Settings` -> `App parity`
+
+#### Steps
+1. Click `Read limits`
+
+#### Expected Results
+- Button shows `Loading…` while in flight
+- Summary line displays primary/secondary usage when snapshot exists
+- Summary shows `No rate limit snapshot available` if backend returns null
+- Errors show in parity error line on failure
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Parity archive current thread control
+
+#### Feature/Change Name
+Settings `App parity` now includes `Archive current thread`, using the same archive path as sidebar actions and refreshing archived thread list.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Open any thread
+3. Open `Settings` -> `App parity`
+
+#### Steps
+1. Click `Archive current thread`
+
+#### Expected Results
+- Button shows `Archiving…` while in flight
+- Success line shows `Archived <thread-id>`
+- Archived threads list refreshes and includes the archived thread
+- Errors show in parity error line on failure
+
+#### Rollback/Cleanup
+- Use `Unarchive` for the same thread in parity panel
+
+---
+
+### Parity resume current thread control
+
+#### Feature/Change Name
+Settings `App parity` now includes `Resume current thread`, calling `thread/resume` and showing resumed model in parity status.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Open any thread
+3. Open `Settings` -> `App parity`
+
+#### Steps
+1. Click `Resume current thread`
+
+#### Expected Results
+- Button shows `Resuming…` while in flight
+- Status line shows `Resumed <thread-id> (model=<model>)`
+- Errors show in parity error line on failure
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Parity accounts list inspector
+
+#### Feature/Change Name
+Settings `App parity` Account block now includes `Load accounts list`, calling `getAccounts` and showing total/active account summary.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Open `Settings` -> `App parity`
+
+#### Steps
+1. Click `Load accounts list`
+
+#### Expected Results
+- Button shows `Loading…` while in flight
+- Summary line shows `accounts=<count> · active=<account-id|none>`
+- Errors show in parity error line on failure
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Parity switch account by ID
+
+#### Feature/Change Name
+Settings `App parity` Account block now includes `Switch account`, allowing direct account switch using an account ID.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. At least two available accounts
+3. Open `Settings` -> `App parity`
+
+#### Steps
+1. Enter target account id in `account id to switch`
+2. Click `Switch account`
+
+#### Expected Results
+- Button shows `Switching…` while in flight
+- Active account switches to the requested account
+- Summary line shows `switched active account=<account-id>`
+- Errors show in parity error line on failure
+
+#### Rollback/Cleanup
+- Switch back to previous account id
+
+---
+
+### Parity remove account by ID
+
+#### Feature/Change Name
+Settings `App parity` Account block now includes `Remove account`, allowing direct account removal by account ID.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. At least one removable account
+3. Open `Settings` -> `App parity`
+
+#### Steps
+1. Enter target account id in `account id to remove`
+2. Click `Remove account`
+
+#### Expected Results
+- Button shows `Removing…` while in flight
+- Account is removed from backend account list
+- Summary line shows `removed account=<id> · remaining=<count>`
+- Errors show in parity error line on failure
+
+#### Rollback/Cleanup
+- Re-add/login the removed account if needed
+
+---
+
+### Parity current model config reader
+
+#### Feature/Change Name
+Settings `App parity` now includes `Current model config`, calling `config/read` via `getCurrentModelConfig` and showing model/provider/effort/speed summary.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Open `Settings` -> `App parity`
+
+#### Steps
+1. Click `Read current model config`
+
+#### Expected Results
+- Button shows `Loading…` while in flight
+- Summary line shows `model`, `provider`, `effort`, and `speed`
+- Errors show in parity error line on failure
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Parity collaboration modes reader
+
+#### Feature/Change Name
+Settings `App parity` now includes `Collaboration modes`, calling `collaborationMode/list` and showing mode count + IDs.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Open `Settings` -> `App parity`
+
+#### Steps
+1. Click `Read collaboration modes`
+
+#### Expected Results
+- Button shows `Loading…` while in flight
+- Summary line shows mode count and mode IDs when available
+- Shows `No collaboration modes returned` when list is empty
+- Errors show in parity error line on failure
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Parity raw rate limits response reader
+
+#### Feature/Change Name
+Settings `App parity` now includes `Raw rate limits response`, calling `account/rateLimits/read` raw response helper and showing `rate_limits` entry count.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Open `Settings` -> `App parity`
+
+#### Steps
+1. Click `Read raw rate limits`
+
+#### Expected Results
+- Button shows `Loading…` while in flight
+- Summary line shows `raw rate_limits entries=<count>`
+- Errors show in parity error line on failure
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Parity available models reader
+
+#### Feature/Change Name
+Settings `App parity` now includes `Available models`, calling `getAvailableModelIds` and showing model count with sample IDs.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Open `Settings` -> `App parity`
+
+#### Steps
+1. Click `Read available models`
+
+#### Expected Results
+- Button shows `Loading…` while in flight
+- Summary line shows `count=<n>` and sample model IDs when available
+- Shows `No available model IDs returned` when empty
+- Errors show in parity error line on failure
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Parity workspace roots state reader
+
+#### Feature/Change Name
+Settings `App parity` now includes `Workspace roots state`, calling `getWorkspaceRootsState` and showing counts for order/active/labels.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Open `Settings` -> `App parity`
+
+#### Steps
+1. Click `Read workspace roots`
+
+#### Expected Results
+- Button shows `Loading…` while in flight
+- Summary line shows `order=<n> · active=<n> · labels=<n>`
+- Errors show in parity error line on failure
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Parity home directory reader
+
+#### Feature/Change Name
+Settings `App parity` now includes `Home directory`, calling `getHomeDirectory` and showing the resolved path.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Open `Settings` -> `App parity`
+
+#### Steps
+1. Click `Read home directory`
+
+#### Expected Results
+- Button shows `Loading…` while in flight
+- Home directory absolute path is shown in parity panel
+- Errors show in parity error line on failure
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Parity git branch state reader
+
+#### Feature/Change Name
+Settings `App parity` now includes `Git branch state`, calling `getGitBranchState` for the selected thread cwd.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Open a thread with a valid git workspace cwd
+3. Open `Settings` -> `App parity`
+
+#### Steps
+1. Click `Read branch state`
+
+#### Expected Results
+- Button shows `Loading…` while in flight
+- Summary line shows `branch=<name|detached> · detached=<yes|no>`
+- Errors show in parity error line on failure
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Parity worktree branch options reader
+
+#### Feature/Change Name
+Settings `App parity` now includes `Worktree branch options`, calling `getWorktreeBranchOptions` for selected thread cwd.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Open a thread with valid git cwd
+3. Open `Settings` -> `App parity`
+
+#### Steps
+1. Click `Read worktree branches`
+
+#### Expected Results
+- Button shows `Loading…` while in flight
+- Summary line shows `count=<n>` with sample branch names
+- Shows `No branch options returned` when empty
+- Errors show in parity error line on failure
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Parity thread search indexed count visibility
+
+#### Feature/Change Name
+`Thread search diagnostics` now also shows backend `indexedThreadCount` alongside matched thread-id count.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Open `Settings` -> `App parity`
+
+#### Steps
+1. Enter a query in `Thread search diagnostics`
+2. Click `Search`
+
+#### Expected Results
+- `matched thread ids` updates to the query match count
+- `indexed threads` shows backend indexed thread count
+- Both values clear/reload on each new search request
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Parity home directory listing reader
+
+#### Feature/Change Name
+Settings `App parity` Home directory block now includes `List home folders`, calling `listLocalDirectories` for the resolved home path.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Open `Settings` -> `App parity`
+
+#### Steps
+1. Click `Read home directory` (optional)
+2. Click `List home folders`
+
+#### Expected Results
+- Button shows `Loading…` while in flight
+- `home folder entries` shows non-hidden directory entry count
+- Errors show in parity error line on failure
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Parity project root suggestion reader
+
+#### Feature/Change Name
+Settings `App parity` now includes `Project root suggestion`, calling `getProjectRootSuggestion` for a provided base path.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Open `Settings` -> `App parity`
+
+#### Steps
+1. Enter a base path in `Project root suggestion`
+2. Click `Suggest root`
+
+#### Expected Results
+- Button shows `Loading…` while in flight
+- Summary line shows `name=<suggested-name> · path=<suggested-path>`
+- Errors show in parity error line on failure
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Parity Telegram status reader
+
+#### Feature/Change Name
+Settings `App parity` now includes `Telegram status`, calling `getTelegramStatus` and showing concise configured/active/chat/thread counts.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Open `Settings` -> `App parity`
+
+#### Steps
+1. Click `Read Telegram status`
+
+#### Expected Results
+- Button shows `Loading…` while in flight
+- Summary line shows `configured`, `active`, `chats`, and `threads`
+- Errors show in parity error line on failure
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Parity Telegram config reader
+
+#### Feature/Change Name
+Settings `App parity` Telegram block now includes `Read Telegram config`, showing redacted config presence summary (no secret token output).
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Open `Settings` -> `App parity`
+
+#### Steps
+1. Click `Read Telegram config`
+
+#### Expected Results
+- Button shows `Loading…` while in flight
+- Summary line shows `botTokenPresent=<yes|no> · allowedUserIds=<count>`
+- Raw bot token value is not displayed
+- Errors show in parity error line on failure
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Parity GitHub projects reader
+
+#### Feature/Change Name
+Settings `App parity` now includes `GitHub projects`, calling `getGithubProjectsForScope` for a selected scope.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Open `Settings` -> `App parity`
+
+#### Steps
+1. Pick a scope in `GitHub projects`
+2. Click `Read GitHub projects`
+
+#### Expected Results
+- Button shows `Loading…` while in flight
+- Summary line shows `count=<n>` and top project names when available
+- Shows `No projects returned` when empty
+- Errors show in parity error line on failure
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Parity collaboration mode setter
+
+#### Feature/Change Name
+Settings `App parity` Collaboration modes block now includes `Set mode`, allowing direct switch between `default` and `plan` modes.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Open `Settings` -> `App parity`
+
+#### Steps
+1. Choose `default` or `plan` in mode selector
+2. Click `Set mode`
+
+#### Expected Results
+- Button shows `Saving…` while in flight
+- Summary line shows `selected=<mode>`
+- Composer collaboration mode reflects selected value
+- Errors show in parity error line on failure
+
+#### Rollback/Cleanup
+- Set mode back to previous value
+
+---
+
+### Parity reasoning effort setter
+
+#### Feature/Change Name
+Settings `App parity` now includes `Reasoning effort` control to set selected effort (`minimal|low|medium|high`).
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Open `Settings` -> `App parity`
+
+#### Steps
+1. Choose an effort in `Reasoning effort`
+2. Click `Set effort`
+
+#### Expected Results
+- Button shows `Saving…` while in flight
+- Success line shows `Saved reasoning effort=<value>`
+- Selected effort in composer state reflects chosen value
+- Errors show in parity error line on failure
+
+#### Rollback/Cleanup
+- Set effort back to previous value
+
+---
+
+### Parity selected-thread model setter
+
+#### Feature/Change Name
+Settings `App parity` now includes `Set selected thread model`, allowing model override for the active thread context.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Open an existing thread
+3. Open `Settings` -> `App parity`
+
+#### Steps
+1. Pick a model in `Set selected thread model`
+2. Click `Set thread model`
+
+#### Expected Results
+- Button shows `Saving…` while in flight
+- Success line shows `Saved selected thread model=<model-id>`
+- Composer selected model for current thread reflects chosen value
+- Errors show in parity error line on failure
+
+#### Rollback/Cleanup
+- Set model back to previous thread model
+
+---
+
+### Parity thread groups reader
+
+#### Feature/Change Name
+Settings `App parity` now includes `Thread groups`, calling `getThreadGroups` and showing project/thread totals.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Open `Settings` -> `App parity`
+
+#### Steps
+1. Click `Read thread groups`
+
+#### Expected Results
+- Button shows `Loading…` while in flight
+- Summary line shows `projects=<n> · threads=<n>`
+- Errors show in parity error line on failure
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Parity skills catalog reader
+
+#### Feature/Change Name
+Settings `App parity` now includes `Skills catalog`, calling `getSkillsList` and showing skill count with sample names.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Open `Settings` -> `App parity`
+
+#### Steps
+1. Click `Read skills`
+
+#### Expected Results
+- Button shows `Loading…` while in flight
+- Summary line shows `count=<n>` and sample skill names
+- Shows `No skills returned` when empty
+- Errors show in parity error line on failure
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Parity thread title cache sample visibility
+
+#### Feature/Change Name
+`Thread state cache` now shows up to three cached thread title samples (`<thread-id>: <title>`) in addition to counts.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Open `Settings` -> `App parity`
+
+#### Steps
+1. Click `Load title/pin cache`
+
+#### Expected Results
+- `thread title cache entries` and `pinned thread ids` still update
+- Up to three sample lines show cached title entries from title cache order
+- Previous sample lines clear before each reload
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Parity pinned thread sample visibility
+
+#### Feature/Change Name
+`Thread state cache` now also shows up to three sample pinned thread IDs in addition to pin count.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Open `Settings` -> `App parity`
+
+#### Steps
+1. Click `Load title/pin cache`
+
+#### Expected Results
+- `pinned thread ids` count still updates
+- Up to three `pinned: <thread-id>` sample lines are rendered when pin state exists
+- Prior pinned samples clear before each reload
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Parity archived threads custom limit
+
+#### Feature/Change Name
+`Archived threads` in `App parity` now supports custom fetch limit (`1..200`) before loading archived thread rows.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Open `Settings` -> `App parity`
+
+#### Steps
+1. Enter a limit value in archived-thread limit input
+2. Click `Load archived`
+
+#### Expected Results
+- Archived list refreshes with the requested/clamped limit
+- Unarchive actions continue to refresh using the same configured limit
+- Errors show in parity error line on failure
+
+#### Rollback/Cleanup
+- Set limit back to `12`
+
+---
+
+### Parity selected thread detail reader
+
+#### Feature/Change Name
+`Archived threads` parity block now includes `Read selected thread detail`, calling `getThreadDetail` for the active thread.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Select any thread
+3. Open `Settings` -> `App parity`
+
+#### Steps
+1. Click `Read selected thread detail`
+
+#### Expected Results
+- Button shows `Loading…` while in flight
+- Summary line shows `messages`, `inProgress`, and `activeTurn`
+- Errors show in parity error line on failure
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Parity selected thread messages reader
+
+#### Feature/Change Name
+`Archived threads` parity block now includes `Read thread messages`, calling `getThreadMessages` for the active thread.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Select any thread
+3. Open `Settings` -> `App parity`
+
+#### Steps
+1. Click `Read thread messages`
+
+#### Expected Results
+- Button shows `Loading…` while in flight
+- Summary line shows `persisted messages=<count>`
+- Errors show in parity error line on failure
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Parity selected thread review result reader
+
+#### Feature/Change Name
+`Archived threads` parity block now includes `Read review result`, calling `getThreadReviewResult` for the active thread.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Select any thread
+3. Open `Settings` -> `App parity`
+
+#### Steps
+1. Click `Read review result`
+
+#### Expected Results
+- Button shows `Loading…` while in flight
+- Summary line shows `review label=<label> · findings=<count>`
+- Errors show in parity error line on failure
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Parity accounts inspector metadata visibility
+
+#### Feature/Change Name
+`Load accounts list` parity summary now includes imported-account id and observed auth-mode mix in addition to count/active id.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Open `Settings` -> `App parity`
+
+#### Steps
+1. Click `Load accounts list`
+
+#### Expected Results
+- Summary line includes `accounts`, `active`, `imported`, and `authModes`
+- `imported` falls back to `(none)` when unavailable
+- `authModes` shows unique non-empty modes or `(none)`
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Parity raw rate limits metadata summary
+
+#### Feature/Change Name
+`Raw rate limits response` summary now reports primary/secondary window presence and bucket-key count/sample from `rateLimitsByLimitId`.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Open `Settings` -> `App parity`
+
+#### Steps
+1. Click `Read raw rate limits`
+
+#### Expected Results
+- Summary includes `primary=<yes|no>` and `secondary=<yes|no>`
+- Summary includes `buckets=<count>` and up to three bucket keys when available
+- Errors show in parity error line on failure
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Parity selected thread detail file-change count
+
+#### Feature/Change Name
+`Read selected thread detail` summary now includes persisted `fileChanges` count from thread detail messages.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Select a thread (preferably one with file change history)
+3. Open `Settings` -> `App parity`
+
+#### Steps
+1. Click `Read selected thread detail`
+
+#### Expected Results
+- Summary line includes `fileChanges=<count>` alongside message/in-progress/active-turn data
+- Count reflects number of persisted `fileChange` message items in returned detail payload
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Parity pending request method distribution
+
+#### Feature/Change Name
+`Pending server requests` parity inspector now includes grouped method distribution summary (for example `methodA:2, methodB:1`).
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Open `Settings` -> `App parity`
+
+#### Steps
+1. Click `Load pending requests`
+
+#### Expected Results
+- Existing request count/row list remains
+- New `methods:` line shows grouped method counts (up to five groups)
+- Unknown or missing method values are grouped as `unknown-method`
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Parity thread groups largest-project summary
+
+#### Feature/Change Name
+`Thread groups` parity summary now includes largest project bucket detail (`largest=<project>:<count>`) in addition to total project/thread counts.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Open `Settings` -> `App parity`
+
+#### Steps
+1. Click `Read thread groups`
+
+#### Expected Results
+- Summary includes `projects`, `threads`, and `largest`
+- `largest` identifies project name with highest thread count
+- `largest=(none)` when no groups are returned
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Parity home directory listing parent-path visibility
+
+#### Feature/Change Name
+`List home folders` parity output now also shows `home parent path` from listing metadata.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Open `Settings` -> `App parity`
+
+#### Steps
+1. Click `List home folders`
+
+#### Expected Results
+- `home folder entries` still shows entry count
+- `home parent path` line displays listing parent path when available
+- Parent path value clears before each reload and updates with newest listing
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Parity selected thread messages role breakdown
+
+#### Feature/Change Name
+`Read thread messages` parity summary now includes role distribution (`roles=role:count,...`) in addition to total persisted message count.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Select any thread with mixed roles
+3. Open `Settings` -> `App parity`
+
+#### Steps
+1. Click `Read thread messages`
+
+#### Expected Results
+- Summary includes `persisted messages=<n>`
+- Summary also includes `roles=<role:count,...>` when roles are present
+- Unknown/empty roles are grouped as `unknown`
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Parity review status and inferred severity
+
+#### Feature/Change Name
+`Read review result` parity summary now includes `status` and `topSeverity` (inferred from finding tags such as `[P0]..[P3]` when present).
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Select a thread with/without review findings
+3. Open `Settings` -> `App parity`
+
+#### Steps
+1. Click `Read review result`
+
+#### Expected Results
+- Summary includes `status=<available|none>`
+- Summary includes `topSeverity=<Px|n/a>`
+- Existing `review label` and `findings` fields remain
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Parity selected thread detail message-type distribution
+
+#### Feature/Change Name
+`Read selected thread detail` summary now includes `types=<messageType:count,...>` derived from persisted thread detail messages.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Select a thread with mixed message types
+3. Open `Settings` -> `App parity`
+
+#### Steps
+1. Click `Read selected thread detail`
+
+#### Expected Results
+- Summary includes `types=` segment with up to four message-type buckets
+- Messages without explicit type are grouped as `text`
+- Existing `messages`, `fileChanges`, `inProgress`, and `activeTurn` data remain
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Parity pending request method sort order
+
+#### Feature/Change Name
+`Pending server requests` method distribution now sorts groups by descending count (then method name) before truncating to top five.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Open `Settings` -> `App parity`
+
+#### Steps
+1. Click `Load pending requests`
+
+#### Expected Results
+- `methods:` summary lists highest-frequency methods first
+- Ties are resolved alphabetically by method name
+- Existing grouped count format remains unchanged
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Parity selected thread messages role sort order
+
+#### Feature/Change Name
+`Read thread messages` role summary now sorts roles by descending count (then role name) before truncating to top four.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Select a thread with multiple roles
+3. Open `Settings` -> `App parity`
+
+#### Steps
+1. Click `Read thread messages`
+
+#### Expected Results
+- `roles=` summary lists highest-frequency roles first
+- Ties are sorted alphabetically by role key
+- Existing message count and role format remain unchanged
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Parity selected thread detail message-type sort order
+
+#### Feature/Change Name
+`Read selected thread detail` message-type summary now sorts type buckets by descending count (then message-type name) before truncating to top four.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Select a thread with multiple message types
+3. Open `Settings` -> `App parity`
+
+#### Steps
+1. Click `Read selected thread detail`
+
+#### Expected Results
+- `types=` summary lists highest-frequency message types first
+- Ties are sorted alphabetically by message-type key
+- Existing summary fields remain unchanged
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Parity archived-thread loading guard
+
+#### Feature/Change Name
+Archived-thread parity actions now share a single loading guard/state so archived list reload, unarchive row actions, and unarchive-by-id do not race.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Open `Settings` -> `App parity`
+
+#### Steps
+1. Click `Load archived`
+2. While loading, attempt to click unarchive buttons or submit unarchive-by-id
+
+#### Expected Results
+- `Load archived` button shows `Loading…` while request is in flight
+- Unarchive row buttons and unarchive-by-id button are disabled during load
+- Archived list refresh path remains correct after archive/unarchive actions
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Parity command exec duration visibility
+
+#### Feature/Change Name
+`Command exec` parity output now includes `durationMs` measured client-side for each command run.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Open `Settings` -> `App parity`
+
+#### Steps
+1. Enter any command in `Command exec`
+2. Click `Run`
+
+#### Expected Results
+- Output starts with `exitCode=<n>` and `durationMs=<n>`
+- Existing `stdout` / `stderr` sections remain unchanged
+- Duration is non-negative and updates each run
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Parity pending request loader duration
+
+#### Feature/Change Name
+`Load pending requests` now appends `durationMs` to the method distribution summary for request-latency visibility.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Open `Settings` -> `App parity`
+
+#### Steps
+1. Click `Load pending requests`
+
+#### Expected Results
+- `methods:` line includes grouped counts and `durationMs=<n>`
+- Duration is non-negative and changes per request
+- Existing request count and row summaries remain
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Parity thread groups loader duration
+
+#### Feature/Change Name
+`Read thread groups` summary now includes `durationMs` to expose request latency alongside project/thread totals.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Open `Settings` -> `App parity`
+
+#### Steps
+1. Click `Read thread groups`
+
+#### Expected Results
+- Summary includes `projects`, `threads`, `largest`, and `durationMs`
+- `durationMs` is non-negative and updates each request
+- Existing grouped totals remain unchanged
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Parity GitHub projects scope and duration summary
+
+#### Feature/Change Name
+`Read GitHub projects` summary now includes selected scope and `durationMs` in addition to project count/sample names.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Open `Settings` -> `App parity`
+
+#### Steps
+1. Select any scope in `GitHub projects`
+2. Click `Read GitHub projects`
+
+#### Expected Results
+- Summary includes `scope=<selected-scope>`
+- Summary includes `durationMs=<n>` for each request
+- Existing project count/sample output remains when projects are returned
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Parity selected thread review loader duration
+
+#### Feature/Change Name
+`Read review result` parity summary now includes `durationMs` to surface review-read request latency.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Select any thread
+3. Open `Settings` -> `App parity`
+
+#### Steps
+1. Click `Read review result`
+
+#### Expected Results
+- Summary includes existing review label/status/findings/topSeverity fields
+- Summary also includes `durationMs=<n>`
+- Duration is non-negative and refreshes per request
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Parity selected thread messages loader duration
+
+#### Feature/Change Name
+`Read thread messages` parity summary now includes `durationMs` for message-read request latency.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Select any thread
+3. Open `Settings` -> `App parity`
+
+#### Steps
+1. Click `Read thread messages`
+
+#### Expected Results
+- Summary includes `persisted messages=<n>` and role distribution
+- Summary now also includes `durationMs=<n>`
+- Duration is non-negative and updates per request
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Parity selected thread detail loader duration
+
+#### Feature/Change Name
+`Read selected thread detail` summary now includes `durationMs` for detail-read request latency.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Select any thread
+3. Open `Settings` -> `App parity`
+
+#### Steps
+1. Click `Read selected thread detail`
+
+#### Expected Results
+- Summary includes message/file-change/type/in-progress/active-turn fields
+- Summary now also includes `durationMs=<n>`
+- Duration is non-negative and updates per request
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Parity skills enabled/scope summary
+
+#### Feature/Change Name
+`Read skills` parity summary now includes enabled count and scope distribution in addition to total count and sample names.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Open `Settings` -> `App parity`
+
+#### Steps
+1. Click `Read skills`
+
+#### Expected Results
+- Summary includes `count=<n>` and `enabled=<n>`
+- Summary includes `scopes=<scope:count,...>` (top three scopes)
+- Existing sample skill names remain appended
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Parity skills loader duration
+
+#### Feature/Change Name
+`Read skills` parity summary now includes `durationMs` to expose skills catalog request latency.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Open `Settings` -> `App parity`
+
+#### Steps
+1. Click `Read skills`
+
+#### Expected Results
+- Summary includes existing count/enabled/scope/name fields
+- Summary now also includes `durationMs=<n>`
+- Empty response summary includes `No skills returned · durationMs=<n>`
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Parity workspace roots loader duration
+
+#### Feature/Change Name
+`Read workspace roots` parity summary now includes `durationMs` to expose workspace-roots request latency.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Open `Settings` -> `App parity`
+
+#### Steps
+1. Click `Read workspace roots`
+
+#### Expected Results
+- Summary includes `order`, `active`, and `labels`
+- Summary now also includes `durationMs=<n>`
+- Duration is non-negative and refreshes per request
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Parity available models loader duration
+
+#### Feature/Change Name
+`Read available models` parity summary now includes `durationMs` to expose model-catalog request latency.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Open `Settings` -> `App parity`
+
+#### Steps
+1. Click `Read available models`
+
+#### Expected Results
+- Summary includes model count/sample IDs when available
+- Summary now also includes `durationMs=<n>`
+- Empty response case includes `No available model IDs returned · durationMs=<n>`
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Parity current model config loader duration
+
+#### Feature/Change Name
+`Read current model config` summary now includes `durationMs` to expose config-read request latency.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Open `Settings` -> `App parity`
+
+#### Steps
+1. Click `Read current model config`
+
+#### Expected Results
+- Summary includes model/provider/effort/speed fields
+- Summary now also includes `durationMs=<n>`
+- Duration is non-negative and updates per request
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Parity collaboration modes labels and duration
+
+#### Feature/Change Name
+`Read collaboration modes` summary now includes both mode `values` and `labels`, plus `durationMs`.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Open `Settings` -> `App parity`
+
+#### Steps
+1. Click `Read collaboration modes`
+
+#### Expected Results
+- Summary includes `count`, `values`, and `labels`
+- Summary includes `durationMs=<n>`
+- Empty response case includes `No collaboration modes returned · durationMs=<n>`
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Parity thread state cache loader duration
+
+#### Feature/Change Name
+`Load title/pin cache` now reports `durationMs` for the combined thread-title/pin-cache read operation.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Open `Settings` -> `App parity`
+
+#### Steps
+1. Click `Load title/pin cache`
+
+#### Expected Results
+- `durationMs` line appears after successful load
+- Duration is non-negative and refreshes each load
+- Existing cache counts and sample rows remain
+
+#### Rollback/Cleanup
+- None
+
+---
+
+### Parity home directory loader duration
+
+#### Feature/Change Name
+`Read home directory` parity output now includes `durationMs` for home-directory lookup latency.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Open `Settings` -> `App parity`
+
+#### Steps
+1. Click `Read home directory`
+
+#### Expected Results
+- Home directory path still renders
+- `durationMs` line appears and is non-negative
+- Duration resets and updates per request
+
+#### Rollback/Cleanup
+- None
+
+## Feature: Parity panel thread rollback and file-change revert actions
+
+### Prerequisites / Setup
+- Start the app in a workspace with at least one existing thread.
+- Ensure the selected thread has at least one completed turn and has a valid `cwd`.
+- Open Settings -> App parity panel.
+
+### Steps
+1. In the thread actions area, enter `1` in `rollback turns` and click `Rollback turns`.
+2. Confirm the action result line reports the selected thread id, rollback turn count, and returned message count.
+3. In `turn id for revert`, enter a known completed turn id for that thread.
+4. Leave `cwd for revert` empty (to use current thread `cwd`) and click `Revert file changes`.
+5. Confirm the action result reports reverted file count and optional error count.
+6. Repeat step 4 with an invalid `turn id` and verify an error is shown without breaking the panel.
+
+### Expected Result(s)
+- Rollback action is available in parity UI and calls backend successfully for valid values.
+- Revert file-change action is available in parity UI and uses selected thread `cwd` when input is empty.
+- Success and failure statuses render in parity action result/error area.
+
+### Rollback / Cleanup Notes
+- If rollback/revert modified thread state unexpectedly, use existing thread archive/resume utilities or repeat workflow on a test thread.
+
+## Feature: Parity panel composer file search
+
+### Prerequisites / Setup
+- Start the app with a selected thread that has a valid `cwd`.
+- Open Settings -> App parity panel.
+
+### Steps
+1. In `Composer file search`, set `cwd` to a real workspace path (or leave it empty when a thread with cwd is selected).
+2. Enter a query string such as `package` and click `Search files`.
+3. Confirm summary output includes result count and duration.
+4. Try a query that should return no matches.
+
+### Expected Result(s)
+- Search action calls `/codex-api/composer-file-search` through gateway.
+- Summary renders `count=<n> · durationMs=<n>` and includes sample paths when available.
+- Empty results still render a valid summary with `count=0`.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel file upload action
+
+### Prerequisites / Setup
+- Start the app and open Settings -> App parity panel.
+- Have a small local file ready for upload testing.
+
+### Steps
+1. In `File upload`, choose a local file from the file picker.
+2. Confirm `selected: <filename>` appears.
+3. Click `Upload file`.
+4. Confirm result line shows either uploaded path or failed status with duration.
+
+### Expected Result(s)
+- Parity panel exposes `/codex-api/upload-file` through gateway `uploadFile`.
+- Successful uploads show `uploaded=<path> · durationMs=<n>`.
+- Failed uploads still show `upload failed · durationMs=<n>` without UI breakage.
+
+### Rollback / Cleanup Notes
+- Uploaded artifacts (if any) can be removed manually from their returned storage path.
+
+## Feature: Parity panel start thread action
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Optionally prepare a workspace `cwd` and model id.
+
+### Steps
+1. In thread actions, set optional `start thread cwd` and optional `start thread model`.
+2. Click `Start thread`.
+3. Confirm result shows new thread id, resolved model, and duration.
+4. Verify thread lists refresh after success.
+
+### Expected Result(s)
+- `startThread(cwd?, model?)` is callable directly from parity panel.
+- Success output includes `Started thread <id> · model=<model> · durationMs=<n>`.
+- Errors are shown in parity error area without breaking panel interactions.
+
+### Rollback / Cleanup Notes
+- Archive/delete test threads if they are no longer needed.
+
+## Feature: Parity panel persist generated title to selected thread
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Select a thread so `selectedThreadId` is available.
+
+### Steps
+1. Enter a title prompt and click `Generate` in `Generate thread title`.
+2. Confirm `generated: ...` appears.
+3. Click `Persist to selected thread`.
+4. Confirm parity action result reports persisted title for the selected thread.
+
+### Expected Result(s)
+- Parity panel can call `persistThreadTitle(threadId, title)`.
+- Success result appears as `Persisted title for <threadId> · durationMs=<n>`.
+- Thread list refreshes without errors after persisting title.
+
+### Rollback / Cleanup Notes
+- Re-run persist with previous title if rollback is needed.
+
+## Feature: Parity panel persist pinned thread IDs
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Ensure thread state cache can be loaded.
+
+### Steps
+1. Click `Load title/pin cache`.
+2. In `thread ids (comma-separated)`, enter one or more thread IDs.
+3. Click `Persist pinned ids`.
+4. Confirm action result reports persisted count and duration.
+5. Confirm pinned samples/count refresh after save.
+
+### Expected Result(s)
+- Parity panel can call `persistPinnedThreadIds(threadIds)`.
+- Result appears as `Persisted pinned thread ids (<n>) · durationMs=<n>`.
+- Thread state cache refresh reflects updated pinned IDs.
+
+### Rollback / Cleanup Notes
+- Re-run persist with previous pinned ID list to restore prior state.
+
+## Feature: Parity panel review workflow actions
+
+### Prerequisites / Setup
+- Select a thread with a valid `cwd` in Settings -> App parity panel.
+- Ensure repository at `cwd` is accessible.
+
+### Steps
+1. In thread diagnostics, set review scope/view and optional base branch.
+2. Click `Init review git`.
+3. Click `Start thread review`.
+4. Click `Read review snapshot`.
+
+### Expected Result(s)
+- `initializeReviewGit(cwd)` runs and reports duration.
+- `startThreadReview(threadId, scope, workspaceView, baseBranch?)` runs and reports scope/view.
+- `getReviewSnapshot(...)` renders summary with file count, line deltas, scope/view, and duration.
+
+### Rollback / Cleanup Notes
+- No persistent cleanup expected from read operations; reuse existing thread actions if a thread should be archived afterward.
+
+## Feature: Parity panel GitHub trending API action
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+
+### Steps
+1. In `GitHub projects`, click `Read trending API`.
+2. Observe returned summary content.
+
+### Expected Result(s)
+- Parity panel invokes `getGithubTrendingProjects(5)`.
+- Summary includes `trending-api count=<n>` with sample project names and `durationMs`.
+- Empty/failure cases are surfaced without breaking parity panel.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel workspace roots write (round-trip)
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+
+### Steps
+1. Click `Read workspace roots`.
+2. Click `Write loaded roots`.
+3. Observe write result text.
+
+### Expected Result(s)
+- `getWorkspaceRootsState()` result is cached for parity write.
+- `setWorkspaceRootsState(...)` is invoked by `Write loaded roots`.
+- Result includes order/active/labels counts and `durationMs`.
+
+### Rollback / Cleanup Notes
+- Re-run `Read workspace roots` + `Write loaded roots` after any intentional root changes to sync state.
+
+## Feature: Parity panel manual pending-request reply
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Ensure at least one pending server request exists (or use any known request id for failure-path check).
+
+### Steps
+1. Click `Load pending requests`.
+2. Enter a `request id`.
+3. Choose `approve` or `deny`.
+4. For `deny`, optionally fill a reason.
+5. Click `Reply request`.
+
+### Expected Result(s)
+- Parity panel calls `replyToServerRequest(id, payload)` directly.
+- Success shows `Replied to request id=<id> · mode=<mode> · durationMs=<n>`.
+- Pending request list refreshes after reply.
+
+### Rollback / Cleanup Notes
+- Use this only on disposable/test pending requests; denied requests may require re-triggering upstream actions.
+
+## Feature: Parity panel direct background-terminal clean by thread id
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Have a valid thread id.
+
+### Steps
+1. In thread actions, enter a thread id in `thread id for direct clean`.
+2. Click `Direct clean by id`.
+3. Observe action result.
+
+### Expected Result(s)
+- Parity panel calls `cleanThreadBackgroundTerminals(threadId)` directly.
+- Result shows `Background terminals cleaned (direct) for <threadId> · durationMs=<n>`.
+- Errors are surfaced in parity error area for invalid IDs.
+
+### Rollback / Cleanup Notes
+- No cleanup required; action is idempotent for already-clean states.
+
+## Feature: Parity panel direct turn interrupt by thread/turn id
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Have a valid thread id and in-progress turn id.
+
+### Steps
+1. In `Interrupt active turn`, fill `thread id (direct interrupt)`.
+2. Fill `turn id (required)`.
+3. Click `Direct interrupt`.
+
+### Expected Result(s)
+- Parity panel calls `interruptThreadTurn(threadId, turnId)` directly.
+- Result text shows `Direct interrupt sent (thread=<id>, turn=<id>) · durationMs=<n>`.
+- Errors are surfaced for invalid or stale ids.
+
+### Rollback / Cleanup Notes
+- No cleanup required; this only sends an interrupt signal.
+
+## Feature: Parity panel direct start turn by thread id
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Have a valid thread id.
+
+### Steps
+1. In `Steer active turn`, fill `thread id (direct start turn)` and `turn text`.
+2. Click `Direct start turn`.
+3. Observe result text.
+
+### Expected Result(s)
+- Parity panel calls `startThreadTurn(threadId, text, [])`.
+- Result shows `Direct turn started (thread=<id>, turn=<turnId>) · durationMs=<n>`.
+- Errors are surfaced for invalid thread IDs or request failures.
+
+### Rollback / Cleanup Notes
+- Archive/discard test turns using existing thread actions if needed.
+
+## Feature: Parity panel direct steer turn by thread/expected-turn id
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Have a valid thread id and current in-progress expected turn id.
+
+### Steps
+1. In `Steer active turn`, fill `thread id (direct steer)`.
+2. Fill `expected turn id` and `steer text`.
+3. Click `Direct steer`.
+
+### Expected Result(s)
+- Parity panel calls `steerThreadTurn(threadId, expectedTurnId, text, [])`.
+- Result shows `Direct steer sent (...) · durationMs=<n>` including returned turn id when available.
+- Errors are surfaced for stale/invalid expected turn ids.
+
+### Rollback / Cleanup Notes
+- No cleanup required; steer updates the active turn behavior.
+
+## Feature: Parity panel apply review action
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel with a selected thread that has valid `cwd`.
+- Optionally load review snapshot first.
+
+### Steps
+1. In review controls, choose action (`stage`/`unstage`/`revert`) and level (`all`/`file`/`hunk`).
+2. For `file` or `hunk`, provide `path`.
+3. Click `Apply review action`.
+
+### Expected Result(s)
+- Parity panel calls `applyReviewAction(...)` with selected scope/view/action/level/path.
+- Snapshot summary updates with applied action, file count, line deltas, and duration.
+- Validation prevents file/hunk action without path.
+
+### Rollback / Cleanup Notes
+- Use inverse review action (for example unstage after stage) to rollback test operations.
+
+## Feature: Parity panel header actions (Refresh parity + Reload MCP)
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Ensure parity panel is visible and has a loaded status block.
+
+### Steps
+1. Click `Refresh parity`.
+2. Confirm parity status content updates and the loading indicator clears.
+3. Click `Reload MCP`.
+4. Confirm the panel reports MCP tools refreshed and no stale loading state remains.
+5. Repeat steps 1-4 while settings panel remains open.
+
+### Expected Result(s)
+- Both actions complete without closing settings.
+- Result text updates with fresh status text and no UI lockup.
+- No console or UI error appears for repeated invocations.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel thread-action disabled-state guards
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Ensure no thread is selected, then select a thread and toggle active/inactive turn states as needed.
+
+### Steps
+1. With no selected thread, inspect buttons that require thread context (for example rollback, compact, clean terminals, direct thread actions).
+2. Verify thread-required controls are disabled.
+3. Select a thread and verify relevant controls become enabled.
+4. While an action is loading, verify only the active action shows loading/disabled state.
+
+### Expected Result(s)
+- Controls that require a selected thread are disabled when thread context is missing.
+- Controls become enabled only when prerequisites are satisfied.
+- Loading guards prevent duplicate submits for in-flight requests.
+
+### Rollback / Cleanup Notes
+- No cleanup required beyond returning to the previously selected thread.
+
+## Feature: Parity panel direct thread management by id
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Prepare an existing thread id for archive/unarchive/rename/fork checks.
+
+### Steps
+1. In `Archived threads`, fill `thread id (direct archive/unarchive/rename/fork)`.
+2. Click `Direct archive` and verify the thread appears in archived list after reload.
+3. Click `Direct unarchive` and verify the thread is removed from archived list after reload.
+4. Fill `new thread name (for direct rename)` and click `Direct rename`.
+5. Click `Direct fork` and verify result text includes a new forked thread id.
+
+### Expected Result(s)
+- Direct actions call gateway-level `archiveThread`, `unarchiveThread`, `renameThread`, and `forkThread`.
+- Result line shows success status with `durationMs`.
+- Thread list/archived list refreshes after direct actions.
+
+### Rollback / Cleanup Notes
+- Rename can be reverted by running direct rename again with original name.
+- Archived state can be reverted with direct unarchive.
+
+## Feature: Parity panel live notification stream
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Keep a thread active so backend notifications can be emitted.
+
+### Steps
+1. Click `Start stream` in `Live notifications`.
+2. Trigger at least one backend event (for example send a message or load thread metadata).
+3. Verify `received` counter increases and sample rows appear.
+4. Click `Clear` and verify counter/sample list reset.
+5. Click `Stop stream` and verify no new samples are appended.
+
+### Expected Result(s)
+- Stream uses `subscribeCodexNotifications` and renders method-level notification samples.
+- Start/Stop toggles subscription state safely.
+- Clear resets stream diagnostics without breaking the panel.
+
+### Rollback / Cleanup Notes
+- Stop stream before leaving settings to avoid background subscription.
+
+## Feature: Parity panel direct project-root open/create
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Prepare a valid filesystem path in `Project root suggestion` base-path input.
+
+### Steps
+1. Enter a base path.
+2. Click `Open root` and verify result text shows opened path and duration.
+3. Click `Open/create root` and verify result text includes `createIfMissing=yes`.
+4. Repeat with an existing path and a new path to verify both modes.
+
+### Expected Result(s)
+- Parity panel calls `openProjectRoot(path, { createIfMissing, label: 'App parity' })`.
+- Result line reports normalized opened path and `durationMs`.
+- Errors are shown in parity error area for invalid paths or permissions failures.
+
+### Rollback / Cleanup Notes
+- Remove any test-created directories if you used `Open/create root` on temporary paths.
+
+## Feature: Parity panel direct local-directory create
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Have a writable path for creating a test folder.
+
+### Steps
+1. In `Home directory`, set `directory path to create` with an absolute path for a new folder.
+2. Click `Create directory`.
+3. Verify result line reports `created=<path>` and `durationMs`.
+4. If home path is loaded, click `List home folders` and confirm entry count updates when path is under home.
+
+### Expected Result(s)
+- Parity panel calls `createLocalDirectory(path)` directly.
+- Success/failure feedback is visible in parity result/error lines.
+- Existing home-directory diagnostics continue to work after directory creation.
+
+### Rollback / Cleanup Notes
+- Remove any temporary test directories created during this check.
+
+## Feature: Parity panel Telegram config write
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Have a valid Telegram bot token and allowed user id(s), or a safe test token for negative-path checks.
+
+### Steps
+1. In `Telegram status`, click `Read Telegram config` to preload current values.
+2. Update `telegram bot token`.
+3. Set `allowed user ids` using comma/newline format (or `*`).
+4. Click `Write Telegram config`.
+5. Verify status/config summaries refresh after write.
+
+### Expected Result(s)
+- Parity panel calls `configureTelegramBot(botToken, allowedUserIds)` using the same parser as main settings flow.
+- Config summary reflects `botTokenPresent` and updated allowed-user count.
+- Status summary refreshes without breaking the parity panel.
+
+### Rollback / Cleanup Notes
+- Restore previous token/user-allowlist values and write config again if this was a temporary test update.
+
+## Feature: Parity panel direct account + config read
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Ensure backend is reachable and at least one account context exists.
+
+### Steps
+1. In `Account`, click `Read account + config`.
+2. Observe account row and config-read block update.
+3. Verify account summary includes refresh duration.
+
+### Expected Result(s)
+- Parity panel directly calls `readAccount()` and `readConfigSummary()`.
+- Account details (`email/plan/type/requiresOpenaiAuth`) and config read values are refreshed in-place.
+- `parityAccountsSummary` shows `account/config refreshed · durationMs=<n>`.
+
+### Rollback / Cleanup Notes
+- No cleanup required; read-only diagnostic action.
+
+## Feature: Parity panel generic config key/value write
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Identify a safe config key for test updates.
+
+### Steps
+1. In `Config write`, set `config key`.
+2. Set `config value` using text, number, boolean, or JSON object/array.
+3. Choose merge strategy (`upsert` or `replace`).
+4. Click `Write key/value`.
+5. Verify success summary includes key/value, merge strategy, and `durationMs`.
+
+### Expected Result(s)
+- Parity panel calls `writeConfigValue(keyPath, parsedValue, mergeStrategy)`.
+- Value parsing supports `true/false/null`, numbers, JSON, and plain strings.
+- Errors surface in parity error line for invalid keys or backend rejection.
+
+### Rollback / Cleanup Notes
+- Re-run `Write key/value` with prior value to restore any changed config key.
+
+## Feature: Parity panel config batch JSON write
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Prepare a safe JSON batch payload with one or more config operations.
+
+### Steps
+1. In `Config write`, paste batch JSON into `batch JSON`.
+2. Click `Write batch JSON`.
+3. Verify success summary reports operation count and `durationMs`.
+4. Try invalid payload shape and confirm error appears in parity error line.
+
+### Expected Result(s)
+- Parity panel parses JSON array and calls `writeConfigBatch(...)`.
+- Each item requires `keyPath`; `mergeStrategy` defaults to `upsert` unless `replace` is provided.
+- Validation errors are surfaced without breaking parity panel state.
+
+### Rollback / Cleanup Notes
+- Reapply previous values via batch or key/value writer for any changed keys.
+
+## Feature: Parity panel direct git branch checkout
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Select a thread with valid `cwd` on a git repository.
+- Ensure target branch exists locally or is resolvable by git checkout logic.
+
+### Steps
+1. In `Git branch state`, click `Read branch state` to capture current branch.
+2. Enter `target branch name`.
+3. Click `Checkout branch`.
+4. Verify summary shows checkout result and `durationMs`.
+5. Optionally read worktree branches again to confirm branch list/state remains consistent.
+
+### Expected Result(s)
+- Parity panel calls `checkoutGitBranch(cwd, targetBranch)` directly.
+- Git branch summary updates with checked-out branch and latency.
+- Errors are surfaced in parity error line for invalid branch or checkout failures.
+
+### Rollback / Cleanup Notes
+- Checkout the original branch using the same parity action after validation.
+
+## Feature: Parity panel thread diagnostics by thread id
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Have a valid thread id.
+
+### Steps
+1. In `Archived threads`, fill `thread id (direct read)`.
+2. Click `Read detail by id`.
+3. Click `Read messages by id`.
+4. Click `Read review by id`.
+
+### Expected Result(s)
+- Parity panel calls `getThreadDetail`, `getThreadMessages`, and `getThreadReviewResult` with the provided thread id.
+- Summary lines include `thread=<id>` and `durationMs`.
+- Errors are shown in parity error line for invalid/stale thread ids.
+
+### Rollback / Cleanup Notes
+- No cleanup required; read-only diagnostic actions.
+
+## Feature: Parity panel thread search with configurable limit
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Ensure thread index has data.
+
+### Steps
+1. In `Thread search diagnostics`, enter a `search query`.
+2. Set `limit` to a small value (for example `5`) and run `Search`.
+3. Set `limit` to a larger value (for example `200`) and run `Search` again.
+
+### Expected Result(s)
+- Parity panel calls `searchThreads(query, limit)` with provided limit (clamped to valid range).
+- `matched thread ids` and `indexed threads` summaries update on each run.
+- Invalid/empty limit falls back to default behavior without breaking UI.
+
+### Rollback / Cleanup Notes
+- No cleanup required; read-only diagnostic action.
+
+## Feature: Parity panel pending-request id quick-fill
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Ensure at least one pending server request exists.
+
+### Steps
+1. Click `Load pending requests`.
+2. Click `Use first pending id`.
+3. Verify `request id` input is auto-filled from the first pending summary.
+4. Optionally send approve/deny reply using the prefilled id.
+
+### Expected Result(s)
+- Quick-fill extracts the first pending id from loaded parity request summaries.
+- Reply flow uses the prefilled id without manual typing.
+- No side effects occur when pending list is empty (button disabled).
+
+### Rollback / Cleanup Notes
+- No cleanup required beyond normal pending-request reply handling.
+
+## Feature: Parity panel live-notification method filter
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Ensure backend emits notifications.
+
+### Steps
+1. In `Live notifications`, enter a `method filter` fragment (for example `thread/`).
+2. Click `Start stream`.
+3. Trigger mixed backend activity.
+4. Verify only matching methods are counted/sampled.
+5. Clear filter and repeat to confirm unfiltered stream behavior.
+
+### Expected Result(s)
+- Stream only records notifications whose method contains the filter text (case-insensitive).
+- `received` count and sample rows reflect filtered notifications.
+- Empty filter preserves existing unfiltered behavior.
+
+### Rollback / Cleanup Notes
+- Stop stream before leaving parity panel.
+
+## Feature: Parity panel worktree-branch quick-fill
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Select a thread with git-backed `cwd`.
+
+### Steps
+1. In `Worktree branch options`, click `Read worktree branches`.
+2. Click `Use first branch option`.
+3. Verify `target branch name` in `Git branch state` is auto-filled.
+4. Optionally run `Checkout branch` using the prefilled value.
+
+### Expected Result(s)
+- Loaded branch options are cached in parity state.
+- Quick-fill copies the first available branch option into checkout draft.
+- Button remains disabled when no branch options are available.
+
+### Rollback / Cleanup Notes
+- If you checked out a different branch, switch back using parity checkout action.
+
+## Feature: Parity panel thread-id quick-fill for by-id diagnostics
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Ensure a thread is selected in the sidebar.
+
+### Steps
+1. In `Archived threads`, click `Use selected thread id`.
+2. Verify `thread id (direct read)` is auto-filled with current selection.
+3. Run `Read detail by id`/`Read messages by id`/`Read review by id`.
+
+### Expected Result(s)
+- Quick-fill copies current selected thread id into direct-read input.
+- By-id diagnostic actions can run without manual id typing.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel direct-clean thread-id quick-fill
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Ensure a thread is selected.
+
+### Steps
+1. In direct clean-by-id controls, click `Use selected thread id`.
+2. Verify `thread id for direct clean` is auto-filled.
+3. Click `Direct clean by id`.
+
+### Expected Result(s)
+- Quick-fill copies selected thread id to direct-clean input.
+- Direct clean action runs without manual id typing.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel direct-interrupt quick-fill helpers
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Select a thread with an active turn for full-path validation.
+
+### Steps
+1. In `Interrupt active turn`, click `Use selected thread id`.
+2. Click `Use active turn id`.
+3. Verify both direct-interrupt inputs are auto-filled.
+4. Click `Direct interrupt`.
+
+### Expected Result(s)
+- Thread-id helper fills `thread id (direct interrupt)` from current selection.
+- Turn-id helper fills `turn id (required)` from selected thread active turn.
+- Direct interrupt can run without manual id copy/paste when active turn data exists.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel current-branch quick-fill for checkout
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Select a thread with git-backed `cwd`.
+
+### Steps
+1. Click `Read branch state`.
+2. Click `Use current branch`.
+3. Verify `target branch name` is auto-filled with current branch.
+4. Optionally run `Checkout branch` (no-op if already on same branch).
+
+### Expected Result(s)
+- Current branch from branch-state read is cached in parity state.
+- Quick-fill copies cached current branch into checkout input.
+- Button stays disabled when branch is detached or branch name is unavailable.
+
+### Rollback / Cleanup Notes
+- No cleanup required unless you changed branch during validation.
+
+## Feature: Parity panel config-batch sample template fill
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+
+### Steps
+1. In `Config write`, click `Fill sample batch`.
+2. Verify `batch JSON` input is populated with a valid JSON array template.
+3. Optionally click `Write batch JSON` to execute template operations.
+
+### Expected Result(s)
+- Sample button fills syntactically valid batch JSON including representative `replace` and `upsert` operations.
+- Filled payload can be edited before writing.
+
+### Rollback / Cleanup Notes
+- Restore any changed config values if sample payload was executed.
+
+## Feature: Parity panel draft clear/reset helpers
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+
+### Steps
+1. Enter values in pending-reply fields, config key/value fields, and config batch JSON.
+2. Click `Clear reply fields`, `Clear key/value`, and `Clear batch` respectively.
+3. Verify corresponding draft inputs are reset.
+
+### Expected Result(s)
+- Pending reply id/reason fields clear without affecting loaded pending list.
+- Config key/value drafts clear and merge strategy resets to `upsert`.
+- Config batch JSON draft clears immediately.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel search/filter clear helpers
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+
+### Steps
+1. Enter values in `Thread search diagnostics` query/limit and run search.
+2. Click `Clear search drafts`.
+3. Verify query clears, limit resets to `200`, and search counters reset.
+4. In `Live notifications`, enter a filter and click `Clear filter`.
+
+### Expected Result(s)
+- Search drafts and derived counters reset without affecting other parity data.
+- Notification filter clears immediately, returning stream behavior to unfiltered mode.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel suggested-path quick-fill
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Have a valid base path for project-root suggestion.
+
+### Steps
+1. Enter base path and click `Suggest root`.
+2. Click `Use suggested path`.
+3. Verify base-path input updates to suggested project path.
+4. Optionally run `Open root`/`Open/create root` with that prefilled path.
+
+### Expected Result(s)
+- Suggest action caches suggested `path` in parity state.
+- Quick-fill copies suggested path into base-path input without retyping.
+
+### Rollback / Cleanup Notes
+- No cleanup required unless root open/create operations were executed.
+
+## Feature: Parity panel composer-search cwd quick-fill
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Select a thread that has valid `cwd`.
+
+### Steps
+1. In `Composer file search`, click `Use selected thread cwd`.
+2. Verify `cwd` input is auto-filled.
+3. Optionally run `Search files`.
+
+### Expected Result(s)
+- Quick-fill copies selected thread cwd into composer-search cwd draft.
+- Search can run without manual cwd copy/paste.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel composer-search draft reset
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+
+### Steps
+1. In `Composer file search`, fill `cwd` and `query`, and run `Search files`.
+2. Click `Clear search drafts`.
+
+### Expected Result(s)
+- `cwd` and `query` inputs clear.
+- Existing composer-search summary output is reset.
+- No impact on unrelated parity blocks.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel start-thread cwd quick-fill
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Select a thread with valid `cwd`.
+
+### Steps
+1. In `Archived threads` start-thread controls, click `Use selected thread cwd`.
+2. Verify `start thread cwd` field is auto-filled.
+3. Optionally click `Start thread`.
+
+### Expected Result(s)
+- Quick-fill copies selected thread cwd into start-thread cwd input.
+- Start-thread action can run without manual cwd copy/paste.
+
+### Rollback / Cleanup Notes
+- Archive/remove any temporary thread started during validation if needed.
+
+## Feature: Parity panel start-thread model quick-fill
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Ensure a selected model is available in current thread context.
+
+### Steps
+1. In start-thread controls, click `Use selected model`.
+2. Verify `start thread model` input is auto-filled.
+3. Optionally click `Start thread`.
+
+### Expected Result(s)
+- Quick-fill copies current selected model id into start-thread model draft.
+- Start-thread action can run without manual model-id typing.
+
+### Rollback / Cleanup Notes
+- No cleanup required unless extra test thread was created.
+
+## Feature: Parity panel start-thread draft reset
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+
+### Steps
+1. Fill `start thread cwd` and `start thread model` fields.
+2. Click `Clear start-thread drafts`.
+
+### Expected Result(s)
+- Both start-thread draft inputs are cleared.
+- No other parity state is modified.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel branch-draft reset
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Optionally load branch state/worktree options and prefill checkout draft.
+
+### Steps
+1. Fill/derive branch-related drafts (`target branch name`, current-branch quick-fill, worktree-option quick-fill).
+2. Click `Clear branch drafts`.
+
+### Expected Result(s)
+- Checkout target branch draft clears.
+- Cached current-branch value and worktree-option cache clear.
+- Worktree branch options summary is reset.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel direct-turn draft reset
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+
+### Steps
+1. Fill direct start-turn and direct steer-turn draft inputs.
+2. Click `Clear direct turn drafts`.
+
+### Expected Result(s)
+- Draft inputs for direct start/steer turn controls are cleared.
+- No unrelated parity fields are changed.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel direct-turn thread-id quick-fill
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Ensure a thread is selected.
+
+### Steps
+1. In direct start/steer controls, click `Use selected thread id`.
+2. Verify both `thread id (direct start turn)` and `thread id (direct steer)` are auto-filled.
+3. Optionally execute direct start or direct steer actions.
+
+### Expected Result(s)
+- One helper action fills both direct-turn thread-id drafts from selected thread context.
+- Reduces manual copy/paste for direct start/steer diagnostics.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel direct-interrupt draft reset
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+
+### Steps
+1. Fill direct interrupt `thread id` and `turn id` fields and optionally run direct interrupt.
+2. Click `Clear interrupt drafts`.
+
+### Expected Result(s)
+- Direct interrupt thread-id and turn-id drafts clear.
+- Direct interrupt result text is reset.
+- Other parity fields are unaffected.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel thread-by-id draft reset
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+
+### Steps
+1. Fill `thread id (direct read)` and run one or more by-id read actions.
+2. Click `Clear by-id drafts`.
+
+### Expected Result(s)
+- By-id thread id draft clears.
+- By-id detail/messages/review summaries reset.
+- Cached active-turn id used by helper flows is cleared.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel direct-thread draft reset
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+
+### Steps
+1. Fill direct-thread inputs: `thread id (direct archive/unarchive/rename/fork)` and `new thread name`.
+2. Click `Clear direct thread drafts`.
+
+### Expected Result(s)
+- Direct-thread id draft clears.
+- Direct-thread name draft clears.
+- No unrelated parity state is modified.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel direct-thread selected-id quick-fill
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Ensure one thread is selected in the sidebar/thread context.
+
+### Steps
+1. In direct-thread action controls, click `Use selected thread id (direct thread actions)`.
+2. Verify the direct-thread id field is auto-filled from current selected thread id.
+3. Optionally run `Direct archive`, `Direct unarchive`, `Direct rename`, or `Direct fork`.
+
+### Expected Result(s)
+- Direct-thread id draft is filled without manual copy/paste.
+- Direct thread actions can be run immediately using the selected thread context.
+
+### Rollback / Cleanup Notes
+- Undo/cleanup any direct thread action intentionally triggered during validation.
+
+## Feature: Parity panel direct-clean draft reset
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+
+### Steps
+1. In direct clean-by-id controls, fill `thread id for direct clean`.
+2. Click `Clear clean draft`.
+
+### Expected Result(s)
+- Direct clean thread-id draft clears.
+- No unrelated parity draft/state is changed.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel revert draft helpers
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Select a thread with a valid `cwd`.
+
+### Steps
+1. In revert controls, click `Use selected thread cwd`.
+2. Verify revert `cwd` draft is populated from selected thread.
+3. Fill `turn id for revert`.
+4. Click `Clear revert drafts`.
+
+### Expected Result(s)
+- Quick-fill copies selected thread cwd into revert cwd input.
+- Clear action resets both revert turn-id and revert cwd drafts.
+- No unrelated parity state is changed.
+
+### Rollback / Cleanup Notes
+- No cleanup required unless a revert action was intentionally executed during validation.
+
+## Feature: Parity panel rollback draft helpers
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+
+### Steps
+1. In rollback controls, click `Set rollback=1`.
+2. Verify `rollback turns` input becomes `1`.
+3. Click `Clear rollback draft`.
+
+### Expected Result(s)
+- Default helper sets rollback draft to `1`.
+- Clear helper resets rollback draft to empty value.
+- No unrelated parity state is changed.
+
+### Rollback / Cleanup Notes
+- No cleanup required unless rollback action was intentionally executed during validation.
+
+## Feature: Parity panel rollback/revert result reset
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Execute rollback or revert once so rollback/revert status line is visible.
+
+### Steps
+1. Click `Clear rollback/revert result`.
+
+### Expected Result(s)
+- Rollback/revert status line clears.
+- Rollback/revert draft inputs remain unchanged.
+- No rollback/revert RPC is sent by reset action itself.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel command draft reset
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+
+### Steps
+1. In `Command exec`, enter a command draft and run once to produce output.
+2. Click `Clear command drafts`.
+
+### Expected Result(s)
+- Command input draft is cleared.
+- Command output preview is cleared.
+- No unrelated parity state is changed.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel command-input reset
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- In `Command exec`, ensure command output is visible.
+
+### Steps
+1. Enter a command draft.
+2. Click `Clear command input`.
+
+### Expected Result(s)
+- Command input draft clears.
+- Existing command output remains visible.
+- No command execution is triggered by reset action itself.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel upload draft reset
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+
+### Steps
+1. In `File upload`, select a file (optionally upload once to populate result path).
+2. Click `Clear upload draft`.
+
+### Expected Result(s)
+- Selected upload file name is cleared.
+- Stored upload result path/summary is cleared.
+- Upload action is disabled again until a file is re-selected.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel upload-result reset
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- In `File upload`, perform an upload once so result path is visible.
+
+### Steps
+1. Click `Clear upload result`.
+
+### Expected Result(s)
+- Upload result path/summary clears.
+- Selected file draft remains unchanged.
+- No upload request is sent by reset action itself.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel turn-result reset
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Trigger any steer/interrupt action so turn result text is visible.
+
+### Steps
+1. Click `Clear turn results`.
+
+### Expected Result(s)
+- Steer result text clears.
+- Interrupt result text clears.
+- No turn action RPC is sent by reset action itself.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel feedback draft reset
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+
+### Steps
+1. In `Feedback upload`, change classification/log toggle/reason and optionally submit once.
+2. Click `Clear feedback drafts`.
+
+### Expected Result(s)
+- Classification resets to `general`.
+- Logs toggle resets to `on`.
+- Reason draft clears.
+- Feedback result summary clears.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel MCP OAuth draft reset
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+
+### Steps
+1. In `MCP OAuth login`, enter a server name and optionally start OAuth once.
+2. Click `Clear OAuth drafts`.
+
+### Expected Result(s)
+- MCP OAuth server-name draft clears.
+- MCP OAuth result summary clears.
+- No unrelated parity state is changed.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel account-action draft reset
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+
+### Steps
+1. In Account actions, enter values in `account id to switch` and `account id to remove`.
+2. Click `Clear account action drafts`.
+
+### Expected Result(s)
+- Switch-account draft clears.
+- Remove-account draft clears.
+- No unrelated parity state is changed.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel login draft reset
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+
+### Steps
+1. In Account login controls, enter an API key draft and/or start a login flow to populate login status.
+2. Click `Clear login drafts`.
+
+### Expected Result(s)
+- API key draft clears.
+- Tracked active login id clears.
+- Login status/result summary clears.
+- No unrelated parity state is changed.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel account summary reset
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Load account info at least once to populate account summaries.
+
+### Steps
+1. In Account controls, click `Clear account summaries`.
+
+### Expected Result(s)
+- Account summary line clears.
+- Account login/result status line clears.
+- No account session/logout/login action is triggered by this reset.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel status reset
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Trigger any parity action that populates error and/or thread-action status lines.
+
+### Steps
+1. Click `Clear parity status`.
+
+### Expected Result(s)
+- Parity error line is cleared.
+- Parity thread-action status line is cleared.
+- No action is executed against thread/account state.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel Telegram draft reset
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+
+### Steps
+1. In `Telegram status` controls, populate bot token / allowed IDs and optionally load config.
+2. Click `Clear Telegram drafts`.
+
+### Expected Result(s)
+- Telegram bot-token draft clears.
+- Telegram allowed-user-ids draft clears.
+- Telegram config summary line clears.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel pinned-id draft reset
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+
+### Steps
+1. In `Thread state cache`, enter one or more IDs in `thread ids (comma-separated)`.
+2. Click `Clear pinned-id draft`.
+
+### Expected Result(s)
+- Pinned thread ids draft input is cleared.
+- No pin persistence request is sent by reset action itself.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel archived-limit draft helpers
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+
+### Steps
+1. In `Archived threads`, edit `fetch limit` with any value.
+2. Click `Set fetch limit=12` and verify input value.
+3. Click `Clear fetch limit`.
+
+### Expected Result(s)
+- Default helper sets archived fetch limit draft to `12`.
+- Clear helper resets fetch limit draft to empty value.
+- No archived-thread request is triggered by these helpers alone.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel model draft reset
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Ensure model dropdown options are loaded.
+
+### Steps
+1. Select values in `Set default model` and `Set selected thread model` dropdowns.
+2. Click `Clear model drafts`.
+
+### Expected Result(s)
+- Default-model draft resets to empty/unselected.
+- Thread-model draft resets to empty/unselected.
+- No model-setting request is sent by reset action itself.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel mode-draft reset to current state
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+
+### Steps
+1. Change `Set speed mode` and `Collaboration modes` drafts away from current values.
+2. Click `Reset mode drafts`.
+
+### Expected Result(s)
+- Speed-mode draft resets to current selected speed mode.
+- Collaboration-mode draft resets to current selected collaboration mode.
+- No write request is sent by reset action itself.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel reasoning-effort draft reset
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+
+### Steps
+1. In `Reasoning effort`, change the effort draft to a different value.
+2. Click `Reset effort draft`.
+
+### Expected Result(s)
+- Reasoning-effort draft resets to current selected effort (`medium` fallback when unset).
+- No settings write request is sent by reset action itself.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel title-draft reset
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+
+### Steps
+1. In `Generate thread title`, enter a prompt and optionally generate a title.
+2. Click `Clear title drafts`.
+
+### Expected Result(s)
+- Title prompt draft clears.
+- Generated title preview clears.
+- No title-generation or persist request is sent by reset action itself.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel create-directory draft helpers
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Load home directory once using `Read home directory`.
+
+### Steps
+1. In home-directory controls, click `Use home directory`.
+2. Verify `directory path to create` is populated.
+3. Optionally create once to populate result text, then click `Clear directory draft`.
+
+### Expected Result(s)
+- Quick-fill copies loaded home directory into create-directory path draft.
+- Clear action resets create-directory path draft and result text.
+- No create-directory request is sent by clear action itself.
+
+### Rollback / Cleanup Notes
+- Remove any intentionally created test directory if one was created during validation.
+
+## Feature: Parity panel project-suggestion draft helpers
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Load home directory once using `Read home directory`.
+
+### Steps
+1. In `Project root suggestion`, click `Use home directory` and verify base-path input updates.
+2. Optionally run `Suggest root` once, then click `Clear suggestion drafts`.
+
+### Expected Result(s)
+- Home-directory helper fills project-suggestion base path.
+- Clear action resets base-path draft, suggestion result, and cached suggested path.
+- No open/create-root request is sent by clear action itself.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel review-draft reset
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+
+### Steps
+1. In review controls, populate `base branch` and `path` drafts and optionally load/apply once.
+2. Click `Clear review drafts`.
+
+### Expected Result(s)
+- Review base-branch draft clears.
+- Review action-path draft clears.
+- Review snapshot summary clears.
+- No review action RPC is sent by reset action itself.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel unarchive-id draft reset
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+
+### Steps
+1. In `Archived threads`, enter a value in `thread id to unarchive`.
+2. Click `Clear unarchive draft`.
+
+### Expected Result(s)
+- Unarchive thread-id draft clears.
+- No unarchive request is sent by reset action itself.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel live-notification stream-state reset
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- In `Live notifications`, populate both filter draft and sample rows (start stream and wait for entries).
+
+### Steps
+1. Click `Reset stream state`.
+
+### Expected Result(s)
+- Notification filter draft clears.
+- Notification sample rows clear.
+- Notification received counter resets to `0`.
+- Stream active/inactive state is unchanged.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel protocol-cache reset
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- In `Protocol catalog`, load methods/notifications at least once.
+
+### Steps
+1. Click `Clear protocol cache`.
+
+### Expected Result(s)
+- Methods summary line is cleared.
+- Notifications summary line is cleared.
+- No protocol-catalog request is sent by reset action itself.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel home-diagnostics reset
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- In home-directory controls, run `Read home directory` and `List home folders` at least once.
+
+### Steps
+1. Click `Clear home diagnostics`.
+
+### Expected Result(s)
+- Home folder entry count clears.
+- Home parent path clears.
+- Home diagnostics duration clears.
+- Home directory value itself remains unchanged.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel GitHub-results reset
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- In `GitHub projects`, load either `Read GitHub projects` or `Read trending API` at least once.
+
+### Steps
+1. Click `Clear GitHub results`.
+
+### Expected Result(s)
+- GitHub projects summary line clears.
+- No GitHub API request is sent by reset action itself.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel branch-summary reset
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Load `Git branch state` and `Worktree branch options` at least once.
+
+### Steps
+1. Click `Clear branch summaries`.
+
+### Expected Result(s)
+- Git branch summary line clears.
+- Worktree branch options summary line clears.
+- No branch read/checkout request is sent by reset action itself.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel available-model summary reset
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- In `Available models`, click `Read available models` at least once.
+
+### Steps
+1. Click `Clear model list summary`.
+
+### Expected Result(s)
+- Available-model summary line clears.
+- No model-list read request is sent by reset action itself.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel rate-limit summary reset
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- In rate-limit controls, run `Read limits` and/or `Read raw rate limits` at least once.
+
+### Steps
+1. Click `Clear rate-limit summaries`.
+
+### Expected Result(s)
+- Read-rate-limits summary line clears.
+- Raw-rate-limits summary line clears.
+- No rate-limit read request is sent by reset action itself.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel model-config summary reset
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Run `Read current model config` and/or `Read available models` at least once.
+
+### Steps
+1. Click `Clear model-config summaries`.
+
+### Expected Result(s)
+- Current-model summary line clears.
+- Available-model summary line clears.
+- No model-config read request is sent by reset action itself.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel collaboration-summary reset
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- In `Collaboration modes`, run `Read collaboration modes` and/or `Set mode` at least once.
+
+### Steps
+1. Click `Clear collaboration summary`.
+
+### Expected Result(s)
+- Collaboration-modes summary line clears.
+- No collaboration-mode read/write request is sent by reset action itself.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel workspace-roots diagnostics reset
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- In `Workspace roots state`, click `Read workspace roots` at least once.
+
+### Steps
+1. Click `Clear workspace-roots diagnostics`.
+
+### Expected Result(s)
+- Workspace-roots summary line clears.
+- Loaded workspace-roots draft state is cleared (so `Write loaded roots` becomes disabled).
+- No workspace-roots read/write request is sent by reset action itself.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel Telegram-status reset
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- In `Telegram status`, click `Read Telegram status` at least once.
+
+### Steps
+1. Click `Clear Telegram status`.
+
+### Expected Result(s)
+- Telegram status summary line clears.
+- No Telegram status read request is sent by reset action itself.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel Telegram allow-all quick-fill
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+
+### Steps
+1. In Telegram config controls, click `Use allow-all (*)`.
+
+### Expected Result(s)
+- Telegram allowed-user-ids draft becomes `*`.
+- No Telegram config write request is sent by quick-fill action itself.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel thread-state diagnostics reset
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- In `Thread state cache`, click `Load title/pin cache` at least once.
+
+### Steps
+1. Click `Clear thread-state diagnostics`.
+
+### Expected Result(s)
+- Thread-title cache count resets to `0`.
+- Pinned-thread count resets to `0`.
+- Duration and sample rows clear.
+- No thread-state read/write request is sent by reset action itself.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel skills-summary reset
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- In `Skills catalog`, click `Read skills` at least once.
+
+### Steps
+1. Click `Clear skills summary`.
+
+### Expected Result(s)
+- Skills summary line clears.
+- No skills read request is sent by reset action itself.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel home-directory value reset
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- In home-directory controls, click `Read home directory` at least once.
+
+### Steps
+1. Click `Clear home directory value`.
+
+### Expected Result(s)
+- Home directory value line clears.
+- No home-directory read request is sent by reset action itself.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel active-account summary reset
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Load account data so active account summary is visible.
+
+### Steps
+1. Click `Clear active account summary`.
+
+### Expected Result(s)
+- Active account summary row clears.
+- No account read/switch/logout request is sent by reset action itself.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel config-read summary reset
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Load config read data so the `Config read` block is visible.
+
+### Steps
+1. Click `Clear config read summary`.
+
+### Expected Result(s)
+- `Config read` summary block is hidden/cleared.
+- No config read/write request is sent by reset action itself.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel pending-request summary reset
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- In `Pending server requests`, click `Load pending requests` at least once.
+
+### Steps
+1. Click `Clear pending-request summaries`.
+
+### Expected Result(s)
+- Pending-request list summaries clear.
+- Pending-request method summary clears.
+- No pending-request read/reply RPC is sent by reset action itself.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel MCP-server cache reset
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Ensure MCP server rows are visible in `MCP servers` section.
+
+### Steps
+1. Click `Clear MCP server cache`.
+
+### Expected Result(s)
+- MCP server rows are cleared from the parity section.
+- No MCP status reload request is sent by reset action itself.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel app/feature cache reset
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Ensure app and experimental-feature rows are visible.
+
+### Steps
+1. Click `Clear app/feature cache`.
+
+### Expected Result(s)
+- App rows clear from parity section.
+- Experimental-feature rows clear from parity section.
+- No app/feature list request is sent by reset action itself.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel config-requirements reset
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Ensure config-requirements summary line is visible.
+
+### Steps
+1. Click `Clear config requirements`.
+
+### Expected Result(s)
+- Config-requirements summary resets to `No requirements`.
+- No app/parity refresh request is sent by reset action itself.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel write-result reset
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Execute at least one parity action that produces a write/result status line.
+
+### Steps
+1. In `Config write`, click `Clear write results`.
+
+### Expected Result(s)
+- Config write result line clears.
+- Thread action result line clears.
+- Feedback result line clears.
+- No write operation is triggered by reset action itself.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel pending-reply mode reset
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+
+### Steps
+1. In `Pending server requests`, change reply mode to `deny`.
+2. Click `Reset reply mode`.
+
+### Expected Result(s)
+- Reply mode returns to `approve`.
+- No pending-request reply RPC is sent by reset action itself.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel pending-reply result reset
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Send a pending-request reply once so reply result text is visible.
+
+### Steps
+1. Click `Clear reply result`.
+
+### Expected Result(s)
+- Pending-reply result/status line clears.
+- No pending-request reply RPC is sent by reset action itself.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel policy-draft reset
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+
+### Steps
+1. In `Config write`, change approval/sandbox/web-search dropdown drafts.
+2. Click `Reset policy drafts`.
+
+### Expected Result(s)
+- Approval draft resets to `on-request`.
+- Sandbox draft resets to `workspace-write`.
+- Web-search draft resets to `live`.
+- No config write request is sent by reset action itself.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel selected-thread diagnostics reset
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Select a thread and run one or more selected-thread diagnostics reads.
+
+### Steps
+1. Click `Clear selected-thread diagnostics`.
+
+### Expected Result(s)
+- Selected-thread detail/messages/review summary lines clear.
+- Cached active-turn id used by direct-interrupt helper clears.
+- No thread read request is sent by reset action itself.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel GitHub-scope reset
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+
+### Steps
+1. In `GitHub projects`, switch scope to a non-default value.
+2. Click `Reset GitHub scope`.
+
+### Expected Result(s)
+- GitHub scope resets to `trending-daily`.
+- No GitHub projects read request is sent by reset action itself.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel archived-thread cache reset
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- In `Archived threads`, click `Load archived` at least once.
+
+### Steps
+1. Click `Clear archived cache`.
+
+### Expected Result(s)
+- Archived-thread list rows clear.
+- No archived-thread load request is sent by reset action itself.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel thread-groups summary reset
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- In `Thread groups`, click `Read thread groups` at least once.
+
+### Steps
+1. Click `Clear thread-groups summary`.
+
+### Expected Result(s)
+- Thread-groups summary line clears.
+- No thread-groups read request is sent by reset action itself.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel home-folder-list summary reset
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- In home-directory controls, click `List home folders` at least once.
+
+### Steps
+1. Click `Clear home folder list summary`.
+
+### Expected Result(s)
+- Home-folder entry-count summary clears.
+- No home-folder listing request is sent by reset action itself.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel unarchive selected-thread quick-fill
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Ensure one thread is selected.
+
+### Steps
+1. In `Archived threads`, click `Use selected thread id` next to unarchive controls.
+
+### Expected Result(s)
+- `thread id to unarchive` draft is populated with current selected thread id.
+- No unarchive request is sent by quick-fill action itself.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel error-only reset
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Trigger any parity error so error line is visible.
+
+### Steps
+1. Click `Clear parity error`.
+
+### Expected Result(s)
+- Parity error line clears.
+- Other status lines (for example thread action result) remain unchanged.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel create-directory suggested-path quick-fill
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Generate a project suggestion so `suggested path` is available.
+
+### Steps
+1. In create-directory controls, click `Use suggested project path`.
+
+### Expected Result(s)
+- `directory path to create` draft is populated with suggested project path.
+- No directory-create request is sent by quick-fill action itself.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel suggested-path reset
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Generate a project suggestion so `suggested path` is populated.
+
+### Steps
+1. Click `Clear suggested path`.
+
+### Expected Result(s)
+- Cached suggested project path clears.
+- Base-path draft remains unchanged.
+- No suggestion/open/create request is sent by reset action itself.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel suggestion-result-only reset
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Run `Suggest root` once so suggestion result line is visible.
+
+### Steps
+1. Click `Clear suggestion result only`.
+
+### Expected Result(s)
+- Suggestion result line clears.
+- Base-path draft and cached suggested path remain unchanged.
+- No suggestion/open/create request is sent by reset action itself.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel project-suggestion selected-cwd quick-fill
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Ensure a thread with valid `cwd` is selected.
+
+### Steps
+1. In `Project root suggestion`, click `Use selected thread cwd`.
+
+### Expected Result(s)
+- Project-suggestion base-path draft is populated from selected thread cwd.
+- No suggestion/open/create request is sent by quick-fill action itself.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel archived-action result reset
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Trigger any archived-thread action that writes archived action status.
+
+### Steps
+1. In `Archived threads`, click `Clear archived action result`.
+
+### Expected Result(s)
+- Archived/action status line is cleared.
+- No archived-thread RPC is sent by reset action itself.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel rollback/revert full reset
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Enter values in `rollback turns`, `turn id for revert`, and `cwd for revert`.
+- Ensure rollback/revert action result text is visible.
+
+### Steps
+1. In rollback/revert controls, click `Reset rollback/revert controls`.
+
+### Expected Result(s)
+- `rollback turns` draft is cleared.
+- `turn id for revert` draft is cleared.
+- `cwd for revert` draft is cleared.
+- Rollback/revert action result line is cleared.
+- No rollback/revert RPC is sent by reset action itself.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel selected-thread cwd clipboard helper
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Ensure a thread with non-empty `cwd` is selected.
+
+### Steps
+1. In `Thread controls`, click `Copy selected thread cwd` in the `Start thread` group.
+2. Paste clipboard content into any text field.
+3. In rollback/revert controls, click `Copy selected thread cwd` again.
+4. Paste clipboard content again into any text field.
+
+### Expected Result(s)
+- Clipboard receives the selected thread `cwd` value.
+- Parity action result shows `Copied selected thread cwd` on success.
+- If clipboard write is blocked, parity error shows `Failed to copy selected thread cwd`.
+- No thread start/revert RPC is sent by the copy action itself.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel selected-thread id clipboard helper
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Ensure a thread is selected and `selectedThreadId` is non-empty.
+
+### Steps
+1. In `Thread controls` direct-action group, click `Copy selected thread id`.
+2. Paste clipboard content into any text field.
+
+### Expected Result(s)
+- Clipboard receives the selected thread id value.
+- Parity action result shows `Copied selected thread id` on success.
+- If clipboard write is blocked, parity error shows `Failed to copy selected thread id`.
+- No direct thread action RPC (archive/unarchive/rename/fork) is sent by this copy action.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel selected-model clipboard helper
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Ensure `selectedModelId` is available (non-empty).
+
+### Steps
+1. In `Thread controls` start-thread group, click `Copy selected model`.
+2. Paste clipboard content into any text field.
+
+### Expected Result(s)
+- Clipboard receives the selected model id value.
+- Parity action result shows `Copied selected model` on success.
+- If clipboard write is blocked, parity error shows `Failed to copy selected model`.
+- No start-thread request is sent by this copy action.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel direct-clean thread-id clipboard helper
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Ensure a thread is selected and `selectedThreadId` is non-empty.
+
+### Steps
+1. In `Thread controls` direct-clean group, click `Copy selected thread id`.
+2. Paste clipboard content into any text field.
+
+### Expected Result(s)
+- Clipboard receives the selected thread id value.
+- Parity action result shows `Copied selected thread id` on success.
+- If clipboard write is blocked, parity error shows `Failed to copy selected thread id`.
+- No direct-clean RPC is sent by this copy action.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel current-thread action row thread-id clipboard helper
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Ensure a thread is selected and `selectedThreadId` is non-empty.
+
+### Steps
+1. In `Thread controls` current-thread action row, click `Copy selected thread id`.
+2. Paste clipboard content into any text field.
+
+### Expected Result(s)
+- Clipboard receives the selected thread id value.
+- Parity action result shows `Copied selected thread id` on success.
+- If clipboard write is blocked, parity error shows `Failed to copy selected thread id`.
+- No current-thread action RPC (resume/archive/compact/clean) is sent by this copy action.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel direct-thread-id draft clipboard helper
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- In direct thread actions, ensure `thread id for direct archive/unarchive/rename/fork` draft is non-empty.
+
+### Steps
+1. In direct thread actions, click `Copy direct thread id`.
+2. Paste clipboard content into any text field.
+
+### Expected Result(s)
+- Clipboard receives the current direct-thread-id draft value.
+- Parity action result shows `Copied direct thread id` on success.
+- If clipboard write is blocked, parity error shows `Failed to copy direct thread id`.
+- No direct thread RPC is sent by this copy action.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel direct-thread-name draft clipboard helper
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- In direct thread actions, ensure `new thread name (for direct rename)` draft is non-empty.
+
+### Steps
+1. In direct thread actions, click `Copy direct thread name`.
+2. Paste clipboard content into any text field.
+
+### Expected Result(s)
+- Clipboard receives the current direct-thread-name draft value.
+- Parity action result shows `Copied direct thread name` on success.
+- If clipboard write is blocked, parity error shows `Failed to copy direct thread name`.
+- No direct rename RPC is sent by this copy action.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel start-thread cwd draft clipboard helper
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Ensure `start thread cwd (optional)` draft is non-empty.
+
+### Steps
+1. In `Thread controls` start-thread group, click `Copy start-thread cwd`.
+2. Paste clipboard content into any text field.
+
+### Expected Result(s)
+- Clipboard receives the current start-thread cwd draft value.
+- Parity action result shows `Copied start-thread cwd` on success.
+- If clipboard write is blocked, parity error shows `Failed to copy start-thread cwd`.
+- No start-thread RPC is sent by this copy action.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel start-thread model draft clipboard helper
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Ensure `start thread model (optional)` draft is non-empty.
+
+### Steps
+1. In `Thread controls` start-thread group, click `Copy start-thread model`.
+2. Paste clipboard content into any text field.
+
+### Expected Result(s)
+- Clipboard receives the current start-thread model draft value.
+- Parity action result shows `Copied start-thread model` on success.
+- If clipboard write is blocked, parity error shows `Failed to copy start-thread model`.
+- No start-thread RPC is sent by this copy action.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel revert turn-id draft clipboard helper
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- In rollback/revert controls, ensure `turn id for revert` draft is non-empty.
+
+### Steps
+1. In rollback/revert controls, click `Copy revert turn id`.
+2. Paste clipboard content into any text field.
+
+### Expected Result(s)
+- Clipboard receives the current revert turn-id draft value.
+- Parity action result shows `Copied revert turn id` on success.
+- If clipboard write is blocked, parity error shows `Failed to copy revert turn id`.
+- No revert RPC is sent by this copy action.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel revert cwd draft clipboard helper
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- In rollback/revert controls, ensure `cwd for revert` draft is non-empty.
+
+### Steps
+1. In rollback/revert controls, click `Copy revert cwd`.
+2. Paste clipboard content into any text field.
+
+### Expected Result(s)
+- Clipboard receives the current revert cwd draft value.
+- Parity action result shows `Copied revert cwd` on success.
+- If clipboard write is blocked, parity error shows `Failed to copy revert cwd`.
+- No revert RPC is sent by this copy action.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel rollback-turns draft clipboard helper
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- In rollback/revert controls, ensure `rollback turns` draft is non-empty.
+
+### Steps
+1. In rollback/revert controls, click `Copy rollback turns`.
+2. Paste clipboard content into any text field.
+
+### Expected Result(s)
+- Clipboard receives the current rollback-turns draft value.
+- Parity action result shows `Copied rollback turns` on success.
+- If clipboard write is blocked, parity error shows `Failed to copy rollback turns`.
+- No rollback RPC is sent by this copy action.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel clean-thread-id draft clipboard helper
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- In direct-clean controls, ensure `thread id for direct clean` draft is non-empty.
+
+### Steps
+1. In direct-clean controls, click `Copy clean thread id`.
+2. Paste clipboard content into any text field.
+
+### Expected Result(s)
+- Clipboard receives the current clean-thread-id draft value.
+- Parity action result shows `Copied clean thread id` on success.
+- If clipboard write is blocked, parity error shows `Failed to copy clean thread id`.
+- No direct-clean RPC is sent by this copy action.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel direct-rename selected-thread-title quick-fill
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Ensure a thread with non-empty title is selected.
+
+### Steps
+1. In direct thread actions, click `Use selected thread title`.
+
+### Expected Result(s)
+- `new thread name (for direct rename)` draft is populated from selected thread title.
+- No direct rename RPC is sent by quick-fill action itself.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel direct-rename selected-thread-title clipboard helper
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Ensure a thread with non-empty title is selected.
+
+### Steps
+1. In direct thread actions, click `Copy selected thread title`.
+2. Paste clipboard content into any text field.
+
+### Expected Result(s)
+- Clipboard receives the selected thread title value.
+- Parity action result shows `Copied selected thread title` on success.
+- If clipboard write is blocked, parity error shows `Failed to copy selected thread title`.
+- No direct rename RPC is sent by this copy action.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel command-output clipboard helper
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Run a command in `Command exec` so command output is visible.
+
+### Steps
+1. In `Command exec`, click `Copy command output`.
+2. Paste clipboard content into any text field.
+
+### Expected Result(s)
+- Clipboard receives the current command output text.
+- Parity action result shows `Copied command output` on success.
+- If clipboard write is blocked, parity error shows `Failed to copy command output`.
+- No new command execution is triggered by this copy action.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel command-input clipboard helper
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Ensure `Command exec` input is non-empty.
+
+### Steps
+1. In `Command exec`, click `Copy command input`.
+2. Paste clipboard content into any text field.
+
+### Expected Result(s)
+- Clipboard receives the current command input text.
+- Parity action result shows `Copied command input` on success.
+- If clipboard write is blocked, parity error shows `Failed to copy command input`.
+- No command execution is triggered by this copy action.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel upload-file-name clipboard helper
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- In `File upload`, select a file so selected file name is visible.
+
+### Steps
+1. In `File upload`, click `Copy upload file name`.
+2. Paste clipboard content into any text field.
+
+### Expected Result(s)
+- Clipboard receives the selected upload file name.
+- Parity action result shows `Copied upload file name` on success.
+- If clipboard write is blocked, parity error shows `Failed to copy upload file name`.
+- No upload request is triggered by this copy action.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel upload-result clipboard helper
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- In `File upload`, run an upload so upload result text is visible.
+
+### Steps
+1. In `File upload`, click `Copy upload result`.
+2. Paste clipboard content into any text field.
+
+### Expected Result(s)
+- Clipboard receives the current upload result text.
+- Parity action result shows `Copied upload result` on success.
+- If clipboard write is blocked, parity error shows `Failed to copy upload result`.
+- No new upload request is triggered by this copy action.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel steer-instruction clipboard helper
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- In `Steer active turn`, enter non-empty text in `steer instruction`.
+
+### Steps
+1. Click `Copy steer instruction`.
+2. Paste clipboard content into any text field.
+
+### Expected Result(s)
+- Clipboard receives the current steer instruction text.
+- Parity action result shows `Copied steer instruction` on success.
+- If clipboard write is blocked, parity error shows `Failed to copy steer instruction`.
+- No steer request is sent by this copy action.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel direct-start-turn text clipboard helper
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- In direct start turn controls, ensure `turn text` draft is non-empty.
+
+### Steps
+1. In direct start turn controls, click `Copy direct start turn text`.
+2. Paste clipboard content into any text field.
+
+### Expected Result(s)
+- Clipboard receives the current direct-start-turn text draft.
+- Parity action result shows `Copied direct start turn text` on success.
+- If clipboard write is blocked, parity error shows `Failed to copy direct start turn text`.
+- No direct start-turn RPC is sent by this copy action.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel direct-steer text clipboard helper
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- In direct steer controls, ensure `steer text` draft is non-empty.
+
+### Steps
+1. In direct steer controls, click `Copy direct steer text`.
+2. Paste clipboard content into any text field.
+
+### Expected Result(s)
+- Clipboard receives the current direct-steer text draft.
+- Parity action result shows `Copied direct steer text` on success.
+- If clipboard write is blocked, parity error shows `Failed to copy direct steer text`.
+- No direct-steer RPC is sent by this copy action.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel direct-steer expected-turn-id clipboard helper
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- In direct steer controls, ensure `expected turn id` draft is non-empty.
+
+### Steps
+1. In direct steer controls, click `Copy expected turn id`.
+2. Paste clipboard content into any text field.
+
+### Expected Result(s)
+- Clipboard receives the current expected-turn-id draft.
+- Parity action result shows `Copied expected turn id` on success.
+- If clipboard write is blocked, parity error shows `Failed to copy expected turn id`.
+- No direct-steer RPC is sent by this copy action.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel direct-steer thread-id clipboard helper
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- In direct steer controls, ensure `thread id (direct steer)` draft is non-empty.
+
+### Steps
+1. In direct steer controls, click `Copy direct steer thread id`.
+2. Paste clipboard content into any text field.
+
+### Expected Result(s)
+- Clipboard receives the current direct-steer thread-id draft.
+- Parity action result shows `Copied direct steer thread id` on success.
+- If clipboard write is blocked, parity error shows `Failed to copy direct steer thread id`.
+- No direct-steer RPC is sent by this copy action.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel direct-interrupt turn-id clipboard helper
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- In direct interrupt controls, ensure `turn id (required)` draft is non-empty.
+
+### Steps
+1. In direct interrupt controls, click `Copy direct interrupt turn id`.
+2. Paste clipboard content into any text field.
+
+### Expected Result(s)
+- Clipboard receives the current direct-interrupt turn-id draft.
+- Parity action result shows `Copied direct interrupt turn id` on success.
+- If clipboard write is blocked, parity error shows `Failed to copy direct interrupt turn id`.
+- No direct-interrupt RPC is sent by this copy action.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel direct-interrupt thread-id clipboard helper
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- In direct interrupt controls, ensure `thread id (direct interrupt)` draft is non-empty.
+
+### Steps
+1. In direct interrupt controls, click `Copy direct interrupt thread id`.
+2. Paste clipboard content into any text field.
+
+### Expected Result(s)
+- Clipboard receives the current direct-interrupt thread-id draft.
+- Parity action result shows `Copied direct interrupt thread id` on success.
+- If clipboard write is blocked, parity error shows `Failed to copy direct interrupt thread id`.
+- No direct-interrupt RPC is sent by this copy action.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel feedback-reason clipboard helper
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- In `Feedback upload`, ensure `short reason (optional)` draft is non-empty.
+
+### Steps
+1. In `Feedback upload`, click `Copy feedback reason`.
+2. Paste clipboard content into any text field.
+
+### Expected Result(s)
+- Clipboard receives the current feedback reason draft.
+- Parity action result shows `Copied feedback reason` on success.
+- If clipboard write is blocked, parity error shows `Failed to copy feedback reason`.
+- No feedback upload request is sent by this copy action.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel OAuth-server-name clipboard helper
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- In `MCP OAuth login`, ensure `mcp server name` draft is non-empty.
+
+### Steps
+1. In `MCP OAuth login`, click `Copy OAuth server name`.
+2. Paste clipboard content into any text field.
+
+### Expected Result(s)
+- Clipboard receives the current OAuth server-name draft.
+- Parity action result shows `Copied OAuth server name` on success.
+- If clipboard write is blocked, parity error shows `Failed to copy OAuth server name`.
+- No OAuth-start request is sent by this copy action.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel OAuth-result clipboard helper
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- In `MCP OAuth login`, run Start OAuth so result text is visible.
+
+### Steps
+1. In `MCP OAuth login`, click `Copy OAuth result`.
+2. Paste clipboard content into any text field.
+
+### Expected Result(s)
+- Clipboard receives the current OAuth result text.
+- Parity action result shows `Copied OAuth result` on success.
+- If clipboard write is blocked, parity error shows `Failed to copy OAuth result`.
+- No OAuth-start request is sent by this copy action.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel config-key clipboard helper
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- In `Config write`, ensure `config key` draft is non-empty.
+
+### Steps
+1. In key/value controls, click `Copy config key`.
+2. Paste clipboard content into any text field.
+
+### Expected Result(s)
+- Clipboard receives the current config-key draft.
+- Parity action result shows `Copied config key` on success.
+- If clipboard write is blocked, parity error shows `Failed to copy config key`.
+- No config write request is sent by this copy action.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel config-value clipboard helper
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- In `Config write`, ensure `config value` draft is non-empty.
+
+### Steps
+1. In key/value controls, click `Copy config value`.
+2. Paste clipboard content into any text field.
+
+### Expected Result(s)
+- Clipboard receives the current config-value draft.
+- Parity action result shows `Copied config value` on success.
+- If clipboard write is blocked, parity error shows `Failed to copy config value`.
+- No config write request is sent by this copy action.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel config-batch-json clipboard helper
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- In `Config write`, ensure `batch JSON` draft is non-empty.
+
+### Steps
+1. In batch controls, click `Copy config batch JSON`.
+2. Paste clipboard content into any text field.
+
+### Expected Result(s)
+- Clipboard receives the current config-batch JSON draft.
+- Parity action result shows `Copied config batch JSON` on success.
+- If clipboard write is blocked, parity error shows `Failed to copy config batch JSON`.
+- No config batch write request is sent by this copy action.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel config-write-result clipboard helper
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- In `Config write`, run any write action so write result text is visible.
+
+### Steps
+1. In write-results controls, click `Copy write result`.
+2. Paste clipboard content into any text field.
+
+### Expected Result(s)
+- Clipboard receives the current config write-result text.
+- Parity action result shows `Copied write result` on success.
+- If clipboard write is blocked, parity error shows `Failed to copy write result`.
+- No config write request is sent by this copy action.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel switch-account-id clipboard helper
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- In `Account` controls, ensure `account id to switch` draft is non-empty.
+
+### Steps
+1. In account switch controls, click `Copy switch account id`.
+2. Paste clipboard content into any text field.
+
+### Expected Result(s)
+- Clipboard receives the current switch-account-id draft.
+- Parity action result shows `Copied switch account id` on success.
+- If clipboard write is blocked, parity error shows `Failed to copy switch account id`.
+- No account switch request is sent by this copy action.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel remove-account-id clipboard helper
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- In `Account` controls, ensure `account id to remove` draft is non-empty.
+
+### Steps
+1. In remove-account controls, click `Copy remove account id`.
+2. Paste clipboard content into any text field.
+
+### Expected Result(s)
+- Clipboard receives the current remove-account-id draft.
+- Parity action result shows `Copied remove account id` on success.
+- If clipboard write is blocked, parity error shows `Failed to copy remove account id`.
+- No account remove request is sent by this copy action.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel login-result clipboard helper
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- In `Account` login controls, run any login action so login result text is visible.
+
+### Steps
+1. In login controls, click `Copy login result`.
+2. Paste clipboard content into any text field.
+
+### Expected Result(s)
+- Clipboard receives the current login-result text.
+- Parity action result shows `Copied login result` on success.
+- If clipboard write is blocked, parity error shows `Failed to copy login result`.
+- No login RPC is sent by this copy action.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel API-key-draft clipboard helper
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- In `Account` login controls, ensure `OpenAI API key` draft is non-empty.
+
+### Steps
+1. In API-key login controls, click `Copy API key draft`.
+2. Paste clipboard content into any text field.
+
+### Expected Result(s)
+- Clipboard receives the current API-key draft.
+- Parity action result shows `Copied API key draft` on success.
+- If clipboard write is blocked, parity error shows `Failed to copy API key draft`.
+- No API-key login request is sent by this copy action.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel accounts-summary clipboard helper
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- In `Account`, run `Load accounts list` or `Read account + config` so accounts summary text is visible.
+
+### Steps
+1. In account summary controls, click `Copy accounts summary`.
+2. Paste clipboard content into any text field.
+
+### Expected Result(s)
+- Clipboard receives the current accounts summary text.
+- Parity action result shows `Copied accounts summary` on success.
+- If clipboard write is blocked, parity error shows `Failed to copy accounts summary`.
+- No account load/switch/remove request is sent by this copy action.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel active-account-summary clipboard helper
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- In `Account`, load or refresh account data so active account summary is visible.
+
+### Steps
+1. In account summary controls, click `Copy active account summary`.
+2. Paste clipboard content into any text field.
+
+### Expected Result(s)
+- Clipboard receives active account summary text (email, plan, type, requiresOpenaiAuth).
+- Parity action result shows `Copied active account summary` on success.
+- If clipboard write is blocked, parity error shows `Failed to copy active account summary`.
+- No account load/switch/remove request is sent by this copy action.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel config-read-summary clipboard helper
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Ensure `Config read` section is visible (read account + config has populated it).
+
+### Steps
+1. In `Config read`, click `Copy config read summary`.
+2. Paste clipboard content into any text field.
+
+### Expected Result(s)
+- Clipboard receives config read summary lines (model/provider, approval/sandbox, web_search).
+- Parity action result shows `Copied config read summary` on success.
+- If clipboard write is blocked, parity error shows `Failed to copy config read summary`.
+- No config read/write request is sent by this copy action.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel active-login-id clipboard helper
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- In `Account` login controls, ensure active login id is non-empty.
+
+### Steps
+1. In account login controls, click `Copy active login id`.
+2. Paste clipboard content into any text field.
+
+### Expected Result(s)
+- Clipboard receives the current active login id.
+- Parity action result shows `Copied active login id` on success.
+- If clipboard write is blocked, parity error shows `Failed to copy active login id`.
+- No login cancel/start request is sent by this copy action.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel thread-action-result clipboard helper
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Trigger any parity action that sets thread action result text.
+
+### Steps
+1. In parity status controls, click `Copy thread action result`.
+2. Paste clipboard content into any text field.
+
+### Expected Result(s)
+- Clipboard receives the current thread action result text.
+- Thread action result is replaced with `Copied thread action result` on success.
+- If clipboard write is blocked, parity error shows `Failed to copy thread action result`.
+- No new parity action RPC is sent by this copy action.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel parity-error clipboard helper
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Trigger any parity error so error text is visible.
+
+### Steps
+1. In parity status controls, click `Copy parity error`.
+2. Paste clipboard content into any text field.
+
+### Expected Result(s)
+- Clipboard receives the current parity error text.
+- Thread action result shows `Copied parity error` on success.
+- If clipboard write is blocked, parity error shows `Failed to copy parity error`.
+- No parity RPC is sent by this copy action.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel config-summary clipboard helper
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Ensure parity config summary text is visible.
+
+### Steps
+1. In parity header controls, click `Copy config summary`.
+2. Paste clipboard content into any text field.
+
+### Expected Result(s)
+- Clipboard receives the current config summary text.
+- Thread action result shows `Copied config summary` on success.
+- If clipboard write is blocked, parity error shows `Failed to copy config summary`.
+- No parity refresh/write request is sent by this copy action.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel apps/experimental/MCP summary clipboard helper
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Ensure parity surface summary line is visible.
+
+### Steps
+1. In parity header controls, click `Copy apps/experimental/MCP summary`.
+2. Paste clipboard content into any text field.
+
+### Expected Result(s)
+- Clipboard receives summary text in format `Apps X · Experimental Y · MCP Z`.
+- Thread action result shows `Copied apps/experimental/MCP summary` on success.
+- If clipboard write is blocked, parity error shows `Failed to copy apps/experimental/MCP summary`.
+- No parity refresh/write request is sent by this copy action.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel config-requirements-JSON clipboard helper
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- Ensure config requirements are loaded (not null).
+
+### Steps
+1. In parity header controls, click `Copy config requirements JSON`.
+2. Paste clipboard content into any text field.
+
+### Expected Result(s)
+- Clipboard receives pretty-printed JSON of current config requirements.
+- Thread action result shows `Copied config requirements JSON` on success.
+- If clipboard write is blocked, parity error shows `Failed to copy config requirements JSON`.
+- No parity refresh/write request is sent by this copy action.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel protocol-catalog-summary clipboard helper
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- In `Protocol catalog`, load methods/notifications so cache is non-empty.
+
+### Steps
+1. Click `Copy protocol catalog summary`.
+2. Paste clipboard content into any text field.
+
+### Expected Result(s)
+- Clipboard receives summary lines with method/notification counts and samples.
+- Thread action result shows `Copied protocol catalog summary` on success.
+- If clipboard write is blocked, parity error shows `Failed to copy protocol catalog summary`.
+- No protocol reload request is sent by this copy action.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel notifications-sample clipboard helper
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- In `Live notifications`, ensure at least one notification sample is present.
+
+### Steps
+1. Click `Copy notifications sample`.
+2. Paste clipboard content into any text field.
+
+### Expected Result(s)
+- Clipboard receives notification sample lines (up to first 10 cached samples).
+- Thread action result shows `Copied notifications sample` on success.
+- If clipboard write is blocked, parity error shows `Failed to copy notifications sample`.
+- No stream start/stop/reset request is sent by this copy action.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel notification-filter clipboard helper
+
+### Prerequisites / Setup
+- Open Settings -> App parity panel.
+- In `Live notifications`, set non-empty text in method filter input.
+
+### Steps
+1. Click `Copy notification filter`.
+2. Paste clipboard content into any text field.
+
+### Expected Result(s)
+- Clipboard receives current notification filter text.
+- Thread action result shows `Copied notification filter` on success.
+- If clipboard write is blocked, parity error shows `Failed to copy notification filter`.
+- No stream start/stop/reset request is sent by this copy action.
+
+### Rollback / Cleanup Notes
+- No cleanup required.
+
+## Feature: Parity panel pending-request methods copy helper
+
+### Prerequisites
+- Open the app and navigate to `Settings` -> `App parity`.
+- In `Pending server requests`, click `Load pending requests` so the methods summary is populated.
+
+### Steps
+1. Click `Copy pending-request methods`.
+2. Paste clipboard content into any text input.
+
+### Expected Results
+- Clipboard text matches the `methods:` summary shown in the pending-request section.
+- `thread action result` shows `Copied pending-request methods`.
+- If summary is empty, button remains disabled and no copy attempt happens.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Parity panel Codex settings categories snapshot
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+
+### Steps
+1. Find the `Codex settings categories` block.
+2. Confirm it lists category count and a comma-separated category summary.
+3. Click `Copy settings categories`.
+4. Paste clipboard text into an input area.
+
+### Expected Results
+- Category list includes Codex settings taxonomy entries (for example `account`, `agent`, `appearance`, `mcp-settings`, `usage`, `worktrees`).
+- `count` matches the number of listed categories.
+- Clipboard contains the same comma-separated category summary shown in the panel.
+- `thread action result` shows `Copied settings categories`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Parity panel settings heading group summaries
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+
+### Steps
+1. In `Codex settings categories`, verify `heading app` and `heading connection` summary lines are visible.
+2. Click `Copy app group` and paste clipboard content.
+3. Click `Copy connection group` and paste clipboard content.
+
+### Expected Results
+- `heading app` contains app-level categories (for example `account`, `agent`, `appearance`, `usage`).
+- `heading connection` contains connection/integration categories (for example `mcp-settings`, `plugins-settings`, `skills-settings`, `worktrees`).
+- Copy actions set `thread action result` to `Copied app settings group` and `Copied connection settings group` respectively.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Parity panel settings coverage inspector
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+
+### Steps
+1. In `Codex settings categories`, inspect `supported` and `missing` lines.
+2. Click `Copy supported categories` and paste clipboard text.
+3. Click `Copy missing categories` and paste clipboard text.
+
+### Expected Results
+- `supported` line lists categories currently represented by parity controls.
+- `missing` line lists remaining Codex settings categories not yet represented.
+- Copy actions set `thread action result` to:
+  - `Copied supported settings categories`
+  - `Copied missing settings categories`
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Parity panel settings focus-category controls
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Locate `Codex settings categories`.
+
+### Steps
+1. Click `Use first missing` and observe `focus category` input.
+2. Click `Copy focus category` and paste clipboard text.
+3. Click `Use first supported` and repeat copy/paste.
+4. Click `Clear focus`.
+
+### Expected Results
+- `Use first missing` fills the input with the first item from `missing` categories.
+- `Use first supported` fills the input with the first item from `supported` categories.
+- Copy action sets `thread action result` to `Copied focus settings category` and clipboard matches input value.
+- `Clear focus` clears the input.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Parity panel personalization draft controls
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Locate `Personalization parity`.
+
+### Steps
+1. Change tone, avatar, and memory selectors to non-default values.
+2. Verify summary line updates immediately.
+3. Click `Copy personalization summary` and paste clipboard text.
+4. Click `Reset personalization`.
+
+### Expected Results
+- Summary line always reflects current selector values in format `tone=... · avatar=... · memory=...`.
+- Copy action sets `thread action result` to `Copied personalization summary`.
+- Clipboard matches the visible summary line.
+- Reset returns selectors to defaults: `friendly`, `default`, `enabled`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Parity panel usage draft controls
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Locate `Usage parity`.
+
+### Steps
+1. Change auto top-up selector and monthly budget value.
+2. Confirm summary line updates immediately.
+3. Click `Copy usage summary` and paste clipboard text.
+4. Click `Reset usage`.
+
+### Expected Results
+- Summary line follows format `autoTopUp=... · budgetUsd=...`.
+- Copy action sets `thread action result` to `Copied usage summary`.
+- Clipboard matches visible summary line.
+- Reset returns values to defaults: `auto top-up disabled` and budget `0`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Parity panel appearance draft controls
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Locate `Appearance parity`.
+
+### Steps
+1. Change theme and density selectors.
+2. Confirm summary line updates immediately.
+3. Click `Copy appearance summary` and paste clipboard text.
+4. Click `Reset appearance`.
+
+### Expected Results
+- Summary line follows format `theme=... · density=...`.
+- Copy action sets `thread action result` to `Copied appearance summary`.
+- Clipboard matches visible summary line.
+- Reset returns defaults: `system` theme and `comfortable` density.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Parity panel data controls draft controls
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Locate `Data controls parity`.
+
+### Steps
+1. Change telemetry and training selectors.
+2. Confirm summary line updates immediately.
+3. Click `Copy data controls summary` and paste clipboard text.
+4. Click `Reset data controls`.
+
+### Expected Results
+- Summary line follows format `telemetry=... · training=...`.
+- Copy action sets `thread action result` to `Copied data controls summary`.
+- Clipboard matches visible summary line.
+- Reset returns defaults: telemetry `enabled` and training `enabled`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Parity panel computer-use draft controls
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Locate `Computer-use parity`.
+
+### Steps
+1. Change mode and vision selectors.
+2. Confirm summary line updates immediately.
+3. Click `Copy computer-use summary` and paste clipboard text.
+4. Click `Reset computer-use`.
+
+### Expected Results
+- Summary line follows format `mode=... · vision=...`.
+- Copy action sets `thread action result` to `Copied computer-use summary`.
+- Clipboard matches visible summary line.
+- Reset returns defaults: mode `ask`, vision `enabled`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Parity panel general-settings draft controls
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Locate `General settings parity`.
+
+### Steps
+1. Change notifications and menu bar selectors.
+2. Confirm summary line updates immediately.
+3. Click `Copy general settings summary` and paste clipboard text.
+4. Click `Reset general settings`.
+
+### Expected Results
+- Summary line follows format `notifications=... · menuBar=...`.
+- Copy action sets `thread action result` to `Copied general settings summary`.
+- Clipboard matches visible summary line.
+- Reset returns defaults: notifications `enabled`, menu bar `enabled`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Parity panel local-environments draft controls
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Locate `Local environments parity`.
+
+### Steps
+1. Change environment name and shell.
+2. Confirm summary line updates immediately.
+3. Click `Copy local env summary` and paste clipboard text.
+4. Click `Reset local env`.
+
+### Expected Results
+- Summary line follows format `name=... · shell=...`.
+- Copy action sets `thread action result` to `Copied local environment summary`.
+- Clipboard matches visible summary line.
+- Reset returns defaults: name `local-default`, shell `zsh`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Parity panel plugins-settings draft controls
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Locate `Plugins settings parity`.
+
+### Steps
+1. Change plugins enabled selector and plugin source value.
+2. Confirm summary line updates immediately.
+3. Click `Copy plugins summary` and paste clipboard text.
+4. Click `Reset plugins`.
+
+### Expected Results
+- Summary line follows format `plugins=... · source=...`.
+- Copy action sets `thread action result` to `Copied plugins summary`.
+- Clipboard matches visible summary line.
+- Reset returns defaults: plugins `enabled`, source `marketplace`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Parity coverage model updated after missing-slice implementation
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Locate `Codex settings categories`.
+
+### Steps
+1. Inspect `supported` and `missing` summary lines.
+2. Confirm previously implemented slices (`appearance`, `computer-use`, `data-controls`, `general-settings`, `local-environments`, `personalization`, `plugins-settings`, `usage`) are in `supported`.
+3. Verify `missing` count is reduced accordingly.
+
+### Expected Results
+- Newly implemented category slices appear in `supported`.
+- `missing` summary excludes those categories.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Parity panel connections draft controls
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Locate `Connections parity`.
+
+### Steps
+1. Change remote host, status, and auth selectors.
+2. Confirm summary line updates immediately.
+3. Click `Copy connections summary` and paste clipboard text.
+4. Click `Reset connections`.
+
+### Expected Results
+- Summary line follows format `host=... · status=... · auth=...`.
+- Copy action sets `thread action result` to `Copied connections summary`.
+- Clipboard matches visible summary line.
+- Reset returns defaults: host `localhost`, status `connected`, auth `token`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Parity panel environments draft controls
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Locate `Environments parity`.
+
+### Steps
+1. Change environment label and type.
+2. Confirm summary line updates immediately.
+3. Click `Copy environments summary` and paste clipboard text.
+4. Click `Reset environments`.
+
+### Expected Results
+- Summary line follows format `name=... · type=...`.
+- Copy action sets `thread action result` to `Copied environments summary`.
+- Clipboard matches visible summary line.
+- Reset returns defaults: name `default`, type `local`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Parity panel settings coverage summary copy
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Locate `Codex settings categories`.
+
+### Steps
+1. Inspect the `coverage:` line.
+2. Click `Copy coverage summary`.
+3. Paste clipboard text into any input area.
+
+### Expected Results
+- Coverage line shows `supported/total (percent%)` format.
+- Copy action sets `thread action result` to `Copied settings coverage summary`.
+- Clipboard text matches the visible coverage value.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Parity panel worktrees draft controls
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Locate `Worktrees parity`.
+
+### Steps
+1. Change auto cleanup selector and repository path.
+2. Confirm summary line updates immediately.
+3. Click `Copy worktrees summary` and paste clipboard text.
+4. Click `Reset worktrees`.
+
+### Expected Results
+- Summary line follows format `autoCleanup=... · repository=...`.
+- Copy action sets `thread action result` to `Copied worktrees summary`.
+- Clipboard matches visible summary line.
+- Reset returns defaults: auto cleanup `enabled`, repository empty.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Parity panel git-settings draft controls
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Locate `Git settings parity`.
+
+### Steps
+1. Change default branch and auto-fetch selector.
+2. Confirm summary line updates immediately.
+3. Click `Copy git settings summary` and paste clipboard text.
+4. Click `Reset git settings`.
+
+### Expected Results
+- Summary line follows format `defaultBranch=... · autoFetch=...`.
+- Copy action sets `thread action result` to `Copied git settings summary`.
+- Clipboard matches visible summary line.
+- Reset returns defaults: branch `main`, auto-fetch `enabled`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Parity panel settings completion state
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Locate `Codex settings categories`.
+
+### Steps
+1. Inspect the `completion:` line.
+2. Click `Copy completion state`.
+3. Paste clipboard text into any input area.
+
+### Expected Results
+- `completion` shows `complete` when `missing` count is zero, otherwise `incomplete`.
+- Copy action sets `thread action result` to `Copied settings completion state`.
+- Clipboard text matches the visible completion value.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Parity panel settings snapshot JSON copy
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+
+### Steps
+1. Adjust at least one draft field in any parity subsection (for example appearance theme).
+2. Click `Copy settings snapshot JSON`.
+3. Paste clipboard content into a text editor.
+
+### Expected Results
+- Clipboard contains valid JSON.
+- JSON includes category coverage fields and subsection objects (`personalization`, `usage`, `appearance`, `dataControls`, `computerUse`, `general`, `localEnvironments`, `plugins`, `connections`, `environments`, `worktrees`, `git`).
+- Copy action sets `thread action result` to `Copied settings snapshot JSON`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Parity panel missing-features report copy
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Locate `Codex settings categories`.
+
+### Steps
+1. Click `Copy missing-features report`.
+2. Paste clipboard content into a markdown-capable editor.
+
+### Expected Results
+- Report is markdown text with heading `Codex Settings Parity Report`.
+- Report includes coverage/completion totals and a `Missing Categories` section.
+- If no missing categories remain, section shows `- (none)`.
+- Copy action sets `thread action result` to `Copied missing-features report`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Parity panel changelog entry copy
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Locate `Codex settings categories`.
+
+### Steps
+1. Click `Copy parity changelog entry`.
+2. Paste clipboard content into a markdown-capable editor.
+
+### Expected Results
+- Clipboard contains markdown heading in format `## Parity Update (YYYY-MM-DD)`.
+- Entry includes `Coverage`, `Completion`, and `Missing categories` lines.
+- Copy action sets `thread action result` to `Copied parity changelog entry`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Parity panel checklist copy
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Locate `Codex settings categories`.
+
+### Steps
+1. Click `Copy parity checklist`.
+2. Paste clipboard content into a markdown-capable editor.
+
+### Expected Results
+- Clipboard contains heading `Codex Settings Parity Checklist`.
+- Checklist includes coverage/completion lines and category checklist rows (`- [x] name` or `- [ ] name`).
+- Copy action sets `thread action result` to `Copied parity checklist`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Parity panel metrics line copy
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Locate `Codex settings categories`.
+
+### Steps
+1. Click `Copy parity metrics line`.
+2. Paste clipboard content into a plain text input.
+
+### Expected Results
+- Clipboard contains a single-line summary including date, coverage, completion, and missing count.
+- Copy action sets `thread action result` to `Copied parity metrics line`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Parity panel badge text copy
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Locate `Codex settings categories`.
+
+### Steps
+1. Click `Copy parity badge text`.
+2. Paste clipboard content into a plain text input.
+
+### Expected Results
+- Clipboard contains `parity:<completion> (<coverage>)` format.
+- Copy action sets `thread action result` to `Copied parity badge text`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Parity panel release-note block copy
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Locate `Codex settings categories`.
+
+### Steps
+1. Click `Copy parity release-note block`.
+2. Paste clipboard content into a markdown-capable editor.
+
+### Expected Results
+- Clipboard contains a markdown section starting with `### Codex App Parity`.
+- Block includes coverage, completion, missing count, and date snapshot.
+- Copy action sets `thread action result` to `Copied parity release-note block`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Parity panel handoff packet copy
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Locate `Codex settings categories`.
+
+### Steps
+1. Click `Copy parity handoff packet`.
+2. Paste clipboard content into a markdown-capable editor.
+
+### Expected Results
+- Clipboard contains a multi-section markdown packet with coverage/completion, checklist, and release-note section.
+- Copy action sets `thread action result` to `Copied parity handoff packet`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Parity panel self-check action
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Locate `Codex settings categories`.
+
+### Steps
+1. Click `Run parity self-check`.
+
+### Expected Results
+- `thread action result` shows `Parity self-check PASS` when missing categories are zero and completion is `complete`.
+- If parity is incomplete, result should show `FAIL` and parity error should explain missing/completion mismatch.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Parity panel self-check result copy
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Locate `Codex settings categories`.
+
+### Steps
+1. Click `Copy parity self-check result`.
+2. Paste clipboard content into a plain text input.
+
+### Expected Results
+- Clipboard contains `Parity self-check <PASS|FAIL> · coverage=... · missing=...`.
+- Copy action sets `thread action result` to `Copied parity self-check result`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Parity panel verification stamp copy
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Locate `Codex settings categories`.
+
+### Steps
+1. Click `Copy parity verification stamp`.
+2. Paste clipboard text into a plain text input.
+
+### Expected Results
+- Clipboard contains `parity-verified <ISO_TIMESTAMP> coverage=... completion=...` format.
+- Copy action sets `thread action result` to `Copied parity verification stamp`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Parity panel JSON line copy
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Locate `Codex settings categories`.
+
+### Steps
+1. Click `Copy parity JSON line`.
+2. Paste clipboard text into a plain text input.
+
+### Expected Results
+- Clipboard contains one-line JSON with keys: `t`, `coverage`, `completion`, `missing`.
+- Copy action sets `thread action result` to `Copied parity JSON line`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Parity panel global settings-drafts reset
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Change values in multiple parity slices (for example appearance, usage, connections).
+
+### Steps
+1. Click `Reset all parity drafts`.
+
+### Expected Results
+- All parity slice drafts reset to their defined defaults.
+- Focus category draft is cleared.
+- No error is shown for normal reset flow.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Parity panel self-check status indicator
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Locate `Codex settings categories`.
+
+### Steps
+1. Observe `self-check` line before running validation.
+2. Click `Run parity self-check`.
+3. Click `Copy parity self-check result`.
+
+### Expected Results
+- `self-check` starts as `not-run`.
+- After validation/copy, it updates to `PASS` or `FAIL` consistently with current parity state.
+- Action result and status line stay aligned.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Parity panel self-check last-run timestamp
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Locate `Codex settings categories`.
+
+### Steps
+1. Confirm `self-check last-run` is visible.
+2. Click `Run parity self-check`.
+3. Click `Copy parity self-check result`.
+
+### Expected Results
+- `self-check last-run` starts as `never` before checks run.
+- After running/copying self-check, it updates to an ISO timestamp.
+- Timestamp refreshes on subsequent self-check operations.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Parity panel status bundle copy
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Locate `Codex settings categories`.
+
+### Steps
+1. Click `Copy parity status bundle`.
+2. Paste clipboard content into a plain text input.
+
+### Expected Results
+- Clipboard contains one line with `coverage`, `completion`, `selfCheck`, and `lastRun` fields.
+- Copy action sets `thread action result` to `Copied parity status bundle`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Parity panel summary markdown copy
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Locate `Codex settings categories`.
+
+### Steps
+1. Click `Copy parity summary markdown`.
+2. Paste clipboard content into a markdown-capable editor.
+
+### Expected Results
+- Clipboard contains `## Parity Summary` with coverage/completion/self-check/last-run bullets.
+- Copy action sets `thread action result` to `Copied parity summary markdown`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Parity panel self-check status reset
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Run `Run parity self-check` at least once so status/timestamp are populated.
+
+### Steps
+1. Click `Reset self-check status`.
+
+### Expected Results
+- `self-check` returns to `not-run`.
+- `self-check last-run` returns to `never`.
+- `thread action result` shows `Reset parity self-check status`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Parity panel audit trail copy
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Locate `Codex settings categories`.
+
+### Steps
+1. Click `Copy parity audit trail`.
+2. Paste clipboard content into a markdown-capable editor.
+
+### Expected Results
+- Clipboard contains `# Parity Audit Trail` section.
+- Content includes coverage, completion, self-check status, self-check last-run, and generation timestamp.
+- Copy action sets `thread action result` to `Copied parity audit trail`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Parity panel heartbeat line copy
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Locate `Codex settings categories`.
+
+### Steps
+1. Click `Copy parity heartbeat line`.
+2. Paste clipboard content into a plain text input.
+
+### Expected Results
+- Clipboard contains one line starting with `parity_heartbeat|` and fields for coverage/completion/selfcheck/timestamp.
+- Copy action sets `thread action result` to `Copied parity heartbeat line`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Parity panel evidence bundle JSON copy
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Locate `Codex settings categories`.
+
+### Steps
+1. Click `Copy parity evidence bundle JSON`.
+2. Paste clipboard content into a text editor.
+
+### Expected Results
+- Clipboard contains pretty JSON with `generatedAt`, `categories`, `selfCheck`, and `statusBundle`.
+- Copy action sets `thread action result` to `Copied parity evidence bundle JSON`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Parity panel CSV line copy
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Locate `Codex settings categories`.
+
+### Steps
+1. Click `Copy parity CSV line`.
+2. Paste clipboard content into a plain text editor.
+
+### Expected Results
+- Clipboard contains one CSV row with quoted columns for timestamp, coverage, completion, missing count, self-check status, and self-check last-run.
+- Copy action sets `thread action result` to `Copied parity CSV line`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Parity panel YAML block copy
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Locate `Codex settings categories`.
+
+### Steps
+1. Click `Copy parity YAML block`.
+2. Paste clipboard content into a text editor.
+
+### Expected Results
+- Clipboard contains YAML with `parity` root and keys for coverage/completion/missing/self_check/generated_at.
+- Copy action sets `thread action result` to `Copied parity YAML block`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Parity panel TOML block copy
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Locate `Codex settings categories`.
+
+### Steps
+1. Click `Copy parity TOML block`.
+2. Paste clipboard content into a text editor.
+
+### Expected Results
+- Clipboard contains TOML with `[parity]` and `[parity.self_check]` sections.
+- Copy action sets `thread action result` to `Copied parity TOML block`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Parity panel XML block copy
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Locate `Codex settings categories`.
+
+### Steps
+1. Click `Copy parity XML block`.
+2. Paste clipboard content into a text editor.
+
+### Expected Results
+- Clipboard contains XML with `<parity>` root and child fields for coverage/completion/missing/selfCheck/generatedAt.
+- Copy action sets `thread action result` to `Copied parity XML block`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Parity panel plain-text block copy
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Locate `Codex settings categories`.
+
+### Steps
+1. Click `Copy parity plain-text block`.
+2. Paste clipboard content into a plain text editor.
+
+### Expected Results
+- Clipboard contains a readable multi-line plain-text summary starting with `PARITY STATUS`.
+- Copy action sets `thread action result` to `Copied parity plain-text block`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Parity panel env vars block copy
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Locate `Codex settings categories`.
+
+### Steps
+1. Click `Copy parity env vars block`.
+2. Paste clipboard content into a plain text editor.
+
+### Expected Results
+- Clipboard contains newline-separated shell-style variables:
+  `PARITY_COVERAGE`, `PARITY_COMPLETION`, `PARITY_MISSING`, `PARITY_SELF_CHECK`, `PARITY_SELF_CHECK_LAST_RUN`, `PARITY_GENERATED_AT`.
+- Copy action sets `thread action result` to `Copied parity env vars block`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Parity panel NDJSON line copy
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Locate `Codex settings categories`.
+
+### Steps
+1. Click `Copy parity NDJSON line`.
+2. Paste clipboard text into a plain text editor.
+
+### Expected Results
+- Clipboard contains one JSON object line suitable for NDJSON streams.
+- Object includes `type`, `t`, `coverage`, `completion`, `missing`, `selfCheck`, and `selfCheckLastRun`.
+- Copy action sets `thread action result` to `Copied parity NDJSON line`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Parity panel markdown table copy
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Locate `Codex settings categories`.
+
+### Steps
+1. Click `Copy parity markdown table`.
+2. Paste clipboard content into a markdown-capable editor.
+
+### Expected Results
+- Clipboard contains a valid markdown table with `Metric` and `Value` columns.
+- Rows include coverage, completion, missing, self-check, and self-check last-run.
+- Copy action sets `thread action result` to `Copied parity markdown table`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Parity panel INI block copy
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Locate `Codex settings categories`.
+
+### Steps
+1. Click `Copy parity INI block`.
+2. Paste clipboard content into a text editor.
+
+### Expected Results
+- Clipboard contains INI-style lines under `[parity]`.
+- Keys include coverage/completion/missing/self_check/self_check_last_run/generated_at.
+- Copy action sets `thread action result` to `Copied parity INI block`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Parity panel HTML block copy
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Locate `Codex settings categories`.
+
+### Steps
+1. Click `Copy parity HTML block`.
+2. Paste clipboard content into an HTML-capable editor.
+
+### Expected Results
+- Clipboard contains an HTML `<section class="parity-status">` with parity status fields.
+- Copy action sets `thread action result` to `Copied parity HTML block`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Parity panel markdown list copy
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Locate `Codex settings categories`.
+
+### Steps
+1. Click `Copy parity markdown list`.
+2. Paste clipboard content into a markdown-capable editor.
+
+### Expected Results
+- Clipboard contains markdown bullet lines for coverage/completion/missing/self-check/last-run.
+- Copy action sets `thread action result` to `Copied parity markdown list`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Parity panel tuple copy
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Locate `Codex settings categories`.
+
+### Steps
+1. Click `Copy parity tuple`.
+2. Paste clipboard into plain text input.
+
+### Expected Results
+- Clipboard contains tuple `coverage|completion|missing|selfCheck`.
+- Copy action sets `thread action result` to `Copied parity tuple`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Parity panel compact code copy
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Locate `Codex settings categories`.
+
+### Steps
+1. Click `Copy parity compact code`.
+2. Paste clipboard content into a plain text input.
+
+### Expected Results
+- Clipboard contains short code format like `P:x|M:0|S:P`.
+- Copy action sets `thread action result` to `Copied parity compact code`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Parity panel key-value list copy
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Locate `Codex settings categories`.
+
+### Steps
+1. Click `Copy parity key-value list`.
+2. Paste clipboard text into a plain text editor.
+
+### Expected Results
+- Clipboard contains newline-separated `key=value` lines.
+- Keys include coverage/completion/missing/selfCheck/selfCheckLastRun.
+- Copy action sets `thread action result` to `Copied parity key-value list`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: macOS settings parity — Show in menu bar toggle
+
+### Prerequisites
+- Run on macOS.
+- Open `Settings` in the sidebar.
+
+### Steps
+1. Locate `Show in menu bar` in the main settings list.
+2. Click the row once.
+3. Click the row again.
+
+### Expected Results
+- The `Show in menu bar` row is visible on macOS.
+- The toggle indicator flips on each click.
+- Value persists across settings close/reopen (stored in local preference key).
+
+### Rollback/Cleanup
+- Set toggle back to the original state if needed.
+
+## Feature: App parity lists show full inventories (no top-5 truncation)
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Ensure there are more than 5 entries in at least one list (Apps, Experimental features, or MCP servers).
+
+### Steps
+1. Open the `Apps` section and count visible rows.
+2. Open the `Experimental features` section and count visible rows.
+3. Open the `MCP servers` section and count visible rows.
+
+### Expected Results
+- Lists are not capped to the first 5 entries.
+- All returned rows from parity loaders are rendered for each section.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: App parity self-check uses live diagnostics coverage
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Keep parity diagnostics in default unloaded state first.
+
+### Steps
+1. Observe `supported`, `missing`, and `coverage` before loading extra diagnostics.
+2. Click parity loaders (for example: `Load skills catalog`, `Read rate limits`, `Load workspace roots state`, `Load git branch state`).
+3. Observe `supported`, `missing`, and `coverage` again.
+4. Click `Run parity self-check`.
+
+### Expected Results
+- `supported/missing/coverage` values change based on loaded live diagnostics.
+- Self-check result reflects live-derived coverage state instead of a static full-pass baseline.
+
+### Rollback/Cleanup
+- Optional: click reset/clear actions in parity diagnostics sections.
+
+## Feature: Refresh parity also refreshes protocol + pending requests
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+
+### Steps
+1. Click `Load protocol catalog` and `Load pending requests`.
+2. Trigger any state change (for example, open/close settings or click `Refresh parity`).
+3. Click `Refresh parity`.
+
+### Expected Results
+- Refresh also rehydrates protocol catalog summary (`methods/notifications`).
+- Refresh also rehydrates pending request summary (`count/methods`).
+- No stale protocol/pending-request snapshot remains after refresh.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Save parity drafts snapshot to config via batch write
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Change one or more parity draft controls (for example `Appearance parity` or `General settings parity`).
+
+### Steps
+1. Click `Save parity drafts (config)` in `Codex settings categories`.
+2. Observe write status output.
+3. Click `Read account + config` in the `Account` parity block.
+
+### Expected Results
+- Save action completes without error.
+- Write status shows `Saved parity drafts snapshot via config/batchWrite`.
+- Thread action result indicates parity draft snapshot was saved.
+
+### Rollback/Cleanup
+- Optional: remove `parity_drafts.*` keys using config write tools.
+
+## Feature: App parity shows load warnings for empty/unavailable sections
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+
+### Steps
+1. Click `Refresh parity`.
+2. Inspect parity metadata area under the summary lines.
+3. Verify warnings appear when a section is empty/unavailable.
+
+### Expected Results
+- Warnings are rendered as `warning: ...` lines for empty critical sections:
+  - Apps list
+  - Experimental features list
+  - MCP server list
+  - Config requirements
+- Warnings clear and repopulate on each refresh.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Copy and clear parity load warnings
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Ensure at least one `warning: ...` line is visible.
+
+### Steps
+1. Click `Copy parity load warnings`.
+2. Paste clipboard into a text editor.
+3. Click `Clear load warnings`.
+
+### Expected Results
+- Clipboard contains newline-separated warning lines.
+- Thread action result reports `Copied parity load warnings`.
+- Warning list clears immediately after `Clear load warnings`.
+
+### Rollback/Cleanup
+- Click `Refresh parity` to regenerate warnings when applicable.
+
+## Feature: Refresh parity warns on empty protocol/pending diagnostics
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+
+### Steps
+1. Click `Refresh parity`.
+2. Inspect warning lines in the parity metadata area.
+
+### Expected Results
+- If protocol catalog is empty, warning includes protocol catalog availability note.
+- If pending requests are empty, warning includes pending request feed note.
+- Warnings are present alongside other parity load warnings after refresh.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Parity warnings summary line and copy action
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Ensure warnings are present.
+
+### Steps
+1. Confirm `warnings: <count>` line is visible.
+2. Click `Copy parity warnings summary`.
+3. Paste clipboard into a text field.
+
+### Expected Results
+- Summary line shows current warning count.
+- Clipboard contains compact summary (`warnings=<n> · first=<warning>`).
+- Thread action result reports `Copied parity warnings summary`.
+
+### Rollback/Cleanup
+- Use `Clear load warnings` if needed.
+
+## Feature: Parity last-refresh summary and copy action
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+
+### Steps
+1. Click `Refresh parity`.
+2. Confirm `last refresh: ...` line updates.
+3. Click `Copy parity refresh summary`.
+4. Paste clipboard content into a text field.
+
+### Expected Results
+- Last-refresh line includes ISO timestamp and duration in milliseconds.
+- Clipboard contains the same refresh summary text.
+- Thread action result reports `Copied parity refresh summary`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Parity load warnings are deduplicated per refresh
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Ensure one or more warning conditions are present.
+
+### Steps
+1. Click `Refresh parity` repeatedly (3+ times).
+2. Inspect warning list.
+
+### Expected Results
+- Identical warning messages appear only once per refresh result set.
+- Warning count reflects unique warnings, not accumulated duplicates.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Copy parity warnings JSON payload
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Ensure warnings exist.
+
+### Steps
+1. Click `Copy parity warnings JSON`.
+2. Paste clipboard content into a JSON viewer/editor.
+
+### Expected Results
+- Clipboard contains valid JSON with:
+  - `timestamp`
+  - `lastRefresh`
+  - `warningCount`
+  - `warnings` array
+- Thread action result reports `Copied parity warnings JSON`.
+
+### Rollback/Cleanup
+- Use `Clear load warnings` if needed.
+
+## Feature: Clear parity diagnostics snapshot
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Ensure parity diagnostics have loaded at least once.
+
+### Steps
+1. Click `Clear diagnostics snapshot` in App parity header.
+2. Inspect parity metadata and diagnostics sections.
+
+### Expected Results
+- Last refresh resets to `never`.
+- Warnings list clears.
+- Protocol and pending diagnostics summaries clear.
+- Thread action result reports `Cleared parity diagnostics snapshot`.
+
+### Rollback/Cleanup
+- Click `Refresh parity` to repopulate diagnostics.
+
+## Feature: Copy full parity diagnostics JSON snapshot
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+
+### Steps
+1. Click `Refresh parity` once.
+2. Click `Copy full parity diagnostics JSON`.
+3. Paste clipboard into a JSON viewer.
+
+### Expected Results
+- Clipboard contains valid JSON snapshot with refresh metadata, surface counts, warnings, protocol/pending summaries, and coverage block.
+- Thread action result reports `Copied full parity diagnostics JSON`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Copy parity diagnostics markdown snapshot
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+
+### Steps
+1. Click `Refresh parity`.
+2. Click `Copy parity diagnostics markdown`.
+3. Paste clipboard content into a markdown editor.
+
+### Expected Results
+- Clipboard contains markdown with refresh/surface/coverage summary.
+- Markdown includes warning bullets plus protocol and pending-request sections.
+- Thread action result reports `Copied parity diagnostics markdown`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Copy parity diagnostics TSV snapshot
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+
+### Steps
+1. Click `Refresh parity`.
+2. Click `Copy parity diagnostics TSV`.
+3. Paste clipboard into a spreadsheet.
+
+### Expected Results
+- Clipboard content is tab-separated with `field`/`value` rows.
+- Includes refresh, surface, coverage/completion, warning count, protocol, and pending-request rows.
+- Thread action result reports `Copied parity diagnostics TSV`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Diagnostics exports include parity snapshot ID
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Click `Refresh parity` at least once.
+
+### Steps
+1. Click `Copy full parity diagnostics JSON` and verify `snapshotId` exists.
+2. Click `Copy parity diagnostics markdown` and verify `Snapshot ID:` line exists.
+3. Click `Copy parity diagnostics TSV` and verify `snapshot_id` row exists.
+
+### Expected Results
+- All major diagnostics export formats include a consistent snapshot identifier for correlation.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Diagnostics include warnings fingerprint
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Ensure warnings exist (or none) after refresh.
+
+### Steps
+1. Check `warnings fingerprint` line in parity metadata.
+2. Copy JSON/Markdown/TSV diagnostics exports.
+3. Verify fingerprint field/line/row is present in each export format.
+
+### Expected Results
+- Fingerprint is deterministic for current warning set.
+- Exports include matching fingerprint value for correlation.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Copy parity warnings fingerprint
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Ensure warning fingerprint is not `none`.
+
+### Steps
+1. Click `Copy warnings fingerprint`.
+2. Paste clipboard content into a text field.
+
+### Expected Results
+- Clipboard contains fingerprint text (format `wf-...`).
+- Thread action result reports `Copied parity warnings fingerprint`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Copy parity correlation key
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Run `Refresh parity` at least once.
+
+### Steps
+1. Click `Copy parity correlation key`.
+2. Paste clipboard into a text field.
+
+### Expected Results
+- Clipboard contains `<snapshot-id>::<warnings-fingerprint>`.
+- Thread action result reports `Copied parity correlation key`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Copy parity diagnostics compact line
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+
+### Steps
+1. Click `Refresh parity`.
+2. Click `Copy parity diagnostics compact line`.
+3. Paste clipboard into a plain text field.
+
+### Expected Results
+- Clipboard contains a single-line summary with snapshot, refresh, coverage/completion, warnings/fingerprint, and app/exp/mcp/pending counts.
+- Thread action result reports `Copied parity diagnostics compact line`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Copy parity diagnostics NDJSON line
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+
+### Steps
+1. Click `Refresh parity`.
+2. Click `Copy parity diagnostics NDJSON`.
+3. Paste clipboard content into a plain text editor.
+
+### Expected Results
+- Clipboard contains one-line JSON suitable for NDJSON/log ingestion.
+- Includes snapshot/correlation and key count fields.
+- Thread action result reports `Copied parity diagnostics NDJSON`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Copy parity diagnostics env block
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+
+### Steps
+1. Click `Refresh parity`.
+2. Click `Copy parity diagnostics env block`.
+3. Paste clipboard content into a text editor.
+
+### Expected Results
+- Clipboard contains newline-separated `KEY=VALUE` lines.
+- Includes snapshot, coverage/completion, warnings, and key count fields.
+- Thread action result reports `Copied parity diagnostics env block`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Copy parity diagnostics YAML snapshot
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+
+### Steps
+1. Click `Refresh parity`.
+2. Click `Copy parity diagnostics YAML`.
+3. Paste clipboard content into a text editor.
+
+### Expected Results
+- Clipboard contains YAML-style diagnostics block with snapshot, refresh, surface counts, coverage, and warnings fingerprint/count.
+- Thread action result reports `Copied parity diagnostics YAML`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Copy parity diagnostics INI snapshot
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+
+### Steps
+1. Click `Refresh parity`.
+2. Click `Copy parity diagnostics INI`.
+3. Paste clipboard content into a text editor.
+
+### Expected Results
+- Clipboard contains INI-style diagnostics with `[parity]` and `[surface]` sections.
+- Includes snapshot, refresh, coverage/completion, warning metrics, and key count fields.
+- Thread action result reports `Copied parity diagnostics INI`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Copy parity diagnostics XML snapshot
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+
+### Steps
+1. Click `Refresh parity`.
+2. Click `Copy parity diagnostics XML`.
+3. Paste clipboard content into an XML-aware editor.
+
+### Expected Results
+- Clipboard contains well-formed XML-style diagnostics payload with snapshot/refresh/coverage/warnings and surface counts.
+- Thread action result reports `Copied parity diagnostics XML`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Copy parity diagnostics HTML snapshot
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+
+### Steps
+1. Click `Refresh parity`.
+2. Click `Copy parity diagnostics HTML`.
+3. Paste clipboard content into an HTML-aware editor.
+
+### Expected Results
+- Clipboard contains HTML snippet with summary, warnings list, and key count details.
+- Thread action result reports `Copied parity diagnostics HTML`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Copy parity diagnostics plain report
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+
+### Steps
+1. Click `Refresh parity`.
+2. Click `Copy parity diagnostics plain report`.
+3. Paste clipboard content into a text editor.
+
+### Expected Results
+- Clipboard contains readable multiline diagnostics report with snapshot, coverage/completion, warning metrics/list, and surface counts.
+- Thread action result reports `Copied parity diagnostics plain report`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Copy parity diagnostics checklist
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+
+### Steps
+1. Click `Refresh parity`.
+2. Click `Copy parity diagnostics checklist`.
+3. Paste clipboard content into a markdown editor.
+
+### Expected Results
+- Clipboard contains checklist-style markdown with parity readiness checks and metadata.
+- Thread action result reports `Copied parity diagnostics checklist`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Copy parity diagnostics minimal JSON
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+
+### Steps
+1. Click `Refresh parity`.
+2. Click `Copy parity diagnostics minimal JSON`.
+3. Paste clipboard content into a text editor.
+
+### Expected Results
+- Clipboard contains compact one-line JSON with snapshot/fingerprint/coverage and warning count.
+- Thread action result reports `Copied parity diagnostics minimal JSON`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Copy parity diagnostics query string
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+
+### Steps
+1. Click `Refresh parity`.
+2. Click `Copy parity diagnostics query string`.
+3. Paste clipboard content into a text field.
+
+### Expected Results
+- Clipboard contains URL query-string style key/value output (`snapshot=...&coverage=...`).
+- Includes refresh, coverage/completion, warning, and surface count fields.
+- Thread action result reports `Copied parity diagnostics query string`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Copy parity diagnostics table row
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+
+### Steps
+1. Click `Refresh parity`.
+2. Click `Copy parity diagnostics table row`.
+3. Paste clipboard content into a markdown table or spreadsheet row.
+
+### Expected Results
+- Clipboard contains single pipe-delimited row with snapshot, refresh, coverage/completion, warnings/fingerprint, and count columns.
+- Thread action result reports `Copied parity diagnostics table row`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Copy parity diagnostics markdown table
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+
+### Steps
+1. Click `Refresh parity`.
+2. Click `Copy parity diagnostics markdown table`.
+3. Paste clipboard content into a markdown editor.
+
+### Expected Results
+- Clipboard contains markdown table with header, divider, and one diagnostics row.
+- Row includes snapshot, refresh, coverage/completion, warning metrics, and core count columns.
+- Thread action result reports `Copied parity diagnostics markdown table`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Copy parity diagnostics badge
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+
+### Steps
+1. Click `Refresh parity`.
+2. Click `Copy parity diagnostics badge`.
+3. Paste clipboard content into a text field.
+
+### Expected Results
+- Clipboard contains a compact badge-like status line with snapshot, coverage, and warnings fingerprint.
+- Thread action result reports `Copied parity diagnostics badge`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Copy parity diagnostics CLI args
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+
+### Steps
+1. Click `Refresh parity`.
+2. Click `Copy parity diagnostics CLI args`.
+3. Paste clipboard content into a terminal or text editor.
+
+### Expected Results
+- Clipboard contains space-separated `--parity-...=...` argument tokens.
+- Includes snapshot, coverage/completion, warning metrics, and core counts.
+- Thread action result reports `Copied parity diagnostics CLI args`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Copy parity diagnostics shell export block
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+
+### Steps
+1. Click `Refresh parity`.
+2. Click `Copy parity diagnostics shell export`.
+3. Paste clipboard content into a shell script or terminal.
+
+### Expected Results
+- Clipboard contains multiline `export PARITY_...="..."` statements.
+- Includes snapshot, coverage/completion, warnings/fingerprint, and core counts.
+- Thread action result reports `Copied parity diagnostics shell export`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Copy parity diagnostics .properties block
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+
+### Steps
+1. Click `Refresh parity`.
+2. Click `Copy parity diagnostics .properties`.
+3. Paste clipboard content into a text editor.
+
+### Expected Results
+- Clipboard contains newline-separated `key=value` lines using `parity.*` keys.
+- Includes snapshot, coverage/completion, warnings/fingerprint, and surface counts.
+- Thread action result reports `Copied parity diagnostics .properties`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Copy parity diagnostics markdown bullets
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+
+### Steps
+1. Click `Refresh parity`.
+2. Click `Copy parity diagnostics markdown bullets`.
+3. Paste clipboard content into markdown-capable text area.
+
+### Expected Results
+- Clipboard contains concise bullet list with snapshot, refresh, coverage/completion, warnings, and surface counts.
+- Thread action result reports `Copied parity diagnostics markdown bullets`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Copy parity diagnostics CSV block
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+
+### Steps
+1. Click `Refresh parity`.
+2. Click `Copy parity diagnostics CSV block`.
+3. Paste clipboard content into a spreadsheet or CSV viewer.
+
+### Expected Results
+- Clipboard contains CSV with one header line and one value row.
+- Includes snapshot, refresh, coverage/completion, warning metrics, and surface counts.
+- Thread action result reports `Copied parity diagnostics CSV block`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Copy parity diagnostics key-value block
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+
+### Steps
+1. Click `Refresh parity`.
+2. Click `Copy parity diagnostics key-value block`.
+3. Paste clipboard content into a plain text editor.
+
+### Expected Results
+- Clipboard contains sorted `parity.*=...` lines.
+- Includes snapshot, refresh, coverage/completion, warnings, and core counts.
+- Thread action result reports `Copied parity diagnostics key-value block`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Copy parity diagnostics JSON array item
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+
+### Steps
+1. Click `Refresh parity`.
+2. Click `Copy parity diagnostics JSON array item`.
+3. Paste clipboard content into a JSON array context.
+
+### Expected Results
+- Clipboard contains one JSON object followed by a trailing comma.
+- Includes snapshot, coverage/completion, warning metrics, and core counts.
+- Thread action result reports `Copied parity diagnostics JSON array item`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Copy parity diagnostics status sentence
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+
+### Steps
+1. Click `Refresh parity`.
+2. Click `Copy parity diagnostics status sentence`.
+3. Paste clipboard content into a text field.
+
+### Expected Results
+- Clipboard contains one human-readable status sentence summarizing snapshot, refresh, completion/coverage, warnings/fingerprint, and surface counts.
+- Thread action result reports `Copied parity diagnostics status sentence`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Copy parity refresh latency line
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Click `Refresh parity` at least once.
+
+### Steps
+1. Click `Copy parity refresh latency line`.
+2. Paste clipboard content into a text field.
+
+### Expected Results
+- Clipboard contains `parity_refresh_latency_ms=... parity_refresh_latency_s=...`.
+- Thread action result reports `Copied parity refresh latency line`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Copy parity warning list inline
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Ensure warnings are present.
+
+### Steps
+1. Click `Copy parity warning list inline`.
+2. Paste clipboard content into a text field.
+
+### Expected Results
+- Clipboard contains warnings joined on one line separated by ` ; `.
+- Thread action result reports `Copied parity warning list inline`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Copy parity warning count line
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+
+### Steps
+1. Click `Copy parity warning count line`.
+2. Paste clipboard content into a text field.
+
+### Expected Results
+- Clipboard contains `parity_warning_count=... parity_warnings_fingerprint=...`.
+- Thread action result reports `Copied parity warning count line`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Copy parity completion line
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+
+### Steps
+1. Click `Refresh parity`.
+2. Click `Copy parity completion line`.
+3. Paste clipboard content into a text field.
+
+### Expected Results
+- Clipboard contains one line with completion state, coverage summary, and snapshot id.
+- Thread action result reports `Copied parity completion line`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Copy parity surface counts line
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+
+### Steps
+1. Click `Refresh parity`.
+2. Click `Copy parity surface counts line`.
+3. Paste clipboard content into a text field.
+
+### Expected Results
+- Clipboard contains one line with apps/experimental/mcp/pending/warnings counts.
+- Thread action result reports `Copied parity surface counts line`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Copy parity pending summary line
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+
+### Steps
+1. Click `Refresh parity`.
+2. Click `Copy parity pending summary line`.
+3. Paste clipboard content into a text field.
+
+### Expected Results
+- Clipboard contains pending count and pending summary text in one line.
+- Thread action result reports `Copied parity pending summary line`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Copy parity protocol summary line
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+
+### Steps
+1. Click `Refresh parity`.
+2. Click `Copy parity protocol summary line`.
+3. Paste clipboard content into a text field.
+
+### Expected Results
+- Clipboard contains one line with protocol methods and notifications counts.
+- Thread action result reports `Copied parity protocol summary line`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Copy parity snapshot/fingerprint tuple
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+
+### Steps
+1. Click `Refresh parity`.
+2. Click `Copy parity snapshot/fingerprint tuple`.
+3. Paste clipboard content into a text field.
+
+### Expected Results
+- Clipboard contains `<snapshot>|<warningsFingerprint>`.
+- Thread action result reports `Copied parity snapshot/fingerprint tuple`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Copy parity digest line
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+
+### Steps
+1. Click `Refresh parity`.
+2. Click `Copy parity digest line`.
+3. Paste clipboard content into a text field.
+
+### Expected Results
+- Clipboard contains compact digest line with snapshot, completion/coverage, warning count, and warnings fingerprint.
+- Thread action result reports `Copied parity digest line`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Copy parity health score line
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+
+### Steps
+1. Click `Refresh parity`.
+2. Click `Copy parity health score line`.
+3. Paste clipboard content into a text field.
+
+### Expected Results
+- Clipboard contains `parity_health_score=... completion=... warnings=...`.
+- Thread action result reports `Copied parity health score line`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Copy parity refresh stamp
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Click `Refresh parity`.
+
+### Steps
+1. Click `Copy parity refresh stamp`.
+2. Paste clipboard content into a text field.
+
+### Expected Results
+- Clipboard contains `parity_stamp snapshot=... refresh="..."`.
+- Thread action result reports `Copied parity refresh stamp`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Copy parity timestamp line
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+
+### Steps
+1. Click `Copy parity timestamp line`.
+2. Paste clipboard content into a text field.
+
+### Expected Results
+- Clipboard contains `parity_timestamp=<iso> parity_refresh="..."`.
+- Thread action result reports `Copied parity timestamp line`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Copy parity refresh epoch line
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+
+### Steps
+1. Click `Refresh parity`.
+2. Click `Copy parity refresh epoch line`.
+3. Paste clipboard content into a text field.
+
+### Expected Results
+- Clipboard contains `parity_refresh_epoch_ms=... parity_refresh_iso="..."`.
+- Thread action result reports `Copied parity refresh epoch line`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Copy parity warning IDs line
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Ensure warnings are present.
+
+### Steps
+1. Click `Copy parity warning IDs line`.
+2. Paste clipboard content into a text field.
+
+### Expected Results
+- Clipboard contains `parity_warning_ids=W1,W2,...`.
+- Thread action result reports `Copied parity warning IDs line`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Copy parity warning map JSON
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Ensure warnings are present.
+
+### Steps
+1. Click `Copy parity warning map JSON`.
+2. Paste clipboard content into a JSON-aware editor.
+
+### Expected Results
+- Clipboard contains JSON object mapping warning IDs (`W1`, `W2`, ...) to warning messages.
+- Thread action result reports `Copied parity warning map JSON`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Copy parity warning map inline
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Ensure warnings are present.
+
+### Steps
+1. Click `Copy parity warning map inline`.
+2. Paste clipboard content into a text field.
+
+### Expected Results
+- Clipboard contains compact warning map format like `W1:...; W2:...`.
+- Thread action result reports `Copied parity warning map inline`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Apply parity category settings to config
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Parity category sections are visible for `Personalization parity`, `Usage parity`, `Data controls parity`, and `Local environments parity`.
+
+### Steps
+1. In `Personalization parity`, set values and click `Apply personalization`.
+2. In `Usage parity`, set values and click `Apply usage`.
+3. In `Data controls parity`, set values and click `Apply data controls`.
+4. In `Local environments parity`, set values and click `Apply local env`.
+
+### Expected Results
+- Each click shows a success thread action result indicating applied parity settings via `config/batchWrite`.
+- No parity error is shown.
+- `Config read summary` updates after apply actions.
+
+### Rollback/Cleanup
+- Optionally reset each section with its existing `Reset ...` button.
+
+## Feature: Apply extended parity category settings to config
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Parity category sections are visible for `Appearance`, `Computer-use`, `General settings`, `Plugins settings`, `Connections`, `Environments`, `Worktrees`, and `Git settings`.
+
+### Steps
+1. In each listed section, set non-default values.
+2. Click each corresponding apply button: `Apply appearance`, `Apply computer-use`, `Apply general settings`, `Apply plugins`, `Apply connections`, `Apply environments`, `Apply worktrees`, `Apply git settings`.
+
+### Expected Results
+- Each action reports applied parity settings via `config/batchWrite`.
+- No parity error is shown.
+- Config summary refreshes after each apply.
+
+### Rollback/Cleanup
+- Use each section's existing `Reset ...` button to restore defaults.
+
+## Feature: Main settings menu-bar toggle writes config
+
+### Prerequisites
+- Run on macOS so `Show in menu bar` is visible in Settings.
+
+### Steps
+1. Open `Settings` and click `Show in menu bar`.
+2. Toggle it once to `on` and once to `off`.
+
+### Expected Results
+- Toggle state changes immediately in UI.
+- `parityGeneralMenuBarDraft` state stays aligned (`enabled`/`disabled`).
+- Config write result reports menu bar setting update via `config/value/write`.
+
+### Rollback/Cleanup
+- Leave toggle in preferred final state.
+
+## Feature: Apply all parity settings in one batch
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Set non-default values in at least two parity category sections.
+
+### Steps
+1. Click `Apply all parity settings`.
+2. Wait for completion.
+
+### Expected Results
+- Action result reports `Applied all parity settings`.
+- Config write result reports apply-all via `config/batchWrite`.
+- No parity error is shown.
+
+### Rollback/Cleanup
+- Use `Reset all parity drafts` and/or per-section reset buttons as needed.
+
+## Feature: Parity drafts hydrate from config on refresh
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Apply at least one non-default parity setting (for example appearance theme or usage auto top-up).
+
+### Steps
+1. Click `Refresh parity`.
+2. Observe parity draft controls across categories.
+
+### Expected Results
+- Draft controls reflect persisted config values loaded from `config/read`.
+- No parity error appears during refresh.
+
+### Rollback/Cleanup
+- Reset changed settings using section reset buttons or `Apply all parity settings` with preferred values.
+
+## Feature: Menu-bar toggle stays in sync with hydrated config
+
+### Prerequisites
+- Run on macOS.
+- Ensure `general_settings.menu_bar` has a persisted value (`enabled` or `disabled`).
+
+### Steps
+1. Open `Settings` -> `App parity`.
+2. Click `Refresh parity`.
+3. Observe both `Show in menu bar` (main setting row) and `General settings parity` menu bar draft.
+
+### Expected Results
+- Main `Show in menu bar` toggle matches hydrated config state.
+- `parityGeneralMenuBarDraft` matches the same state.
+- Local preference key remains aligned with hydrated value.
+
+### Rollback/Cleanup
+- Toggle `Show in menu bar` to preferred state.
+
+## Feature: Parity refresh uses single config read bundle
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+
+### Steps
+1. Click `Refresh parity`.
+2. Confirm parity config summary and parity draft controls update together.
+
+### Expected Results
+- Config summary and parity drafts both refresh successfully in one parity refresh pass.
+- No parity error is shown.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Apply general/all parity keeps top-level menu-bar toggle in sync
+
+### Prerequisites
+- Run on macOS and open `Settings` -> `App parity`.
+
+### Steps
+1. In `General settings parity`, change menu bar value and click `Apply general settings`.
+2. Change it again and click `Apply all parity settings`.
+3. Observe top-level `Show in menu bar` row.
+
+### Expected Results
+- Top-level toggle immediately matches applied `general_settings.menu_bar` value in both apply paths.
+- Local preference key is updated consistently.
+
+### Rollback/Cleanup
+- Set menu bar to preferred final value.
+
+## Feature: Reset all parity drafts syncs top-level menu-bar toggle
+
+### Prerequisites
+- Run on macOS and open `Settings` -> `App parity`.
+
+### Steps
+1. Set `General settings parity` menu bar draft to `disabled` and apply it.
+2. Click `Reset all parity drafts`.
+3. Observe top-level `Show in menu bar` row.
+
+### Expected Results
+- Top-level toggle immediately reflects reset general draft default (`enabled`).
+- Local preference key is updated to match.
+
+### Rollback/Cleanup
+- Set menu bar to preferred final state.
+
+## Feature: Reset general parity section syncs top-level menu-bar toggle
+
+### Prerequisites
+- Run on macOS and open `Settings` -> `App parity`.
+
+### Steps
+1. Set `General settings parity` menu bar to `disabled`.
+2. Click `Reset general settings`.
+3. Observe top-level `Show in menu bar` row.
+
+### Expected Results
+- `General settings parity` menu bar resets to `enabled`.
+- Top-level `Show in menu bar` toggle also resets to enabled immediately.
+- Local preference key is updated accordingly.
+
+### Rollback/Cleanup
+- Set menu bar to preferred final state.
+
+## Feature: Appearance parity stays synced with top-level Appearance setting
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+
+### Steps
+1. In `Appearance parity`, set theme to `dark` and click `Apply appearance`.
+2. Verify main `Appearance` row shows `Dark`.
+3. Click `Reset appearance` in parity section.
+4. Verify main `Appearance` row returns to `System`.
+5. Click `Apply all parity settings` with theme set to `light` and verify main row becomes `Light`.
+
+### Expected Results
+- Top-level appearance state and theme class update immediately after parity apply/reset/hydration paths.
+- Local appearance preference key stays aligned.
+
+### Rollback/Cleanup
+- Set appearance to preferred final mode.
+
+## Feature: Top-level Appearance toggle writes config and syncs parity draft
+
+### Prerequisites
+- Open `Settings`.
+
+### Steps
+1. Click top-level `Appearance` toggle to cycle through `System`, `Light`, `Dark`.
+2. Open `App parity` and inspect `Appearance parity` theme draft.
+
+### Expected Results
+- UI appearance updates immediately each cycle.
+- `Appearance parity` theme draft matches top-level selection.
+- Config write result reports appearance update via `config/value/write`.
+
+### Rollback/Cleanup
+- Leave appearance in preferred final mode.
+
+## Feature: Top-level appearance/menu-bar writes report parity action results
+
+### Prerequisites
+- Open `Settings`.
+
+### Steps
+1. Toggle top-level `Appearance` once.
+2. Toggle `Show in menu bar` once (macOS).
+
+### Expected Results
+- Config write results are shown for both updates.
+- Parity thread action result updates to `Updated appearance theme` and `Updated menu bar setting` respectively.
+
+### Rollback/Cleanup
+- Restore preferred appearance and menu-bar states.
+
+## Feature: Top-level Notifications toggle writes config and syncs parity general draft
+
+### Prerequisites
+- Open `Settings`.
+
+### Steps
+1. Toggle top-level `Notifications` once.
+2. Open `App parity` and check `General settings parity` notifications value.
+
+### Expected Results
+- Notifications toggle state changes immediately.
+- `general_settings.notifications` is written via `config/value/write`.
+- `General settings parity` notifications draft matches the top-level toggle.
+- Parity thread action result reports notifications update.
+
+### Rollback/Cleanup
+- Restore notifications to preferred final state.
+
+## Feature: Top-level settings writes clear stale parity error state on success
+
+### Prerequisites
+- Open `Settings`.
+- Ensure a visible parity error exists (for example from a previous failed parity write).
+
+### Steps
+1. Toggle top-level `Appearance` once.
+2. Toggle top-level `Notifications` once.
+3. Toggle top-level `Show in menu bar` once (macOS).
+
+### Expected Results
+- Each successful write clears stale parity error text.
+- Parity config/action result messages update for each setting.
+
+### Rollback/Cleanup
+- Restore preferred final settings values.
+
+## Feature: Top-level setting toggles rollback on config write failure
+
+### Prerequisites
+- Open `Settings`.
+- Have a way to force config write failure (for example temporary permission/API failure).
+
+### Steps
+1. Toggle `Appearance`, `Notifications`, or `Show in menu bar` while writes are failing.
+
+### Expected Results
+- UI toggles revert to prior state after failed write.
+- Matching local preference keys revert as well.
+- Parity error displays the failure reason.
+
+### Rollback/Cleanup
+- Restore normal config write behavior.
+
+## Feature: Top-level config-writing toggles are race-guarded
+
+### Prerequisites
+- Open `Settings`.
+
+### Steps
+1. Rapidly click `Appearance`, `Notifications`, or `Show in menu bar` multiple times while write is in flight.
+
+### Expected Results
+- Only one write operation runs at a time.
+- Toggles are temporarily disabled during write.
+- Final state remains consistent with last successful write and no race-induced drift occurs.
+
+### Rollback/Cleanup
+- Set preferred final states.
+
+## Feature: Top-level toggle failures clear stale success status
+
+### Prerequisites
+- Open `Settings`.
+- Have a way to induce config write failure.
+
+### Steps
+1. Perform a successful top-level write (appearance/notifications/menu-bar) to set success status.
+2. Induce failure and toggle again.
+
+### Expected Results
+- On failure, stale success messages are cleared.
+- Error message is the only active status signal.
+
+### Rollback/Cleanup
+- Restore normal write behavior and preferred settings.
+
+## Feature: Top-level setting writes clear stale status at action start
+
+### Prerequisites
+- Open `Settings`.
+- Ensure parity status area currently shows previous success or error text.
+
+### Steps
+1. Trigger top-level `Appearance`, `Notifications`, or `Show in menu bar` write.
+
+### Expected Results
+- Previous status text is cleared immediately when the new write starts.
+- Final status reflects only the current write result.
+
+### Rollback/Cleanup
+- Restore preferred final settings values.
+
+## Feature: Top-level setting rows show in-progress status during writes
+
+### Prerequisites
+- Open `Settings`.
+
+### Steps
+1. Trigger a top-level write (`Appearance`, `Notifications`, or `Show in menu bar`).
+2. Observe row value while write is in flight.
+
+### Expected Results
+- Row value temporarily shows `Updating…` during in-flight write.
+- Control remains disabled until write finishes.
+- Final state/value appears after completion.
+
+### Rollback/Cleanup
+- Restore preferred final settings values.
+
+## Feature: Only active top-level setting row shows Updating state
+
+### Prerequisites
+- Open `Settings`.
+
+### Steps
+1. Trigger one top-level write (for example `Notifications`).
+2. Observe all three top-level rows during write.
+
+### Expected Results
+- Only the active row shows `Updating…`.
+- Non-active rows keep normal value labels (`System/Light/Dark`, `On/Off`).
+
+### Rollback/Cleanup
+- Restore preferred final states.
+
+## Feature: Top-level settings continuously mirror to parity drafts via watchers
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+
+### Steps
+1. Change top-level `Appearance`.
+2. Change top-level `Notifications`.
+3. Change top-level `Show in menu bar` (macOS).
+4. Observe corresponding parity drafts without requiring manual refresh.
+
+### Expected Results
+- `Appearance` mirrors to `parityAppearanceThemeDraft`.
+- `Notifications` mirrors to `parityGeneralNotificationsDraft`.
+- `Show in menu bar` mirrors to `parityGeneralMenuBarDraft`.
+
+### Rollback/Cleanup
+- Restore preferred final settings values.
+
+## Feature: Top-level handlers rely on watcher-based parity sync (no duplicate manual assignment)
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+
+### Steps
+1. Toggle top-level `Appearance`, `Notifications`, and `Show in menu bar`.
+2. Observe corresponding parity draft values.
+
+### Expected Results
+- Parity draft values still update correctly via watchers.
+- Behavior remains unchanged from user perspective.
+
+### Rollback/Cleanup
+- Restore preferred final setting values.
+
+## Feature: Watcher sync does not clobber parity drafts during apply actions
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+
+### Steps
+1. Start an apply action for parity settings (`Apply general settings` or `Apply all parity settings`).
+2. Observe draft fields during in-flight apply.
+
+### Expected Results
+- Watcher-based top-level mirroring does not overwrite parity drafts mid-apply.
+- Draft and applied values remain consistent after completion.
+
+### Rollback/Cleanup
+- Restore preferred final setting values.
+
+## Feature: Parity refresh hydration does not override in-flight top-level setting writes
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+
+### Steps
+1. Trigger a top-level write (`Appearance`, `Notifications`, or `Show in menu bar`).
+2. While write is in flight, trigger `Refresh parity`.
+
+### Expected Results
+- In-flight top-level state is not overwritten by hydration during the write.
+- Final values remain consistent with the completed write outcome.
+
+### Rollback/Cleanup
+- Restore preferred final setting values.
+
+## Feature: Top-level setting write lifecycle is centralized
+
+### Prerequisites
+- Open `Settings`.
+
+### Steps
+1. Trigger each top-level config-writing action (`Appearance`, `Notifications`, `Show in menu bar`).
+
+### Expected Results
+- Behavior is unchanged: lock, status clear, per-row in-flight label, and unlock all work correctly.
+- No regressions from lifecycle deduplication.
+
+### Rollback/Cleanup
+- Restore preferred final setting values.
+
+## Feature: Top-level writes do not rollback on post-write config-summary refresh failure
+
+### Prerequisites
+- Open `Settings`.
+- Have a way to make `config/read` fail while `config/value/write` still succeeds.
+
+### Steps
+1. Trigger top-level `Appearance`, `Notifications`, or `Show in menu bar` update.
+2. Force/read observe `config/read` refresh failure after write.
+
+### Expected Results
+- UI state remains at the newly written value (no false rollback).
+- Success status for the write remains visible.
+- Config summary refresh failure does not override successful write outcome.
+
+### Rollback/Cleanup
+- Restore normal read behavior and preferred setting values.
+
+## Feature: Successful top-level writes report non-blocking summary refresh failures
+
+### Prerequisites
+- Open `Settings`.
+- Have a way to make `config/read` fail after `config/value/write` success.
+
+### Steps
+1. Trigger top-level `Appearance`, `Notifications`, or `Show in menu bar` write.
+2. Observe status text when summary refresh fails.
+
+### Expected Results
+- Write remains treated as successful (no rollback).
+- Config write status includes `(summary refresh failed: ...)` detail.
+- Action result still indicates the setting was updated.
+
+### Rollback/Cleanup
+- Restore normal `config/read` behavior and preferred setting values.
+
+## Feature: Opening Settings triggers parity/account refresh sync
+
+### Prerequisites
+- Keep app running long enough for settings/account/parity data to potentially drift.
+
+### Steps
+1. Close settings panel.
+2. Re-open settings panel.
+
+### Expected Results
+- On open, account state refresh runs.
+- Parity surface refresh runs without requiring manual `Refresh parity` click.
+- Top-level/parity controls reflect latest persisted/backend state.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Parity refresh ignores stale overlapping requests
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+
+### Steps
+1. Trigger multiple parity refreshes quickly (open-settings auto-refresh plus manual `Refresh parity`).
+2. Observe final parity data/state.
+
+### Expected Results
+- Older/stale refresh responses do not overwrite newer refresh state.
+- Final UI reflects latest refresh request only.
+- Loading/error state resolves from latest request path.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Top-level settings hydrate from config on app startup
+
+### Prerequisites
+- Persist non-default values for appearance/notifications/menu-bar in config.
+
+### Steps
+1. Restart the app.
+2. Open settings panel.
+
+### Expected Results
+- Top-level `Appearance`, `Notifications`, and `Show in menu bar` reflect persisted config immediately.
+- No need to open App parity or click `Refresh parity` first.
+
+### Rollback/Cleanup
+- Restore preferred final settings values.
+
+## Feature: Top-level settings re-sync on app-list revision and settings open
+
+### Prerequisites
+- App running with potential external config changes.
+
+### Steps
+1. Trigger an app-list revision event while settings panel is closed.
+2. Open settings panel.
+
+### Expected Results
+- Top-level settings are re-synced from persisted config on revision events even when settings panel is closed.
+- Opening settings also refreshes top-level settings before parity/account refresh completes.
+
+### Rollback/Cleanup
+- Restore preferred final settings values.
+
+## Feature: Settings sync avoids redundant config bundle reads on mount/open paths
+
+### Prerequisites
+- Start app with Settings initially closed.
+
+### Steps
+1. Let initial mount complete.
+2. Open settings panel.
+3. Trigger app-list revision while settings open, then while settings closed.
+
+### Expected Results
+- Mount/open paths avoid duplicate top-level+parity bundle fetch overlap.
+- Behavior remains unchanged: top-level settings still sync, parity still refreshes when needed.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Top-level settings sync ignores stale overlapping hydration responses
+
+### Prerequisites
+- Trigger multiple top-level config sync calls in quick succession (for example rapid open/close settings plus revision events).
+
+### Steps
+1. Cause overlapping `loadTopLevelSettingsFromConfig` triggers.
+2. Observe final top-level setting values.
+
+### Expected Results
+- Older responses do not overwrite newer sync state.
+- Final top-level appearance/notifications/menu-bar reflect the latest sync call.
+
+### Rollback/Cleanup
+- Restore preferred final settings values.
+
+## Feature: Top-level write summary refresh uses shared post-write helper
+
+### Prerequisites
+- Open `Settings`.
+
+### Steps
+1. Execute top-level writes for `Appearance`, `Notifications`, and `Show in menu bar`.
+
+### Expected Results
+- Each path still updates config summary status consistently.
+- If summary refresh fails, each path reports identical `(summary refresh failed: ...)` suffix behavior.
+
+### Rollback/Cleanup
+- Restore preferred final settings values.
+
+## Feature: Boolean top-level preference writes use shared helper
+
+### Prerequisites
+- Open `Settings`.
+
+### Steps
+1. Toggle `Notifications` and `Show in menu bar` (macOS) via top-level controls.
+2. Use reset/apply flows in `General settings parity`.
+
+### Expected Results
+- Boolean preference persistence behavior is unchanged.
+- Menu-bar/notifications state remains consistent across top-level and parity flows.
+
+### Rollback/Cleanup
+- Restore preferred final setting values.
+
+## Feature: Boolean pref writes route through helper without redundant window guards
+
+### Prerequisites
+- Open `Settings`.
+
+### Steps
+1. Exercise menu-bar and notifications changes via top-level + parity general flows.
+
+### Expected Results
+- Behavior remains identical.
+- Boolean preference persistence still works in all touched paths.
+
+### Rollback/Cleanup
+- Restore preferred setting values.
+
+## Feature: Dark/menu-bar/notifications pref persistence uses helper paths
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+
+### Steps
+1. Trigger top-level and parity flows that update appearance, notifications, and menu-bar states.
+
+### Expected Results
+- Preference persistence behavior is unchanged.
+- No regressions in cross-sync behavior after helper consolidation.
+
+### Rollback/Cleanup
+- Restore preferred final settings values.
+
+## Feature: General top-level settings hydration uses shared helper
+
+### Prerequisites
+- Have persisted notifications/menu-bar values in config.
+
+### Steps
+1. Trigger startup top-level sync and parity refresh sync paths.
+2. Observe notifications/menu-bar top-level and parity draft states.
+
+### Expected Results
+- Both paths produce consistent hydration behavior.
+- Top-level/pairty states remain aligned with write-lock respect where applicable.
+
+### Rollback/Cleanup
+- Restore preferred final settings values.
+
+## Feature: Appearance top-level hydration uses shared helper
+
+### Prerequisites
+- Persist non-default appearance theme in config.
+
+### Steps
+1. Trigger startup top-level sync and parity refresh sync paths.
+2. Observe top-level appearance and parity appearance draft.
+
+### Expected Results
+- Both paths hydrate appearance consistently.
+- Write-lock respect is preserved during parity refresh.
+
+### Rollback/Cleanup
+- Restore preferred final appearance mode.
+
+## Feature: General draft-to-top-level sync uses shared helper
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+
+### Steps
+1. Run `Reset general settings`, `Apply general settings`, `Reset all parity drafts`, and `Apply all parity settings`.
+2. Observe top-level notifications/menu-bar values after each action.
+
+### Expected Results
+- Top-level notifications/menu-bar remain consistent with parity general drafts across all actions.
+- Behavior remains unchanged after helper consolidation.
+
+### Rollback/Cleanup
+- Restore preferred final setting values.
+
+## Feature: Draft-to-top-level appearance sync uses shared helper
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+
+### Steps
+1. Run appearance-related parity flows: `Reset appearance`, `Apply appearance`, and `Apply all parity settings`.
+
+### Expected Results
+- Top-level appearance remains synchronized with parity appearance draft in all three flows.
+- Behavior remains unchanged after helper consolidation.
+
+### Rollback/Cleanup
+- Restore preferred final appearance mode.
+
+## Feature: App parity config write includes sandbox network access
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Codex app-server supports `config/batchWrite` and `config/read`.
+
+### Steps
+1. In `Config write`, select `sandbox: workspace-write`.
+2. Change the new `network` dropdown to `enabled`.
+3. Click `Save`.
+4. Check the `Config read` block and copy summary.
+5. Repeat with `network: disabled`.
+
+### Expected Results
+- Save writes `sandbox_workspace_write.network_access` with the selected boolean value.
+- Status text includes `network_access=enabled` or `network_access=disabled`.
+- `Config read` displays `sandbox network: enabled` or `sandbox network: disabled`.
+- Approval policy, sandbox mode, and web search writes continue to work.
+
+### Rollback/Cleanup
+- Restore the preferred sandbox/network setting after testing.
+
+## Feature: Copy parity warning count JSON
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+
+### Steps
+1. Click `Refresh parity`.
+2. Click `Copy parity warning count JSON`.
+3. Paste clipboard content into a JSON-aware editor.
+
+### Expected Results
+- Clipboard contains compact JSON with the current warning count, for example `{"warnings":0}`.
+- Thread action result reports `Copied parity warning count JSON`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Settings route parity path (`#/settings`) opens/closes settings panel
+
+### Prerequisites
+- Run the app and open any route (`#/`, `#/thread/<id>`, or `#/skills`).
+
+### Steps
+1. Click the sidebar `Settings` button.
+2. Confirm URL changes to `#/settings` and settings panel is open.
+3. Press `Escape`.
+4. Repeat from a thread route and click outside the settings panel.
+
+### Expected Results
+- Opening settings navigates to `#/settings`.
+- Closing settings (Escape/outside click/button toggle) returns to the previous route (`#/thread/<id>`, `#/skills`, or `#/`).
+- Settings panel visibility stays in sync with route state.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Top-level notifications/menu-bar toggles write current value (no stale draft)
+
+### Prerequisites
+- Open `Settings` -> `App parity`.
+- Ensure `general_settings.notifications` and `general_settings.menu_bar` are visible via config summary.
+
+### Steps
+1. Toggle `Notifications` from top-level settings.
+2. Immediately click `Refresh parity` and observe `general settings` draft summary.
+3. Toggle `Show in menu bar` from top-level settings.
+4. Immediately click `Refresh parity` and observe `general settings` draft summary.
+
+### Expected Results
+- Config writes persist the newly toggled value in both cases.
+- Parity drafts (`notifications`, `menuBar`) match the top-level toggled state with no inversion/lag.
+- On write failure, UI and draft values roll back together.
+
+### Rollback/Cleanup
+- Restore preferred final notifications/menu-bar states.
+
+## Feature: Keyboard shortcut opens settings (`Cmd/Ctrl + ,`)
+
+### Prerequisites
+- App is focused.
+- Start from any route (`#/`, `#/thread/<id>`, or `#/skills`).
+
+### Steps
+1. Press `Cmd + ,` on macOS (or `Ctrl + ,` on non-macOS).
+2. Observe route and settings panel state.
+
+### Expected Results
+- Settings panel opens.
+- Route changes to `#/settings`.
+- Existing `Cmd/Ctrl + b` sidebar shortcut behavior remains unchanged.
+
+### Rollback/Cleanup
+- Close settings with `Escape` or toggle button.
+
+## Feature: Settings route shows Settings title and page title
+
+### Prerequisites
+- App running with sidebar visible.
+
+### Steps
+1. Open settings (button or `Cmd/Ctrl + ,`).
+2. Observe content header title.
+3. Observe browser tab title.
+
+### Expected Results
+- Content header title is `Settings` while route is `#/settings`.
+- Browser tab title is `Settings • <host>` while settings route is active.
+- Navigating back to thread/home restores normal title behavior.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Settings button active state follows settings route
+
+### Prerequisites
+- Sidebar visible.
+
+### Steps
+1. Open settings so route becomes `#/settings`.
+2. Observe the sidebar `Settings` button style.
+3. Close settings to return to a non-settings route.
+
+### Expected Results
+- `Settings` button shows active state while route is `#/settings`.
+- Active state clears after leaving `#/settings`.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Settings route stays accessible with sidebar collapse changes
+
+### Prerequisites
+- App running with at least one thread.
+
+### Steps
+1. Collapse the sidebar.
+2. Navigate to `#/settings` (or press `Cmd/Ctrl + ,`).
+3. While settings is open, collapse the sidebar again.
+
+### Expected Results
+- Entering `#/settings` auto-expands the sidebar so settings panel is reachable.
+- If sidebar is collapsed while settings is open, settings closes and route returns to prior non-settings route.
+- No stuck `#/settings` state with hidden settings UI.
+
+### Rollback/Cleanup
+- Reopen sidebar/settings as desired.
+
+## Feature: Settings panel receives focus when opened
+
+### Prerequisites
+- App running with sidebar visible.
+
+### Steps
+1. Open settings via button, `Cmd/Ctrl + ,`, or direct `#/settings` navigation.
+2. Press `Tab` and `Shift+Tab`.
+
+### Expected Results
+- Settings panel container is focusable when opened.
+- Keyboard focus starts inside settings context without requiring an extra click.
+- Existing Escape close behavior still works.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Focus returns to Settings button when panel closes
+
+### Prerequisites
+- Sidebar visible and settings can be opened.
+
+### Steps
+1. Open settings.
+2. Close settings using `Escape`.
+3. Reopen settings and close by clicking outside the panel.
+
+### Expected Results
+- After close, keyboard focus returns to the sidebar `Settings` button.
+- Reopening with keyboard works immediately without extra click.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Sidebar Settings navigation entry
+
+### Prerequisites
+- Sidebar expanded.
+
+### Steps
+1. Click `Settings` entry under `Skills Hub` in sidebar.
+2. Observe route and settings panel state.
+3. Navigate away and return.
+
+### Expected Results
+- Clicking sidebar `Settings` opens settings panel and navigates to `#/settings`.
+- Sidebar `Settings` entry shows active state while settings route is active.
+- Existing settings button and shortcut behavior remain unchanged.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Sidebar nav entries expose active page semantics
+
+### Prerequisites
+- Sidebar expanded.
+
+### Steps
+1. Navigate to `#/skills` and inspect `Skills Hub` button.
+2. Navigate to `#/settings` and inspect `Settings` button.
+
+### Expected Results
+- Active entry has `aria-current="page"`.
+- Inactive entry does not set `aria-current`.
+- Visual active-state behavior is unchanged.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Settings trigger announces controlled panel
+
+### Prerequisites
+- Sidebar visible.
+
+### Steps
+1. Open DevTools and inspect the sidebar `Settings` button.
+2. Confirm `aria-controls` value.
+3. Open settings and inspect panel element id.
+
+### Expected Results
+- Settings button exposes `aria-controls="sidebar-settings-panel"`.
+- Open settings panel element has `id="sidebar-settings-panel"`.
+- Existing open/close behavior remains unchanged.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Settings panel exposes dialog semantics
+
+### Prerequisites
+- Sidebar visible.
+
+### Steps
+1. Inspect sidebar `Settings` button in DevTools.
+2. Open settings and inspect panel element.
+
+### Expected Results
+- Settings button exposes `aria-haspopup="dialog"`.
+- Settings panel exposes `role="dialog"`, `aria-modal="false"`, and `aria-label="Settings"`.
+- Existing open/close behavior remains unchanged.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Settings dialog uses labelled title reference
+
+### Prerequisites
+- Sidebar visible.
+
+### Steps
+1. Open settings.
+2. Inspect settings panel element in DevTools.
+3. Inspect title element id `sidebar-settings-panel-title`.
+
+### Expected Results
+- Panel uses `aria-labelledby="sidebar-settings-panel-title"`.
+- Title element exists and contains `Settings`.
+- Dialog remains keyboard-focusable and close behavior is unchanged.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: `Cmd/Ctrl + ,` toggles settings open and close
+
+### Prerequisites
+- Sidebar visible.
+
+### Steps
+1. Press `Cmd/Ctrl + ,` once.
+2. Press `Cmd/Ctrl + ,` again.
+
+### Expected Results
+- First press opens settings and routes to `#/settings`.
+- Second press closes settings and returns to the prior route.
+- Existing `Escape` close behavior still works.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Settings trigger exposes keyboard shortcut metadata
+
+### Prerequisites
+- Sidebar visible.
+
+### Steps
+1. Inspect the sidebar `Settings` button in DevTools.
+
+### Expected Results
+- Button exposes `aria-keyshortcuts="Meta+, Control+,"`.
+- Existing `Cmd/Ctrl + ,` behavior is unchanged.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Sidebar Settings entry does not auto-close itself on mobile
+
+### Prerequisites
+- Mobile viewport/emulation with sidebar visible.
+
+### Steps
+1. Tap sidebar `Settings` entry.
+
+### Expected Results
+- Settings opens and remains open.
+- Sidebar is not immediately collapsed by that click path.
+- Route remains `#/settings` until user closes settings.
+
+### Rollback/Cleanup
+- Close settings manually after verification.
+
+## Feature: Sidebar Settings entry toggles open and close
+
+### Prerequisites
+- Sidebar expanded.
+
+### Steps
+1. Click sidebar `Settings` entry once.
+2. Click sidebar `Settings` entry again.
+
+### Expected Results
+- First click opens settings and navigates to `#/settings`.
+- Second click closes settings and returns to prior route.
+- Behavior matches settings button and `Cmd/Ctrl + ,` toggle flow.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Settings controls expose pressed toggle state
+
+### Prerequisites
+- Sidebar visible.
+
+### Steps
+1. Inspect sidebar `Settings` nav entry and footer `Settings` button in DevTools while closed.
+2. Open settings.
+3. Inspect both controls again.
+
+### Expected Results
+- Both controls set `aria-pressed="false"` when settings is closed.
+- Both controls set `aria-pressed="true"` when settings is open.
+- Existing open/close behavior remains unchanged.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Sidebar Settings entry exposes explicit accessible label
+
+### Prerequisites
+- Sidebar expanded.
+
+### Steps
+1. Inspect sidebar `Settings` entry in DevTools.
+
+### Expected Results
+- Entry exposes `aria-label="Settings (Cmd/Ctrl+,)"`.
+- Existing toggle behavior and active state semantics remain unchanged.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Settings close restores previous focus target
+
+### Prerequisites
+- Sidebar visible.
+
+### Steps
+1. Focus an interactive control outside settings (for example sidebar search input).
+2. Open settings.
+3. Close settings via `Escape`.
+
+### Expected Results
+- Focus returns to the previously focused control when still mounted.
+- If previous control is unavailable, focus falls back to the `Settings` button.
+- Existing route close behavior remains unchanged.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Settings close does not restore focus to hidden panel elements
+
+### Prerequisites
+- Sidebar visible.
+
+### Steps
+1. Open settings.
+2. Focus an interactive control inside settings panel.
+3. Close settings with `Escape`.
+
+### Expected Results
+- Focus does not attempt to remain on a now-hidden settings control.
+- Focus falls back to the `Settings` button (or valid previous non-panel target).
+- No keyboard trap or lost-focus state after close.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Repeated open calls do not overwrite focus-return origin
+
+### Prerequisites
+- Sidebar visible.
+
+### Steps
+1. Focus a non-settings control (for example sidebar search input).
+2. Open settings.
+3. Trigger another open path while still open (for example click route-active `Settings` control pattern in test harness or call open action twice).
+4. Close settings.
+
+### Expected Results
+- Focus returns to the original pre-open control, not to a later in-panel element.
+- Repeated open attempts while already open do not degrade close-focus behavior.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Settings controls expose tooltip shortcut hint
+
+### Prerequisites
+- Sidebar visible.
+
+### Steps
+1. Hover sidebar `Settings` nav entry.
+2. Hover footer `Settings` button.
+
+### Expected Results
+- Both controls expose `title="Settings (Cmd/Ctrl+,)"`.
+- Existing accessibility labels and toggle behavior remain unchanged.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Settings close handler is idempotent
+
+### Prerequisites
+- Sidebar visible.
+
+### Steps
+1. Open settings.
+2. Trigger close once (e.g. `Escape`).
+3. Trigger close path again immediately (e.g. another `Escape` or route-close path).
+
+### Expected Results
+- First close behaves normally (route + focus restoration).
+- Subsequent close calls while already closed do not cause extra focus jumps.
+- No regression in normal open/close behavior.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Settings dialog traps Tab focus while open
+
+### Prerequisites
+- Sidebar visible.
+
+### Steps
+1. Open settings.
+2. Press `Tab` repeatedly until the last focusable control.
+3. Press `Tab` once more.
+4. Press `Shift+Tab` from the first focusable control.
+
+### Expected Results
+- Focus cycles within settings controls and does not escape to background UI.
+- Forward tab from last wraps to first.
+- Reverse tab from first wraps to last.
+- `Escape` still closes settings.
+
+### Rollback/Cleanup
+- Close settings after verification.
+
+## Feature: Route-driven settings close uses same close lifecycle
+
+### Prerequisites
+- Settings open on `#/settings`.
+
+### Steps
+1. With settings open, navigate to a non-settings route (for example select a thread).
+2. Observe focus behavior and settings visibility.
+
+### Expected Results
+- Settings closes through the same lifecycle as manual close.
+- Focus restoration behavior remains consistent.
+- No route ping-pong or duplicate navigation side effects.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Settings open focuses first interactive control
+
+### Prerequisites
+- Sidebar visible.
+
+### Steps
+1. Open settings via button, shortcut, or `#/settings`.
+2. Observe initial keyboard focus target.
+
+### Expected Results
+- Initial focus lands on the first focusable settings control.
+- If no focusable control exists, focus falls back to settings panel container.
+- Tab trap and Escape close behavior remain unchanged.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: `Cmd/Ctrl + Shift + H` navigates to home and closes settings
+
+### Prerequisites
+- Start from `#/thread/<id>` or `#/settings`.
+
+### Steps
+1. Press `Cmd/Ctrl + Shift + H`.
+
+### Expected Results
+- Route navigates to `#/` (`home`).
+- If settings was open, it closes via normal close lifecycle.
+- Existing settings and thread interactions remain unchanged.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Settings toggle behavior is consistent across all entry points
+
+### Prerequisites
+- Sidebar visible.
+
+### Steps
+1. Toggle settings via sidebar `Settings` entry.
+2. Toggle settings via footer `Settings` button.
+3. Toggle settings via `Cmd/Ctrl + ,`.
+
+### Expected Results
+- All three entry points follow identical open/close behavior.
+- Route transitions and focus lifecycle remain consistent regardless of entry point.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Sidebar Settings nav entry exposes full dialog trigger semantics
+
+### Prerequisites
+- Sidebar expanded.
+
+### Steps
+1. Inspect sidebar `Settings` entry in DevTools while closed.
+2. Open settings and inspect the same entry again.
+
+### Expected Results
+- Entry exposes `aria-controls="sidebar-settings-panel"` and `aria-haspopup="dialog"`.
+- Entry exposes `aria-keyshortcuts="Meta+, Control+,"`.
+- `aria-expanded` flips from `false` to `true` when settings opens.
+- Existing toggle behavior remains unchanged.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Direct `#/settings` navigation preserves focus-return origin
+
+### Prerequisites
+- Sidebar visible.
+- Focus a non-settings control (for example sidebar search input).
+
+### Steps
+1. Navigate directly to `#/settings` (address bar/router navigation).
+2. Close settings.
+
+### Expected Results
+- Settings opens normally from route-driven path.
+- Closing settings restores focus to the original pre-navigation control when available.
+- Fallback-to-settings-button behavior still applies when original control is unavailable.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Settings focus-origin capture uses shared helper across open paths
+
+### Prerequisites
+- Sidebar visible.
+
+### Steps
+1. Open settings from trigger button and close.
+2. Open settings via direct route (`#/settings`) and close.
+
+### Expected Results
+- Focus-return behavior is consistent across both open paths.
+- No behavioral regressions after helper refactor.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Settings dialog exposes close shortcut metadata
+
+### Prerequisites
+- Settings open.
+
+### Steps
+1. Inspect settings panel element in DevTools.
+
+### Expected Results
+- Panel exposes `aria-keyshortcuts="Escape"`.
+- Existing Escape close behavior remains unchanged.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Settings dialog exposes descriptive accessibility hint
+
+### Prerequisites
+- Settings open.
+
+### Steps
+1. Inspect settings panel element in DevTools.
+2. Inspect referenced description element.
+
+### Expected Results
+- Panel exposes `aria-describedby="sidebar-settings-panel-description"`.
+- Description element exists and includes close/tab navigation guidance.
+- Existing keyboard behavior remains unchanged.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Home shortcut avoids double-route transition when closing settings
+
+### Prerequisites
+- Open settings on `#/settings`.
+
+### Steps
+1. Press `Cmd/Ctrl + Shift + H`.
+
+### Expected Results
+- Settings closes and app navigates directly to `#/`.
+- No transient route bounce through stored return-route.
+- Focus and close lifecycle remain intact.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Settings Tab trap ignores modified key chords
+
+### Prerequisites
+- Settings open.
+
+### Steps
+1. Press plain `Tab` and `Shift+Tab` in settings.
+2. Press modified Tab combinations (e.g. `Ctrl+Tab`, `Alt+Tab`, or `Cmd+Tab` where available to app context).
+
+### Expected Results
+- Plain Tab/Shift+Tab remain trapped within settings dialog.
+- Modified key chords are not intercepted by the settings Tab trap logic.
+- Escape close behavior remains unchanged.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Global home/sidebar shortcuts ignore editable typing targets
+
+### Prerequisites
+- Focus an editable control (`input`, `textarea`, or contenteditable`) in the app.
+
+### Steps
+1. Press `Cmd/Ctrl + Shift + H` while typing in an editable control.
+2. Press `Cmd/Ctrl + B` while typing in an editable control.
+
+### Expected Results
+- Neither shortcut triggers while typing in editable targets.
+- Outside editable targets, both shortcuts continue to work as before.
+- Settings shortcut (`Cmd/Ctrl + ,`) behavior remains unchanged.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Keyboard editable-target detection uses shared helper
+
+### Prerequisites
+- App running with editable controls available.
+
+### Steps
+1. Repeat global shortcut checks from editable and non-editable targets.
+
+### Expected Results
+- Behavior is unchanged after helper refactor.
+- Editable-target shortcut guards still apply exactly as before.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Global shortcut guards treat `<select>` as editable target
+
+### Prerequisites
+- Focus a `select` control in settings or other UI.
+
+### Steps
+1. While focused on the `select`, press `Cmd/Ctrl + Shift + H`.
+2. While focused on the `select`, press `Cmd/Ctrl + B`.
+
+### Expected Results
+- Neither shortcut triggers while a `select` has focus.
+- Outside editable targets, shortcuts continue to work.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Global shortcut guards detect nested contenteditable targets
+
+### Prerequisites
+- Have a `contenteditable` surface with nested child elements.
+
+### Steps
+1. Place focus/caret inside a nested child element within the contenteditable region.
+2. Press `Cmd/Ctrl + Shift + H` and `Cmd/Ctrl + B`.
+
+### Expected Results
+- Shortcuts are ignored while focus is inside any descendant of a `contenteditable="true"` container.
+- Outside editable targets, shortcuts continue to work.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Editable shortcut guard supports all contenteditable variants
+
+### Prerequisites
+- Have editable regions using values like `contenteditable=""` or `contenteditable="plaintext-only"`.
+
+### Steps
+1. Focus inside those contenteditable regions.
+2. Press `Cmd/Ctrl + Shift + H` and `Cmd/Ctrl + B`.
+
+### Expected Results
+- Global shortcuts are suppressed for all editable contenteditable variants (except explicit `contenteditable="false"`).
+- Shortcut behavior outside editable targets is unchanged.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Global shortcuts are ignored during IME composition
+
+### Prerequisites
+- Use an IME input method (for example CJK composition) in an editable field.
+
+### Steps
+1. Start text composition so key events have `isComposing=true`.
+2. While composing, press shortcut combinations used by app (`Cmd/Ctrl + ,`, `Cmd/Ctrl + B`, `Cmd/Ctrl + Shift + H`).
+
+### Expected Results
+- Shortcuts are ignored while IME composition is active.
+- After composition ends, shortcuts resume normal behavior.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Global shortcuts ignore key-repeat events
+
+### Prerequisites
+- App focused on a non-editable surface.
+
+### Steps
+1. Hold `Cmd/Ctrl + ,` so the key repeats.
+2. Hold `Cmd/Ctrl + B` so the key repeats.
+3. Hold `Cmd/Ctrl + Shift + H` so the key repeats.
+
+### Expected Results
+- Each shortcut executes at most once per keypress sequence.
+- Repeated keydown events (`event.repeat=true`) do not retrigger actions.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Repeat suppression applies to shortcuts without breaking Tab traversal
+
+### Prerequisites
+- Settings open.
+
+### Steps
+1. Hold `Tab` to advance focus repeatedly in settings.
+2. Hold shortcut keys (`Cmd/Ctrl + ,`, `Cmd/Ctrl + B`, `Cmd/Ctrl + Shift + H`).
+
+### Expected Results
+- Repeated `Tab` events continue cycling focus as normal.
+- Shortcut actions are still limited to one execution per keypress hold sequence.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Editable-target detection uses unified closest-selector helper
+
+### Prerequisites
+- Have focusable editable controls (`input`, `textarea`, `select`, and contenteditable region).
+
+### Steps
+1. Focus each editable control type and trigger guarded shortcuts.
+2. Repeat from non-editable UI controls.
+
+### Expected Results
+- Shortcut guard behavior is unchanged after helper simplification.
+- Editable controls suppress guarded shortcuts; non-editable controls do not.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Route watcher avoids refocus when settings is already open
+
+### Prerequisites
+- Settings open with focus on a specific settings control.
+
+### Steps
+1. Trigger a route update that keeps route at `#/settings` (without closing settings).
+2. Observe current focused element.
+
+### Expected Results
+- Focus does not jump back to first settings control while panel is already open.
+- Initial open from non-settings route still applies normal focus behavior.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Closing already-closed settings clears stale focus-origin state
+
+### Prerequisites
+- Trigger code paths that call close while settings may already be closed.
+
+### Steps
+1. Close settings normally.
+2. Trigger close again while already closed.
+3. Reopen and close settings.
+
+### Expected Results
+- No stale focus-origin state leaks across close cycles.
+- Subsequent open/close focus restoration behaves normally.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Settings focus trap includes visible fixed/sticky controls
+
+### Prerequisites
+- Settings panel contains focusable controls that may render with `position: fixed` or `position: sticky` styling (or any layout where `offsetParent` can be null).
+
+### Steps
+1. Open settings.
+2. Use `Tab`/`Shift+Tab` to cycle focus across all visible controls.
+3. Verify controls with fixed/sticky-like layout still participate.
+
+### Expected Results
+- Focus trap includes all visible focusable controls, even when `offsetParent` is null.
+- No visible settings control is skipped due to layout mode.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Route-driven settings close can skip focus restoration
+
+### Prerequisites
+- Open settings on `#/settings`.
+
+### Steps
+1. Trigger navigation to a non-settings route while settings is open (for example select a thread).
+2. Observe focused element after navigation settles.
+
+### Expected Results
+- Settings closes cleanly without forcing focus back to previous settings-origin element.
+- Navigation target keeps expected focus behavior with no jump back to settings trigger.
+- Manual close flows (Escape/toggle) still restore focus normally.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Settings shortcut detection supports key and code matching
+
+### Prerequisites
+- Keyboard layouts where `event.key` mapping can vary.
+
+### Steps
+1. Press the Settings shortcut chord (`Cmd/Ctrl` + physical comma key).
+2. Repeat on alternate keyboard layout if available.
+
+### Expected Results
+- Settings shortcut still works when `event.code` is `Comma`.
+- Existing toggle/open-close behavior remains unchanged.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Home/sidebar shortcuts support key and code matching
+
+### Prerequisites
+- Keyboard layouts where `event.key` may vary from physical key label.
+
+### Steps
+1. Trigger `Cmd/Ctrl + Shift + H` using the physical H key.
+2. Trigger `Cmd/Ctrl + B` using the physical B key.
+3. Repeat on alternate keyboard layout if available.
+
+### Expected Results
+- Home shortcut works via key or `KeyH` code detection.
+- Sidebar toggle shortcut works via key or `KeyB` code detection.
+- Existing shortcut guards (editable/IME/repeat) remain unchanged.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Shortcut modifier checks use shared helpers without behavior change
+
+### Prerequisites
+- App focused on non-editable surface.
+
+### Steps
+1. Verify `Cmd/Ctrl + ,`, `Cmd/Ctrl + B`, `Cmd/Ctrl + Shift + H` still work.
+2. Verify variants with disallowed modifiers (e.g. `Alt` combinations) remain ignored.
+
+### Expected Results
+- Shortcut behavior is unchanged after helper refactor.
+- Modifier gating remains consistent across all guarded shortcuts.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Keyboard modifier branch logic uses explicit helper predicates
+
+### Prerequisites
+- App focused on non-editable surface.
+
+### Steps
+1. Re-run shortcut checks for:
+- `Cmd/Ctrl + ,`
+- `Cmd/Ctrl + B`
+- `Cmd/Ctrl + Shift + H`
+2. Re-run negative checks with disallowed modifier combinations.
+
+### Expected Results
+- Behavior is unchanged after predicate helper extraction.
+- Shortcut gating remains consistent and readable in implementation.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Shortcuts require exactly one primary modifier (Ctrl xor Meta)
+
+### Prerequisites
+- App focused on non-editable surface.
+
+### Steps
+1. Trigger shortcuts with only `Ctrl` (or only `Meta`) pressed.
+2. Trigger same shortcuts with both `Ctrl` and `Meta` pressed together.
+
+### Expected Results
+- Shortcuts work with exactly one primary modifier.
+- Shortcuts are ignored when both primary modifiers are held simultaneously.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Shortcut repeat guard uses shared helper
+
+### Prerequisites
+- App focused on non-editable surface.
+
+### Steps
+1. Hold shortcut keys for settings, sidebar toggle, and home.
+
+### Expected Results
+- Repeat suppression behavior is unchanged after helper extraction.
+- Each shortcut still triggers once per key-hold sequence.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Home shortcut metadata is exposed to assistive tech
+
+### Prerequisites
+- App loaded on any route.
+
+### Steps
+1. Inspect the content area in DevTools for screen-reader-only shortcut metadata.
+
+### Expected Results
+- Hidden metadata node advertises `aria-keyshortcuts="Meta+Shift+H Control+Shift+H"`.
+- Existing home shortcut behavior remains unchanged.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Home shortcut metadata is static (non-live)
+
+### Prerequisites
+- App loaded on any route.
+
+### Steps
+1. Inspect the screen-reader-only shortcut metadata node in DevTools.
+
+### Expected Results
+- Node keeps `aria-keyshortcuts` metadata.
+- Node does not use `aria-live`, avoiding unintended announcement churn.
+- Home shortcut behavior is unchanged.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Shortcut accessibility strings are centralized as shared constants
+
+### Prerequisites
+- App loaded with sidebar and content area visible.
+
+### Steps
+1. Inspect sidebar settings entry and footer settings button accessibility attributes.
+2. Inspect home shortcut metadata node in content area.
+
+### Expected Results
+- Settings controls still expose identical shortcut label/key metadata.
+- Home shortcut metadata remains unchanged.
+- Behavior is unchanged after constant extraction.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Home shortcut hint text is centralized as a shared constant
+
+### Prerequisites
+- App loaded with content area visible.
+
+### Steps
+1. Inspect the screen-reader-only home shortcut metadata node.
+
+### Expected Results
+- Displayed hint text is unchanged.
+- Implementation uses a shared constant for the home shortcut hint string.
+- No behavioral change in shortcut handling.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Settings dialog accessibility description text is centralized
+
+### Prerequisites
+- Open settings panel.
+
+### Steps
+1. Inspect `#sidebar-settings-panel-description` text in DevTools.
+
+### Expected Results
+- Description text remains unchanged for users/assistive tech.
+- Implementation references a shared constant for the dialog accessibility description.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Settings panel accessibility IDs are centralized as shared constants
+
+### Prerequisites
+- Settings panel open.
+
+### Steps
+1. Inspect settings trigger and panel attributes in DevTools.
+2. Confirm `aria-controls`, `id`, `aria-labelledby`, and `aria-describedby` still resolve correctly.
+
+### Expected Results
+- Trigger-to-panel and label/description relationships are unchanged.
+- Implementation uses shared constants for settings panel IDs.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Settings dialog escape shortcut metadata is centralized
+
+### Prerequisites
+- Settings panel open.
+
+### Steps
+1. Inspect settings panel `aria-keyshortcuts` attribute in DevTools.
+
+### Expected Results
+- Attribute value remains `Escape`.
+- Implementation references shared constant for dialog shortcut metadata.
+- Escape close behavior remains unchanged.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Settings dialog title text is centralized
+
+### Prerequisites
+- Settings panel open.
+
+### Steps
+1. Inspect `#sidebar-settings-panel-title` text in DevTools.
+
+### Expected Results
+- Title text remains `Settings` for users/assistive tech.
+- Implementation sources this text from a shared constant.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Visible Settings labels are centralized as shared constant
+
+### Prerequisites
+- Sidebar visible.
+
+### Steps
+1. Inspect sidebar Settings entry text.
+2. Inspect footer Settings button text.
+
+### Expected Results
+- Both controls still render `Settings`.
+- Implementation sources this visible label from one shared constant.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Settings dialog title reuses shared visible label constant
+
+### Prerequisites
+- Settings panel open.
+
+### Steps
+1. Inspect settings dialog title node (`#sidebar-settings-panel-title`) in DevTools.
+2. Compare visible settings labels in sidebar and footer controls.
+
+### Expected Results
+- Dialog title text and visible settings labels remain consistent (`Settings`).
+- Implementation no longer duplicates separate dialog-title constant.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Settings route logic uses shared route-name constants
+
+### Prerequisites
+- Open and close settings from button, sidebar entry, and `Cmd/Ctrl + ,`.
+
+### Steps
+1. Exercise settings open/close flows from thread/home/skills routes.
+2. Exercise home shortcut (`Cmd/Ctrl + Shift + H`) while settings is open.
+
+### Expected Results
+- Behavior is unchanged after route-name constant extraction.
+- Settings return-route behavior and home navigation remain consistent.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Template route checks/actions use shared route constants
+
+### Prerequisites
+- Sidebar expanded with at least one thread selected.
+
+### Steps
+1. Click `Skills Hub` sidebar entry.
+2. Open a thread and verify header branch dropdown visibility.
+
+### Expected Results
+- Skills navigation still opens `#/skills`.
+- Branch dropdown still appears only on thread route.
+- Behavior remains unchanged after template constant usage refactor.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Shortcut key/code literals are centralized as constants
+
+### Prerequisites
+- App focused on non-editable surface.
+
+### Steps
+1. Trigger settings/home/sidebar shortcuts.
+2. Validate behavior on layouts where physical key code matching is relevant.
+
+### Expected Results
+- Shortcut behavior remains unchanged.
+- Implementation uses shared constants for key/code literals.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Settings shortcut ignores editable typing targets
+
+### Prerequisites
+- Focus an editable control (`input`, `textarea`, `select`, or contenteditable).
+
+### Steps
+1. Press `Cmd/Ctrl + ,` while editable control is focused.
+2. Move focus to a non-editable surface and press `Cmd/Ctrl + ,` again.
+
+### Expected Results
+- Settings shortcut is ignored while typing in editable targets.
+- Settings shortcut works normally from non-editable targets.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Settings focus trap includes contenteditable controls
+
+### Prerequisites
+- Settings panel contains or embeds a `contenteditable` control.
+
+### Steps
+1. Open settings.
+2. Use `Tab` / `Shift+Tab` to traverse focusable controls.
+
+### Expected Results
+- Contenteditable controls are included in the focus cycle.
+- Focus remains trapped within settings while open.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Global shortcut guards treat ARIA textbox controls as editable targets
+
+### Prerequisites
+- Have a control with `role="textbox"` that accepts text input.
+
+### Steps
+1. Focus the textbox-role control.
+2. Press guarded shortcuts (`Cmd/Ctrl + ,`, `Cmd/Ctrl + B`, `Cmd/Ctrl + Shift + H`).
+
+### Expected Results
+- Guarded shortcuts are ignored while focus is in textbox-role controls.
+- Shortcut behavior outside editable targets remains unchanged.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Settings focus trap includes ARIA textbox-role controls
+
+### Prerequisites
+- Settings panel includes a focusable control with `role="textbox"`.
+
+### Steps
+1. Open settings.
+2. Use `Tab` / `Shift+Tab` to traverse controls.
+
+### Expected Results
+- Textbox-role controls are included in focus cycle.
+- Focus remains trapped within settings while open.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Settings focusable selector is centralized as shared constant
+
+### Prerequisites
+- Settings panel open with multiple focusable controls.
+
+### Steps
+1. Traverse controls with `Tab`/`Shift+Tab`.
+2. Verify known focusable types still participate (buttons, links, inputs/select/textarea, textbox-role, contenteditable).
+
+### Expected Results
+- Focus trap behavior is unchanged after selector constant extraction.
+- Implementation no longer rebuilds selector inline in function scope.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Combobox-role controls are treated as editable/focus-trap targets
+
+### Prerequisites
+- UI includes a focusable control with `role="combobox"`.
+
+### Steps
+1. Focus the combobox-role control and press guarded shortcuts.
+2. Open settings and traverse focus with `Tab`/`Shift+Tab`.
+
+### Expected Results
+- Guarded global shortcuts are ignored while combobox-role control is focused.
+- Combobox-role control participates in settings focus trap traversal.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Editable-target selector is shared across keyboard guard logic
+
+### Prerequisites
+- App includes editable controls (`input`, `textarea`, `select`, textbox/combobox roles, contenteditable).
+
+### Steps
+1. Focus each editable target type and test guarded shortcuts.
+2. Focus non-editable targets and test the same shortcuts.
+
+### Expected Results
+- Behavior remains unchanged after selector centralization.
+- Editable targets still suppress guarded shortcuts consistently.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Settings focusable selector derives editable subset from shared constant
+
+### Prerequisites
+- Settings panel open with multiple editable/non-editable controls.
+
+### Steps
+1. Traverse focus with `Tab`/`Shift+Tab` across settings controls.
+2. Re-check global shortcut suppression on editable targets.
+
+### Expected Results
+- Focus-trap and editable-shortcut guard behavior remain unchanged.
+- Editable control coverage stays consistent after selector derivation refactor.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Editable content selector fragment is centralized
+
+### Prerequisites
+- App includes contenteditable-based editable controls.
+
+### Steps
+1. Verify guarded shortcuts while focused in contenteditable controls.
+2. Verify settings focus trap still includes contenteditable controls.
+
+### Expected Results
+- Behavior remains unchanged after selector-fragment constant extraction.
+- No drift between editable-target and focusable selectors for contenteditable handling.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Searchbox-role controls are treated as editable/focus-trap targets
+
+### Prerequisites
+- UI includes a focusable control with `role="searchbox"`.
+
+### Steps
+1. Focus the searchbox-role control and press guarded shortcuts.
+2. Open settings and traverse focus with `Tab`/`Shift+Tab`.
+
+### Expected Results
+- Guarded global shortcuts are ignored while searchbox-role control is focused.
+- Searchbox-role control participates in settings focus trap traversal.
+
+### Rollback/Cleanup
+- No cleanup required.
+
+## Feature: Agent ambient suggestions toggle in Settings
+
+### Prerequisites
+- App is running and Settings panel is accessible.
+
+### Steps
+1. Open `Settings`.
+2. Locate `Agent ambient suggestions` row.
+3. Toggle it from On to Off.
+4. Close Settings and reopen it.
+5. Confirm the toggle state persists.
+6. Toggle back to On.
+
+### Expected Results
+- `Agent ambient suggestions` row is visible in Settings.
+- Toggle updates immediately on click.
+- State persists across Settings close/reopen.
+
+### Rollback/Cleanup
+- Return toggle to previous value.
+
+## Feature: Agent speed toggle in Settings
+
+### Prerequisites
+- App is running with Settings panel accessible.
+
+### Steps
+1. Open `Settings`.
+2. Locate `Agent speed` row.
+3. Click once to switch from `Standard` to `Fast` (or vice versa).
+4. Click again to switch back.
+
+### Expected Results
+- `Agent speed` row is visible and shows current mode (`Standard` or `Fast`).
+- Clicking the row triggers mode switch and updates the displayed value.
+- While a speed update is in flight, row shows `Updating…` and is disabled.
+
+### Rollback/Cleanup
+- Restore original speed mode after verification.
+
+## Feature: Agent network access toggle in Settings
+
+### Prerequisites
+- App is running with Settings panel accessible.
+- Active config supports `sandbox_workspace_write.network_access` writes.
+
+### Steps
+1. Open `Settings`.
+2. Locate `Agent network access` row.
+3. Toggle from `On` to `Off` (or vice versa).
+4. Wait for `Updating…` to clear.
+5. Re-open Settings and verify value remains.
+
+### Expected Results
+- Row is visible and shows current state (`On`/`Off`).
+- During write, row shows `Updating…` and is disabled.
+- On success, state persists and config summary refreshes.
+- On failure, value rolls back and an error is shown.
+
+### Rollback/Cleanup
+- Restore previous network-access state.
+
+## Feature: Web search mode cycle in Settings
+
+### Prerequisites
+- App is running with Settings panel accessible.
+- Config supports `web_search` writes.
+
+### Steps
+1. Open `Settings`.
+2. Locate `Web search mode` row.
+3. Click row repeatedly to cycle through values.
+4. Confirm each click shows `Updating…` during write and then a concrete mode.
+5. Re-open Settings and confirm last selected mode persists.
+
+### Expected Results
+- Modes cycle in order: `disabled` -> `cached` -> `live` -> repeat.
+- Failed writes roll back to previous mode and surface an error.
+- Successful writes refresh config summary.
+
+### Rollback/Cleanup
+- Restore original mode after validation.
+
+## Feature: Approval policy cycle in Settings
+
+### Prerequisites
+- App is running with Settings panel accessible.
+- Config writes for `approval_policy` are available.
+
+### Steps
+1. Open `Settings`.
+2. Locate `Approval policy` row.
+3. Click repeatedly to cycle through values.
+4. Verify `Updating…` appears during each write.
+
+### Expected Results
+- Values cycle in order: `untrusted` -> `on-failure` -> `on-request` -> `never` -> repeat.
+- Failed write rolls back to previous value with visible error.
+- Successful write refreshes config summary.
+
+### Rollback/Cleanup
+- Restore original approval policy.
+
+## Feature: Sandbox mode cycle in Settings
+
+### Prerequisites
+- App is running with Settings panel accessible.
+- Config writes for `sandbox_mode` are available.
+
+### Steps
+1. Open `Settings`.
+2. Locate `Sandbox mode` row.
+3. Click repeatedly to cycle modes.
+4. Verify `Updating…` appears during each write.
+
+### Expected Results
+- Values cycle in order: `read-only` -> `workspace-write` -> `danger-full-access` -> repeat.
+- Failed write rolls back to previous mode with visible error.
+- Successful write refreshes config summary.
+
+### Rollback/Cleanup
+- Restore original sandbox mode.
+
+## Feature: Collaboration mode cycle in Settings
+
+### Prerequisites
+- App is running with Settings panel accessible.
+- At least one collaboration mode available (`default` and/or `plan`).
+
+### Steps
+1. Open `Settings`.
+2. Locate `Collaboration mode` row.
+3. Click the row repeatedly.
+
+### Expected Results
+- Row cycles through available collaboration modes in order.
+- Displayed value updates immediately and remains in sync with composer mode controls.
+- If only one mode is available, value remains stable.
+
+### Rollback/Cleanup
+- Return to original collaboration mode.
+
+## Feature: Model cycle in Settings
+
+### Prerequisites
+- App is running with Settings panel accessible.
+- `availableModelIds` contains at least one model.
+
+### Steps
+1. Open `Settings`.
+2. Locate `Model` row.
+3. Click repeatedly to cycle through available models.
+4. Check composer model selection remains in sync.
+
+### Expected Results
+- Displayed model cycles through `availableModelIds` in order.
+- If no model is available, row value stays `(none)` and no change occurs.
+- Selected model updates through existing thread-context model state.
+
+### Rollback/Cleanup
+- Return to original model selection.
+
+## Feature: Reasoning effort cycle in Settings
+
+### Prerequisites
+- App is running with Settings panel accessible.
+
+### Steps
+1. Open `Settings`.
+2. Locate `Reasoning effort` row.
+3. Click repeatedly to cycle values.
+
+### Expected Results
+- Values cycle in order: `(auto)` -> `none` -> `minimal` -> `low` -> `medium` -> `high` -> `xhigh` -> `(auto)`.
+- Composer reasoning-effort state stays in sync with the selected value.
+
+### Rollback/Cleanup
+- Restore original reasoning effort.
+
+## Feature: Provider cycle in Settings
+
+### Prerequisites
+- App is running with Settings panel accessible.
+- Provider switching endpoints are available.
+
+### Steps
+1. Open `Settings`.
+2. Locate `Provider` row.
+3. Click repeatedly to cycle provider values.
+
+### Expected Results
+- Values cycle in order: `codex` -> `openrouter` -> `opencode-zen` -> `custom` -> repeat.
+- While switching, row shows `Updating…`.
+- Existing provider-specific controls remain visible for the selected provider.
+
+### Rollback/Cleanup
+- Restore original provider selection.
+
+## Feature: Dictation language cycle row in Settings
+
+### Prerequisites
+- App is running and Settings is open.
+- Dictation language options are available.
+
+### Steps
+1. Locate `Dictation language` row near top-level settings controls.
+2. Click repeatedly to cycle language value.
+3. Verify the lower dictation-language select reflects the same value.
+
+### Expected Results
+- Row cycles through available `dictationLanguageOptions` values.
+- Value is persisted via existing dictation-language preference logic.
+- Top row and lower select stay synchronized.
+
+### Rollback/Cleanup
+- Restore original dictation language.
+
+## Feature: GitHub trending projects row shows explicit On/Off state
+
+### Prerequisites
+- App is running with Settings panel accessible.
+
+### Steps
+1. Open `Settings`.
+2. Locate `GitHub trending projects` row.
+3. Toggle the row on and off.
+
+### Expected Results
+- Row displays explicit value text (`On` or `Off`).
+- Value changes immediately after each click.
+- Existing behavior of showing/hiding trending cards remains unchanged.
+
+### Rollback/Cleanup
+- Restore original toggle state.
+
+## Feature: Top-level toggle rows show explicit On/Off values
+
+### Prerequisites
+- App is running with Settings panel accessible.
+
+### Steps
+1. Open `Settings`.
+2. Toggle `Require ⌘ + enter to send`.
+3. Toggle `Click to toggle dictation`.
+4. Toggle `Auto send dictation`.
+
+### Expected Results
+- Each row displays explicit `On`/`Off` text instead of only visual pill state.
+- Text updates immediately after toggle.
+- Existing behavior of each setting remains unchanged.
+
+### Rollback/Cleanup
+- Restore original values for the three settings.
+
+## Feature: Agent ambient suggestions row shows explicit On/Off state
+
+### Prerequisites
+- App is running with Settings panel accessible.
+
+### Steps
+1. Open `Settings`.
+2. Locate `Agent ambient suggestions` row.
+3. Toggle row on and off.
+
+### Expected Results
+- Row displays explicit `On`/`Off` text.
+- Text updates immediately after each toggle.
+- Existing ambient-suggestions preference behavior remains unchanged.
+
+### Rollback/Cleanup
+- Restore original value.
+
+## Feature: Top-level dictation language row shows friendly label
+
+### Prerequisites
+- App is running with Settings panel accessible.
+
+### Steps
+1. Open `Settings`.
+2. Change `Dictation language` using either the top-level row or the select control.
+3. Observe top-level row value text.
+
+### Expected Results
+- Top-level row shows human-friendly option label (for example `Auto-detect` or `Preferred: ...`) instead of raw value code only.
+- Top-level row remains synchronized with the select control.
+
+### Rollback/Cleanup
+- Restore original dictation language value.
+
+## Feature: Top-level provider row shows user-facing label
+
+### Prerequisites
+- App is running with Settings panel accessible.
+
+### Steps
+1. Open `Settings`.
+2. Cycle provider via top-level `Provider` row.
+3. Observe displayed value text after each switch.
+
+### Expected Results
+- Row shows labels: `Codex`, `OpenRouter`, `OpenCode Zen`, `Custom endpoint`.
+- No raw enum values (`codex`, `openrouter`, `opencode-zen`, `custom`) are shown in this row.
+- Provider behavior remains unchanged.
+
+### Rollback/Cleanup
+- Restore original provider.
+
+## Feature: Top-level collaboration mode row shows user-facing label
+
+### Prerequisites
+- App is running with Settings panel accessible.
+
+### Steps
+1. Open `Settings`.
+2. Cycle `Collaboration mode` row.
+
+### Expected Results
+- Row displays `Default` or `Plan` (title case), not raw lowercase enum.
+- Cycling behavior remains unchanged.
+
+### Rollback/Cleanup
+- Restore original collaboration mode.
+
+## Feature: Top-level model row uses `Auto` fallback label
+
+### Prerequisites
+- App is running with Settings panel accessible.
+
+### Steps
+1. Open `Settings`.
+2. Observe `Model` row when no explicit model is pinned for the active context.
+3. Select a concrete model, then clear/switch context back to implicit model state.
+
+### Expected Results
+- Row shows `Auto` when no explicit model ID is set.
+- Row shows concrete model ID when one is set.
+- Model cycling behavior remains unchanged.
+
+### Rollback/Cleanup
+- Restore original model selection state.
+
+## Feature: Top-level reasoning effort row shows user-facing labels
+
+### Prerequisites
+- App is running with Settings panel accessible.
+
+### Steps
+1. Open `Settings`.
+2. Cycle `Reasoning effort` row through all values.
+
+### Expected Results
+- Row shows title-case labels (`Auto`, `None`, `Minimal`, `Low`, `Medium`, `High`, `XHigh`).
+- Underlying reasoning-effort behavior and cycling order remain unchanged.
+
+### Rollback/Cleanup
+- Restore original reasoning effort value.
+
+## Feature: Top-level approval/sandbox rows use user-facing labels
+
+### Prerequisites
+- App is running with Settings panel accessible.
+
+### Steps
+1. Open `Settings`.
+2. Cycle `Approval policy` and `Sandbox mode` rows.
+3. Observe displayed values in each row.
+
+### Expected Results
+- Approval row shows labels like `Untrusted`, `On failure`, `On request`, `Never`.
+- Sandbox row shows labels like `Read only`, `Workspace write`, `Danger full access`.
+- Underlying write behavior remains unchanged.
+
+### Rollback/Cleanup
+- Restore original approval/sandbox values.
+
+## Feature: Top-level web search mode row uses user-facing labels
+
+### Prerequisites
+- App is running with Settings panel accessible.
+
+### Steps
+1. Open `Settings`.
+2. Cycle `Web search mode` row.
+
+### Expected Results
+- Row displays `Disabled`, `Cached`, or `Live` (title case labels).
+- Underlying cycle/write behavior remains unchanged.
+
+### Rollback/Cleanup
+- Restore original web search mode.
+
+## Feature: Agent network access row uses Enabled/Disabled labels
+
+### Prerequisites
+- App is running with Settings panel accessible.
+
+### Steps
+1. Open `Settings`.
+2. Toggle `Agent network access`.
+
+### Expected Results
+- Row displays `Enabled` or `Disabled` labels.
+- Write behavior and rollback semantics remain unchanged.
+
+### Rollback/Cleanup
+- Restore original network access value.
+
+## Feature: Top-level appearance row uses dedicated user-facing label
+
+### Prerequisites
+- App is running with Settings panel accessible.
+
+### Steps
+1. Open `Settings`.
+2. Cycle `Appearance` row through all states.
+
+### Expected Results
+- Row displays `System`, `Light`, `Dark` labels.
+- Appearance behavior remains unchanged.
+
+### Rollback/Cleanup
+- Restore original appearance mode.
+
+## Feature: Send behavior row uses explicit behavior label
+
+### Prerequisites
+- App is running with Settings panel accessible.
+
+### Steps
+1. Open `Settings`.
+2. Toggle `Require ⌘ + enter to send`.
+3. Observe row value text after each toggle.
+
+### Expected Results
+- Row shows `Enter sends` when normal Enter submit mode is active.
+- Row shows `Cmd/Ctrl+Enter sends` when modifier-required submit mode is active.
+- Existing submit behavior remains unchanged.
+
+### Rollback/Cleanup
+- Restore original send behavior setting.
+
+## Feature: In-progress send mode row uses explicit behavior labels
+
+### Prerequisites
+- App is running with Settings panel accessible.
+
+### Steps
+1. Open `Settings`.
+2. Toggle `When busy, send as`.
+
+### Expected Results
+- Row displays `Steer active turn` or `Queue message`.
+- Existing in-progress send behavior remains unchanged.
+
+### Rollback/Cleanup
+- Restore original in-progress send mode.
+
+## Feature: Top-level model row fallback label uses `Default model`
+
+### Prerequisites
+- App is running with Settings panel accessible.
+
+### Steps
+1. Open `Settings`.
+2. Ensure active context has no explicit model override.
+3. Observe `Model` row value.
+
+### Expected Results
+- Row shows `Default model` when no explicit model ID is set.
+- Concrete model ID still appears when an explicit model is selected.
+
+### Rollback/Cleanup
+- Restore original model selection state.
+
+## Feature: Top-level reasoning effort label formats xhigh as `X-High`
+
+### Prerequisites
+- App is running with Settings panel accessible.
+
+### Steps
+1. Open `Settings`.
+2. Cycle `Reasoning effort` until highest value is selected.
+
+### Expected Results
+- Highest value is displayed as `X-High` in top-level row.
+- Other labels and behavior remain unchanged.
+
+### Rollback/Cleanup
+- Restore original reasoning effort value.
+
+## Feature: Menu bar and notifications rows use Enabled/Disabled labels
+
+### Prerequisites
+- App is running with Settings panel accessible.
+
+### Steps
+1. Open `Settings`.
+2. Toggle `Show in menu bar` (macOS only) and `Notifications`.
+
+### Expected Results
+- Rows display `Enabled` or `Disabled` labels.
+- Existing write behavior and rollback semantics remain unchanged.
+
+### Rollback/Cleanup
+- Restore original values.
+
+## Feature: Top-level chat width row uses friendly labels
+
+### Prerequisites
+- App is running with Settings panel accessible.
+
+### Steps
+1. Open `Settings`.
+2. Cycle `Chat width` row through all options.
+
+### Expected Results
+- Row displays `Standard`, `Wide`, `Extra Wide`.
+- Existing chat width behavior remains unchanged.
+
+### Rollback/Cleanup
+- Restore original chat width value.
+
+## Feature: Top-level model row fallback label uses `Thread default`
+
+### Prerequisites
+- App is running with Settings panel accessible.
+
+### Steps
+1. Open `Settings`.
+2. Ensure no explicit model override is set for active context.
+3. Observe `Model` row value.
+
+### Expected Results
+- Row shows `Thread default` fallback label.
+- Explicit model IDs still render when selected.
+
+### Rollback/Cleanup
+- Restore previous model selection state.
+
+## Feature: Top-level reasoning effort label uses `Extra High` for xhigh
+
+### Prerequisites
+- App is running with Settings panel accessible.
+
+### Steps
+1. Open `Settings`.
+2. Cycle `Reasoning effort` to highest value.
+
+### Expected Results
+- Highest value label is shown as `Extra High`.
+- Other reasoning labels and behavior remain unchanged.
+
+### Rollback/Cleanup
+- Restore original reasoning effort value.
+
+## Feature: Top-level collaboration mode row uses dynamic option labels
+
+### Prerequisites
+- App is running with Settings panel accessible.
+- Collaboration mode list is available.
+
+### Steps
+1. Open `Settings`.
+2. Cycle `Collaboration mode` row.
+3. Compare row value with labels from available collaboration mode options.
+
+### Expected Results
+- Row uses option-provided labels when available.
+- Fallback remains `Default`/`Plan` if labels are unavailable.
+- Mode-switch behavior remains unchanged.
+
+### Rollback/Cleanup
+- Restore original collaboration mode.
+
+## Feature: Top-level model row shows friendly aliases for common model IDs
+
+### Prerequisites
+- App is running with Settings panel accessible.
+
+### Steps
+1. Open `Settings`.
+2. Cycle/select models including known IDs (`gpt-5.4`, `gpt-5.4-mini`, `gpt-5.3-codex-spark`, `gpt-5.2`) when available.
+3. Observe top-level `Model` row value.
+
+### Expected Results
+- Known IDs are shown as friendly aliases (`GPT-5.4`, `GPT-5.4 Mini`, `GPT-5.3 Codex Spark`, `GPT-5.2`).
+- Unknown IDs continue to display raw model ID text.
+- Selection behavior remains unchanged.
+
+### Rollback/Cleanup
+- Restore original model selection.
+
+## Feature: Top-level sandbox mode labels are hyphenated to match config terms
+
+### Prerequisites
+- App is running with Settings panel accessible.
+
+### Steps
+1. Open `Settings`.
+2. Cycle `Sandbox mode` row through all values.
+
+### Expected Results
+- Row displays `Read-only`, `Workspace-write`, `Danger-full-access`.
+- Underlying cycling/write behavior remains unchanged.
+
+### Rollback/Cleanup
+- Restore original sandbox mode.
+
+## Feature: Top-level approval policy labels use hyphenated forms
+
+### Prerequisites
+- App is running with Settings panel accessible.
+
+### Steps
+1. Open `Settings`.
+2. Cycle `Approval policy` row through all values.
+
+### Expected Results
+- Row displays `On-failure` and `On-request` for those policies.
+- Other labels (`Untrusted`, `Never`) remain unchanged.
+- Behavior remains unchanged.
+
+### Rollback/Cleanup
+- Restore original approval policy.
+
+## Feature: Top-level reasoning effort label uses `Extra-high` style
+
+### Prerequisites
+- App is running with Settings panel accessible.
+
+### Steps
+1. Open `Settings`.
+2. Cycle `Reasoning effort` to highest value.
+
+### Expected Results
+- Highest value displays as `Extra-high` in top-level row.
+- Other reasoning labels remain readable and behavior remains unchanged.
+
+### Rollback/Cleanup
+- Restore original reasoning effort value.
+
+## Feature: Top-level model row aliases additional common GPT-5.1 IDs
+
+### Prerequisites
+- App is running with Settings panel accessible.
+
+### Steps
+1. Open `Settings`.
+2. Select/cycle to model IDs `gpt-5.1` and `gpt-5.1-codex-mini` when available.
+3. Observe top-level `Model` row value.
+
+### Expected Results
+- `gpt-5.1` displays as `GPT-5.1`.
+- `gpt-5.1-codex-mini` displays as `GPT-5.1 Codex Mini`.
+- Unknown IDs still fallback to raw text.
+
+### Rollback/Cleanup
+- Restore original model selection.
+
+## Feature: Top-level model row aliases `gpt-5.3-codex`
+
+### Prerequisites
+- App is running with Settings panel accessible.
+
+### Steps
+1. Open `Settings`.
+2. Select/cycle to `gpt-5.3-codex` when available.
+3. Observe top-level `Model` row value.
+
+### Expected Results
+- `gpt-5.3-codex` is shown as `GPT-5.3 Codex`.
+- Other alias/fallback behavior remains unchanged.
+
+### Rollback/Cleanup
+- Restore original model selection.
+
+## Feature: Top-level model row aliases additional Codex model variants
+
+### Prerequisites
+- App is running with Settings panel accessible.
+
+### Steps
+1. Open `Settings`.
+2. Select/cycle to `gpt-5.4-codex` and `gpt-5.2-codex` when available.
+3. Observe top-level `Model` row value.
+
+### Expected Results
+- `gpt-5.4-codex` is shown as `GPT-5.4 Codex`.
+- `gpt-5.2-codex` is shown as `GPT-5.2 Codex`.
+- Fallback behavior for unknown IDs remains unchanged.
+
+### Rollback/Cleanup
+- Restore original model selection.
+
+## Feature: Top-level model row aliases `gpt-5.3` and `gpt-5.0`
+
+### Prerequisites
+- App is running with Settings panel accessible.
+
+### Steps
+1. Open `Settings`.
+2. Select/cycle to `gpt-5.3` and `gpt-5.0` when available.
+3. Observe top-level `Model` row value.
+
+### Expected Results
+- `gpt-5.3` displays as `GPT-5.3`.
+- `gpt-5.0` displays as `GPT-5.0`.
+- Existing alias/fallback behavior remains unchanged.
+
+### Rollback/Cleanup
+- Restore original model selection.
+
+## Feature: Top-level model row aliases `gpt-5.1-codex-max`
+
+### Prerequisites
+- App is running with Settings panel accessible.
+
+### Steps
+1. Open `Settings`.
+2. Select/cycle to `gpt-5.1-codex-max` when available.
+3. Observe top-level `Model` row value.
+
+### Expected Results
+- `gpt-5.1-codex-max` displays as `GPT-5.1 Codex Max`.
+- Existing alias/fallback behavior remains unchanged.
+
+### Rollback/Cleanup
+- Restore original model selection.
+
+## Feature: Top-level model row aliases `gpt-5.2-codex-mini`
+
+### Prerequisites
+- App is running with Settings panel accessible.
+
+### Steps
+1. Open `Settings`.
+2. Select/cycle to `gpt-5.2-codex-mini` when available.
+3. Observe top-level `Model` row value.
+
+### Expected Results
+- `gpt-5.2-codex-mini` displays as `GPT-5.2 Codex Mini`.
+- Existing alias/fallback behavior remains unchanged.
+
+### Rollback/Cleanup
+- Restore original model selection.
+
+## Feature: Top-level model row aliases `gpt-5.4-codex-mini`
+
+### Prerequisites
+- App is running with Settings panel accessible.
+
+### Steps
+1. Open `Settings`.
+2. Select/cycle to `gpt-5.4-codex-mini` when available.
+3. Observe top-level `Model` row value.
+
+### Expected Results
+- `gpt-5.4-codex-mini` displays as `GPT-5.4 Codex Mini`.
+- Existing alias/fallback behavior remains unchanged.
+
+### Rollback/Cleanup
+- Restore original model selection.
+
+## Feature: Top-level model row aliases `gpt-5.3-mini`
+
+### Prerequisites
+- App is running with Settings panel accessible.
+
+### Steps
+1. Open `Settings`.
+2. Select/cycle to `gpt-5.3-mini` when available.
+3. Observe top-level `Model` row value.
+
+### Expected Results
+- `gpt-5.3-mini` displays as `GPT-5.3 Mini`.
+- Existing alias/fallback behavior remains unchanged.
+
+### Rollback/Cleanup
+- Restore original model selection.
+
+## Feature: Top-level model row aliases `gpt-5.0-codex`
+
+### Prerequisites
+- App is running with Settings panel accessible.
+
+### Steps
+1. Open `Settings`.
+2. Select/cycle to `gpt-5.0-codex` when available.
+3. Observe top-level `Model` row value.
+
+### Expected Results
+- `gpt-5.0-codex` displays as `GPT-5.0 Codex`.
+- Existing alias/fallback behavior remains unchanged.
+
+### Rollback/Cleanup
+- Restore original model selection.
+
+## Feature: Top-level model row aliases `gpt-5.0-mini`
+
+### Prerequisites
+- App is running with Settings panel accessible.
+
+### Steps
+1. Open `Settings`.
+2. Select/cycle to `gpt-5.0-mini` when available.
+3. Observe top-level `Model` row value.
+
+### Expected Results
+- `gpt-5.0-mini` displays as `GPT-5.0 Mini`.
+- Existing alias/fallback behavior remains unchanged.
+
+### Rollback/Cleanup
+- Restore original model selection.
+
+## Feature: Top-level model row aliases `gpt-5.0-codex-mini`
+
+### Prerequisites
+- App is running with Settings panel accessible.
+
+### Steps
+1. Open `Settings`.
+2. Select/cycle to `gpt-5.0-codex-mini` when available.
+3. Observe top-level `Model` row value.
+
+### Expected Results
+- `gpt-5.0-codex-mini` displays as `GPT-5.0 Codex Mini`.
+- Existing alias/fallback behavior remains unchanged.
+
+### Rollback/Cleanup
+- Restore original model selection.
+
+## Feature: Top-level model aliases are table-driven (refactor)
+
+### Prerequisites
+- App is running with Settings panel accessible.
+
+### Steps
+1. Open `Settings`.
+2. Cycle/select several known aliased models and an unknown model ID (if available).
+
+### Expected Results
+- Known IDs still render the same friendly labels as before.
+- Unknown IDs still fall back to raw model text.
+- No behavior regression from alias-map refactor.
+
+### Rollback/Cleanup
+- Restore original model selection.
+
+## Feature: Top-level provider labels are table-driven (refactor)
+
+### Prerequisites
+- App is running with Settings panel accessible.
+
+### Steps
+1. Open `Settings`.
+2. Cycle `Provider` through all options.
+
+### Expected Results
+- Labels remain `Codex`, `OpenRouter`, `OpenCode Zen`, `Custom endpoint`.
+- No behavior regression from map-based label refactor.
+
+### Rollback/Cleanup
+- Restore original provider.
+
+## Feature: Top-level web search labels are table-driven (refactor)
+
+### Prerequisites
+- App is running with Settings panel accessible.
+
+### Steps
+1. Open `Settings`.
+2. Cycle `Web search mode` through all values.
+
+### Expected Results
+- Labels remain `Disabled`, `Cached`, `Live`.
+- No behavior regression from map-based label refactor.
+
+### Rollback/Cleanup
+- Restore original web search mode.
+
+## Feature: Top-level approval policy labels are table-driven (refactor)
+
+### Prerequisites
+- App is running with Settings panel accessible.
+
+### Steps
+1. Open `Settings`.
+2. Cycle `Approval policy` through all values.
+
+### Expected Results
+- Labels remain `Untrusted`, `On-failure`, `On-request`, `Never`.
+- No behavior regression from map-based label refactor.
+
+### Rollback/Cleanup
+- Restore original approval policy.
+
+## Feature: Top-level sandbox mode labels are table-driven (refactor)
+
+### Prerequisites
+- App is running with Settings panel accessible.
+
+### Steps
+1. Open `Settings`.
+2. Cycle `Sandbox mode` through all values.
+
+### Expected Results
+- Labels remain `Read-only`, `Workspace-write`, `Danger-full-access`.
+- No behavior regression from map-based label refactor.
+
+### Rollback/Cleanup
+- Restore original sandbox mode.
+
+## Feature: Top-level reasoning effort labels are table-driven (refactor)
+
+### Prerequisites
+- App is running with Settings panel accessible.
+
+### Steps
+1. Open `Settings`.
+2. Cycle `Reasoning effort` through all values.
+
+### Expected Results
+- Labels remain `Auto`, `None`, `Minimal`, `Low`, `Medium`, `High`, `Extra-high`.
+- No behavior regression from map-based label refactor.
+
+### Rollback/Cleanup
+- Restore original reasoning effort.
+
+## Feature: Top-level chat width labels are table-driven (refactor)
+
+### Prerequisites
+- App is running with Settings panel accessible.
+
+### Steps
+1. Open `Settings`.
+2. Cycle `Chat width` through all values.
+
+### Expected Results
+- Labels remain `Standard`, `Wide`, `Extra Wide`.
+- No behavior regression from map-based label refactor.
+
+### Rollback/Cleanup
+- Restore original chat width.
