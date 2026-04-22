@@ -265,6 +265,12 @@
             @update:model-value="onReasoningEffortSelect"
           />
 
+          <ComposerMcpDropdown
+            class="thread-composer-control"
+            :disabled="disabled || !activeThreadId || isTurnInProgress"
+            open-direction="up"
+          />
+
           <ComposerSearchDropdown
             class="thread-composer-control"
             :options="skillDropdownOptions"
@@ -392,6 +398,7 @@ import IconTablerFolder from '../icons/IconTablerFolder.vue'
 import IconTablerMicrophone from '../icons/IconTablerMicrophone.vue'
 import IconTablerPlayerStopFilled from '../icons/IconTablerPlayerStopFilled.vue'
 import ComposerDropdown from './ComposerDropdown.vue'
+import ComposerMcpDropdown from './ComposerMcpDropdown.vue'
 import ComposerSearchDropdown from './ComposerSearchDropdown.vue'
 import ComposerSkillPicker from './ComposerSkillPicker.vue'
 

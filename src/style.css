@@ -1392,3 +1392,12 @@
 :root.dark .cem-btn-secondary {
   @apply bg-zinc-800 text-zinc-300 hover:bg-zinc-700;
 }
+
+/* MCP dropdown dark mode */
+:root.dark .mcp-dropdown-menu {
+  @apply border-zinc-700 bg-zinc-800;
+}
+
+:root.dark .mcp-dropdown-option {
+  @apply text-zinc-200 hover:bg-zinc-700;
+}

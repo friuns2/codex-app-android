@@ -87,6 +87,7 @@ const zh = {
     runtimeLocal: '本地项目',
     runtimeWorktree: '新工作树',
     continueIn: '继续方式',
+    noMcpServers: '未配置 MCP 服务器',
   },
 
   conversation: {

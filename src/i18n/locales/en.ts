@@ -88,6 +88,7 @@ const en = {
     runtimeLocal: 'Local project',
     runtimeWorktree: 'New worktree',
     continueIn: 'Continue in',
+    noMcpServers: 'No MCP servers configured',
   },
 
   conversation: {

@@ -1448,6 +1448,33 @@ export async function getAccountRateLimitsResponse(): Promise<GetAccountRateLimi
   return await callRpc<GetAccountRateLimitsResponse>('account/rateLimits/read')
 }
 
+/** MCP server entry with name and enabled state. */
+export type McpServerEntry = { name: string; enabled: boolean }
+
+/** List all configured MCP servers with their enabled state from config. */
+export async function listMcpServers(): Promise<McpServerEntry[]> {
+  const payload = await callRpc<ConfigReadResponse>('config/read', {})
+  const config = payload.config as Record<string, unknown>
+  const mcpServers = config.mcp_servers as Record<string, Record<string, unknown>> | undefined
+  if (!mcpServers || typeof mcpServers !== 'object') return []
+  return Object.entries(mcpServers).map(([name, cfg]) => ({
+    name,
+    enabled: cfg?.enabled !== false,
+  }))
+}
+
+/** Toggle an MCP server's enabled state and reload. */
+export async function setMcpServerEnabled(name: string, enabled: boolean): Promise<void> {
+  await callRpc('config/batchWrite', {
+    edits: [
+      { keyPath: `mcp_servers.${name}.enabled`, value: enabled, mergeStrategy: 'upsert' },
+    ],
+    filePath: null,
+    expectedVersion: null,
+  })
+  await callRpc('mcpServer/reload', {})
+}
+
 function normalizeCollaborationModeLabel(value: string): string {
   const trimmed = value.trim()
   if (!trimmed) return ''
