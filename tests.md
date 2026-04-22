@@ -1508,6 +1508,32 @@ This file tracks manual regression and feature verification steps.
 #### Rollback/Cleanup
 - Stop running dev servers and unset temporary env overrides.
 
+### Feature: Queued messages keep mode at queue time without changing current composer mode
+
+#### Prerequisites
+- Start the app from this repository (`pnpm run dev`).
+- Open any existing thread.
+- Ensure Plan mode toggle is visible in the composer attach menu.
+
+#### Steps
+1. Enable Plan mode in the composer.
+2. Send a prompt that keeps the turn running long enough to queue follow-ups.
+3. While the turn is in progress, queue one message (`A`) with Plan mode still enabled.
+4. Toggle composer to Default mode.
+5. Queue a second message (`B`).
+6. Wait for the active turn to complete and let queued messages run automatically.
+7. Observe that `A` executes with Plan behavior and `B` executes with Default behavior.
+8. Repeat with the queued row `Steer` button and verify the steered queued message uses its stored mode.
+9. Confirm the composer’s current Plan/default toggle is not auto-flipped by queue execution.
+
+#### Expected Results
+- Queue processing uses each queued message’s stored collaboration mode (per-message freeze).
+- Mixed queues are supported (`A` Plan, `B` Default) when modes differ at queue time.
+- Processing queued messages does not mutate the user’s current composer mode selection.
+
+#### Rollback/Cleanup
+- No cleanup required.
+
 ### Feature: Approval request uses legacy in-conversation request card only
 
 #### Prerequisites
