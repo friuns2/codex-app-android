@@ -96,7 +96,7 @@ watch(query, () => {
 })
 </script>
 
-<style scoped>
+<style>
 @reference "tailwindcss";
 
 .skill-picker {
@@ -134,4 +134,5 @@ watch(query, () => {
 .skill-picker-empty {
   @apply p-3 text-center text-sm text-zinc-400;
 }
+
 </style>

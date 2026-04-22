@@ -169,7 +169,7 @@ onMounted(() => window.addEventListener('pointerdown', onDocumentPointerDown))
 onBeforeUnmount(() => window.removeEventListener('pointerdown', onDocumentPointerDown))
 </script>
 
-<style scoped>
+<style>
 @reference "tailwindcss";
 
 .search-dropdown {

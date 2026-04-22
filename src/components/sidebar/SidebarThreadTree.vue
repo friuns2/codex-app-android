@@ -1965,7 +1965,7 @@ onBeforeUnmount(() => {
 }
 
 .thread-row {
-  @apply hover:bg-zinc-200;
+  @apply hover:bg-zinc-200 cursor-pointer;
 }
 
 .thread-row[data-menu-open='true'] {
@@ -1981,7 +1981,7 @@ onBeforeUnmount(() => {
 }
 
 .thread-main-button {
-  @apply min-w-0 w-full text-left rounded px-0 py-0 flex items-center min-h-5;
+  @apply min-w-0 w-full text-left rounded px-0 py-0 flex items-center min-h-5 cursor-pointer;
 }
 
 .thread-row-title-wrap {

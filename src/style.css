@@ -1,6 +1,16 @@
 @import "tailwindcss";
 @import "highlight.js/styles/github-dark.css";
 
+/* ── Global interactive element styles ── */
+button, [role="button"], [role="tab"], [role="option"], [role="menuitem"],
+summary, select {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
 :root.dark {
   color-scheme: dark;
 }
@@ -271,7 +281,7 @@
 }
 
 :root.dark .composer-dropdown-trigger {
-  @apply text-zinc-400;
+  @apply text-zinc-400 hover:text-zinc-200;
 }
 
 
@@ -1394,12 +1404,105 @@
 }
 
 /* MCP dropdown dark mode */
+:root.dark .mcp-dropdown-trigger {
+  @apply text-zinc-400 hover:text-zinc-200;
+}
+
 :root.dark .mcp-dropdown-menu {
-  @apply border-zinc-700 bg-zinc-800;
+  @apply border-zinc-600 bg-zinc-800;
 }
 
 :root.dark .mcp-dropdown-option {
-  @apply text-zinc-200 hover:bg-zinc-700;
+  @apply text-zinc-300 hover:bg-zinc-700;
+}
+
+:root.dark .mcp-dropdown-loading,
+:root.dark .mcp-dropdown-empty {
+  @apply text-zinc-500;
+}
+
+:root.dark .mcp-dropdown-chevron {
+  @apply text-zinc-500;
+}
+
+:root.dark .mcp-dropdown-name {
+  @apply text-zinc-300;
+}
+
+
+/* Search dropdown (ComposerSearchDropdown) dark mode */
+:root.dark .search-dropdown-trigger {
+  @apply text-zinc-400 hover:text-zinc-200;
+}
+
+:root.dark .search-dropdown-menu-wrap-up,
+:root.dark .search-dropdown-menu-wrap-down {
+  @apply border-zinc-600 bg-zinc-800;
+}
+
+:root.dark .search-dropdown-search-wrap {
+  @apply border-zinc-700;
+}
+
+:root.dark .search-dropdown-search {
+  @apply border-zinc-600 bg-zinc-900 text-zinc-200 placeholder-zinc-500 focus:border-zinc-500 focus:bg-zinc-800;
+}
+
+:root.dark .search-dropdown-option {
+  @apply text-zinc-300 hover:bg-zinc-700;
+}
+
+:root.dark .search-dropdown-option.is-highlighted {
+  @apply bg-zinc-700;
+}
+
+:root.dark .search-dropdown-option.is-selected {
+  @apply text-zinc-100;
+}
+
+:root.dark .search-dropdown-option-desc {
+  @apply text-zinc-500;
+}
+
+:root.dark .search-dropdown-empty {
+  @apply text-zinc-500;
+}
+
+:root.dark .search-dropdown-chevron {
+  @apply text-zinc-500;
+}
+
+/* Skill picker dark mode */
+:root.dark .skill-picker {
+  @apply border-zinc-600 bg-zinc-800;
+}
+
+:root.dark .skill-picker-header {
+  @apply border-zinc-700;
+}
+
+:root.dark .skill-picker-search {
+  @apply border-zinc-600 bg-zinc-900 text-zinc-200 placeholder-zinc-500 focus:border-zinc-500 focus:bg-zinc-800;
+}
+
+:root.dark .skill-picker-item {
+  @apply hover:bg-zinc-700;
+}
+
+:root.dark .skill-picker-item.is-highlighted {
+  @apply bg-zinc-700;
+}
+
+:root.dark .skill-picker-name {
+  @apply text-zinc-200;
+}
+
+:root.dark .skill-picker-desc {
+  @apply text-zinc-500;
+}
+
+:root.dark .skill-picker-empty {
+  @apply text-zinc-500;
 }
 
 /* File manager dark mode */

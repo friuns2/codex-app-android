@@ -119,7 +119,7 @@ onBeforeUnmount(() => {
 }
 
 .mcp-dropdown-trigger {
-  @apply inline-flex min-h-7 min-w-0 items-center gap-1 border-0 bg-transparent px-0 py-0.5 text-sm leading-tight text-zinc-500 outline-none transition;
+  @apply inline-flex min-h-7 min-w-0 items-center gap-1 border-0 bg-transparent px-0 py-0.5 text-sm leading-tight text-zinc-500 outline-none transition hover:text-zinc-800 cursor-pointer;
 }
 
 .mcp-dropdown-trigger:disabled {
@@ -139,7 +139,7 @@ onBeforeUnmount(() => {
 }
 
 .mcp-dropdown-menu {
-  @apply absolute left-0 z-50 w-56 rounded-xl border border-zinc-200 bg-white p-1 shadow-lg;
+  @apply absolute left-0 z-50 min-w-56 rounded-xl border border-zinc-200 bg-white p-1 shadow-lg;
   top: calc(100% + 8px);
 }
 
