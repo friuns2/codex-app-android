@@ -46,8 +46,8 @@ RUN ARCH=$(uname -m) && \
     chmod +x /usr/local/bin/officecli
 
 # Install runtime dependencies
-COPY --from=builder /src/package.json /app/package.json
-RUN pnpm install --prod
+COPY --from=builder /src/package.json /src/pnpm-lock.yaml /app/
+RUN pnpm install --prod --frozen-lockfile
 
 # Copy build artifacts
 COPY --from=builder /src/dist /app/dist
