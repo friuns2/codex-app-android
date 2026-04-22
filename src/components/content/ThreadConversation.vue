@@ -24,8 +24,10 @@
       <li
         v-if="!hiddenGroupedCommandIds.has(message.id) && !hiddenFileChangeMessageIds.has(message.id)"
         class="conversation-item"
+        :class="{ 'conversation-item-find-active': message.id === highlightMessageId }"
         :data-role="message.role"
         :data-message-type="message.messageType || ''"
+        :data-message-id="message.id"
       >
         <div v-if="isCommandMessage(message)" class="message-row" data-role="system">
           <div class="message-stack" data-role="system">
@@ -605,20 +607,20 @@
               </section>
 
               <div
-                v-if="showCopyResponseButton(message) || showRollbackButton(message)"
+                v-if="showCopyResponseButton(message) || showEditMessageButton(message)"
                 class="message-toolbar"
                 :data-role="message.role"
               >
                 <button
-                  v-if="showRollbackButton(message)"
+                  v-if="showEditMessageButton(message)"
                   type="button"
-                  class="message-rollback-button"
-                  aria-label="Rollback to this response"
-                  title="Rollback to this response"
-                  @click="rollbackResponse(message.id)"
+                  class="message-edit-button"
+                  aria-label="Edit this message"
+                  title="Edit this message"
+                  @click="editMessage(message.id)"
                 >
-                  <IconTablerArrowBackUp class="icon-svg message-rollback-icon" />
-                  <span class="message-rollback-label">Rollback</span>
+                  <IconTablerFilePencil class="icon-svg message-edit-icon" />
+                  <span class="message-edit-label">Edit message</span>
                 </button>
                 <button
                   v-if="showForkResponseButton(message)"
@@ -835,9 +837,9 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import type { ThreadScrollState, UiFileChange, UiLiveOverlay, UiMessage, UiPlanStep, UiServerRequest } from '../../types/codex'
 import { useMobile } from '../../composables/useMobile'
 
-import IconTablerArrowBackUp from '../icons/IconTablerArrowBackUp.vue'
 import IconTablerArrowUp from '../icons/IconTablerArrowUp.vue'
 import IconTablerCopy from '../icons/IconTablerCopy.vue'
+import IconTablerFilePencil from '../icons/IconTablerFilePencil.vue'
 import IconTablerGitFork from '../icons/IconTablerGitFork.vue'
 import IconTablerX from '../icons/IconTablerX.vue'
 
@@ -1177,6 +1179,8 @@ const props = defineProps<{
   activeThreadId: string
   cwd: string
   scrollState: ThreadScrollState | null
+  findQuery?: string
+  highlightMessageId?: string
 }>()
 
 const emit = defineEmits<{
@@ -2080,37 +2084,23 @@ function forkResponse(anchorMessageId: string): void {
   })
 }
 
-const rollbackTurnIdByAnchorId = computed<Record<string, string>>(() => {
-  const groupedTurns = new Map<string, { anchorMessageId: string; turnId: string }>()
-
-  for (const message of props.messages) {
-    if (!isCopyableAssistantMessage(message) || typeof message.turnIndex !== 'number') continue
-    const turnId = typeof message.turnId === 'string' && message.turnId.length > 0 ? message.turnId : ''
-    if (!turnId) continue
-
-    const responseKey = `turn:${message.turnIndex}`
-    const existing = groupedTurns.get(responseKey)
-    if (existing) {
-      existing.anchorMessageId = message.id
-      existing.turnId = turnId
-      continue
-    }
-    groupedTurns.set(responseKey, { anchorMessageId: message.id, turnId })
-  }
-
+const editableTurnIdByMessageId = computed<Record<string, string>>(() => {
   const next: Record<string, string> = {}
-  for (const entry of groupedTurns.values()) {
-    next[entry.anchorMessageId] = entry.turnId
+  for (const message of props.messages) {
+    if (message.role !== 'user' || typeof message.turnIndex !== 'number') continue
+    const turnId = typeof message.turnId === 'string' && message.turnId.length > 0 ? message.turnId : ''
+    if (!turnId || message.text.trim().length === 0) continue
+    next[message.id] = turnId
   }
   return next
 })
 
-function showRollbackButton(message: UiMessage): boolean {
-  return typeof rollbackTurnIdByAnchorId.value[message.id] === 'string'
+function showEditMessageButton(message: UiMessage): boolean {
+  return typeof editableTurnIdByMessageId.value[message.id] === 'string'
 }
 
-function rollbackResponse(anchorMessageId: string): void {
-  const turnId = rollbackTurnIdByAnchorId.value[anchorMessageId]
+function editMessage(messageId: string): void {
+  const turnId = editableTurnIdByMessageId.value[messageId]
   if (!turnId) return
   emit('rollback', { turnId })
 }
@@ -3982,6 +3972,25 @@ watch(
 )
 
 watch(
+  () => props.highlightMessageId,
+  async (nextId) => {
+    const messageId = nextId?.trim()
+    if (!messageId) return
+    const messageIndex = props.messages.findIndex((message) => message.id === messageId)
+    if (messageIndex >= 0 && messageIndex < renderWindowStart.value) {
+      // Ensure search navigation can target older messages that are currently windowed out.
+      renderWindowStart.value = Math.max(0, messageIndex - 6)
+    }
+    await nextTick()
+    const container = conversationListRef.value
+    if (!container) return
+    const target = container.querySelector<HTMLElement>(`[data-message-id="${CSS.escape(messageId)}"]`)
+    if (!target) return
+    target.scrollIntoView({ block: 'center', behavior: 'smooth' })
+  },
+)
+
+watch(
   activeCommandMessageId,
   (nextId, prevId) => {
     if (!prevId || prevId === nextId) return
@@ -4122,6 +4131,11 @@ onBeforeUnmount(() => {
 
 .conversation-item {
   @apply m-0 w-full min-w-0 flex;
+}
+
+.conversation-item-find-active .message-card,
+.conversation-item-find-active .message-body {
+  @apply ring-2 ring-amber-400 ring-offset-2 ring-offset-white rounded-xl;
 }
 
 .conversation-item-request {
@@ -4288,19 +4302,19 @@ onBeforeUnmount(() => {
   @apply border-emerald-200 bg-emerald-50 text-emerald-700;
 }
 
-.message-rollback-button {
+.message-edit-button {
   @apply inline-flex items-center gap-0.5 px-0.5 py-0 text-[9px] font-medium leading-none text-amber-600/70 transition hover:text-amber-700;
 }
 
 .message-fork-icon,
 .message-copy-icon,
-.message-rollback-icon {
+.message-edit-icon {
   @apply text-[10px];
 }
 
 .message-fork-label,
 .message-copy-label,
-.message-rollback-label {
+.message-edit-label {
   @apply leading-none;
 }
 

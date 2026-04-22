@@ -338,6 +338,28 @@
         </div>
       </div>
 
+      <div v-if="quotaSummaryText || contextUsageSummaryText" class="thread-composer-rate-limit">
+        <div class="thread-composer-rate-limit-row">
+          <span v-if="quotaSummaryText" class="thread-composer-rate-limit-value" :title="quotaTooltipText || quotaSummaryText">
+            {{ quotaSummaryText }}
+          </span>
+          <span
+            v-if="contextUsageSummaryText"
+            class="thread-composer-context-usage-inline"
+            :class="{
+              'is-warning': contextUsageTone === 'warning',
+              'is-danger': contextUsageTone === 'danger',
+            }"
+            :title="contextUsageTooltipText || contextUsageSummaryText"
+          >
+            <span class="thread-composer-context-usage-inline-value">{{ contextUsageSummaryText }}</span>
+            <span class="thread-composer-context-usage-inline-bar" aria-hidden="true">
+              <span class="thread-composer-context-usage-inline-bar-fill" :style="{ width: `${contextUsageRemainingPercent}%` }" />
+            </span>
+          </span>
+        </div>
+      </div>
+
     </div>
     <input
       ref="photoLibraryInputRef"
@@ -660,7 +682,7 @@ const placeholderText = computed(() =>
     ? 'Select a thread to send a message'
     : isPlanModeWaitingForModel.value
       ? 'Loading models for plan mode...'
-      : 'Type a message... (@ for files, / for skills)',
+      : 'Ask Codex anything, @ to add files, / for commands',
 )
 const hasSubmitContent = computed(() =>
   draft.value.trim().length > 0 || selectedImages.value.length > 0 || fileAttachments.value.length > 0,
@@ -716,8 +738,10 @@ function formatResetDate(resetsAt: number | null): string {
 
 function formatResetDateCompact(resetsAt: number | null): string {
   if (typeof resetsAt !== 'number' || !Number.isFinite(resetsAt)) return ''
-  const date = new Date(resetsAt * 1000)
-  return `${date.getMonth() + 1}月${date.getDate()}日`
+  return new Intl.DateTimeFormat(undefined, {
+    month: 'short',
+    day: 'numeric',
+  }).format(new Date(resetsAt * 1000))
 }
 
 function pickWeeklyQuotaWindow(quota: UiRateLimitSnapshot): UiRateLimitWindow | null {
@@ -1479,7 +1503,7 @@ function onInputKeydown(event: KeyboardEvent): void {
       }
       return
     }
-    if (event.key === 'Enter' || event.key === 'Tab') {
+    if (event.key === 'Enter' || (event.key === 'Tab' && !event.shiftKey)) {
       event.preventDefault()
       const selected = fileMentionSuggestions.value[fileMentionHighlightedIndex.value]
       if (selected) {
@@ -1491,9 +1515,38 @@ function onInputKeydown(event: KeyboardEvent): void {
     }
   }
 
-  const shouldSend = props.sendWithEnter !== false
-    ? event.key === 'Enter' && !event.shiftKey
-    : event.key === 'Enter' && (event.metaKey || event.ctrlKey)
+  if (
+    event.key === 'Escape'
+    && !event.metaKey
+    && !event.ctrlKey
+    && !event.altKey
+    && !event.shiftKey
+  ) {
+    event.preventDefault()
+    handleComposerEscape()
+    return
+  }
+
+  if (
+    event.key === 'Tab'
+    && event.shiftKey
+    && !event.metaKey
+    && !event.ctrlKey
+    && !event.altKey
+    && !isFileMentionOpen.value
+    && toggleCollaborationModeViaShortcut()
+  ) {
+    event.preventDefault()
+    return
+  }
+
+  const hasModKey = event.metaKey || event.ctrlKey
+  const isModShiftEnter = event.key === 'Enter' && hasModKey && event.shiftKey
+  const shouldSend = isModShiftEnter || (
+    props.sendWithEnter !== false
+      ? event.key === 'Enter' && !event.shiftKey
+      : event.key === 'Enter' && hasModKey
+  )
   if (shouldSend) {
     event.preventDefault()
     onSubmit(props.isTurnInProgress ? activeInProgressMode.value : 'steer')
@@ -1511,6 +1564,33 @@ function onInputKeydown(event: KeyboardEvent): void {
       return
     }
   }
+}
+
+function handleComposerEscape(): void {
+  if (isAttachMenuOpen.value) {
+    isAttachMenuOpen.value = false
+    inputRef.value?.focus()
+    return
+  }
+  if (isSlashMenuOpen.value) {
+    closeSlashMenu()
+    return
+  }
+  inputRef.value?.blur()
+}
+
+function toggleCollaborationModeViaShortcut(): boolean {
+  const modes = props.collaborationModes ?? []
+  const hasPlanMode = modes.some((mode) => mode.value === 'plan')
+  const hasDefaultMode = modes.some((mode) => mode.value === 'default')
+  if (!hasPlanMode) return false
+  if (isPlanModeSelected.value) {
+    if (!hasDefaultMode) return false
+    emit('update:selected-collaboration-mode', 'default')
+    return true
+  }
+  emit('update:selected-collaboration-mode', 'plan')
+  return true
 }
 
 function closeSlashMenu(): void {
@@ -1674,8 +1754,18 @@ function onDocumentClick(event: MouseEvent): void {
   isAttachMenuOpen.value = false
 }
 
+function onWindowKeydown(event: KeyboardEvent): void {
+  if (!isAttachMenuOpen.value) return
+  if (event.key !== 'Escape') return
+  if (event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) return
+  event.preventDefault()
+  isAttachMenuOpen.value = false
+  nextTick(() => inputRef.value?.focus())
+}
+
 onMounted(() => {
   document.addEventListener('click', onDocumentClick)
+  window.addEventListener('keydown', onWindowKeydown)
   window.addEventListener('drop', onWindowDragCleanup)
   window.addEventListener('dragend', onWindowDragCleanup)
   window.addEventListener('blur', onWindowDragCleanup)
@@ -1689,6 +1779,7 @@ defineExpose<ThreadComposerExposed>({
 
 onBeforeUnmount(() => {
   document.removeEventListener('click', onDocumentClick)
+  window.removeEventListener('keydown', onWindowKeydown)
   window.removeEventListener('drop', onWindowDragCleanup)
   window.removeEventListener('dragend', onWindowDragCleanup)
   window.removeEventListener('blur', onWindowDragCleanup)

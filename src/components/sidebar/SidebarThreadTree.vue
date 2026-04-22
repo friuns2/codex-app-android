@@ -370,7 +370,7 @@
 
     <Teleport to="body">
       <div v-if="renameThreadDialogVisible" class="rename-thread-overlay" @click.self="closeRenameThreadDialog">
-        <div class="rename-thread-panel" role="dialog" aria-modal="true" aria-label="Thread title">
+        <div class="rename-thread-panel" role="dialog" aria-modal="true" aria-label="Rename thread">
           <h3 class="rename-thread-title">Rename thread</h3>
           <p class="rename-thread-subtitle">Make it short and recognizable.</p>
           <input
@@ -890,6 +890,14 @@ function submitDeleteThread(): void {
   closeDeleteThreadDialog()
 }
 
+function openRenameThreadDialogForThread(threadIdRaw: string): void {
+  const threadId = threadIdRaw.trim()
+  if (!threadId) return
+  const thread = threadById.value.get(threadId)
+  if (!thread) return
+  openRenameThreadDialog(threadId, thread.title)
+}
+
 function getProjectDisplayName(projectName: string): string {
   return props.projectDisplayNameById[projectName] ?? projectName
 }
@@ -1109,14 +1117,19 @@ function updateOpenThreadMenuPlacement(threadId: string): void {
   const panelWidth = panelRect?.width || panelElement?.offsetWidth || 160
   const direction = updateThreadMenuDirection(threadId, panelHeight)
   const wrapRect = menuWrapElement.getBoundingClientRect()
+  const boundaryRect = findMenuBoundaryRect(menuWrapElement)
   const viewportGap = 8
   const offset = 4
   const maxLeft = Math.max(viewportGap, window.innerWidth - panelWidth - viewportGap)
   const left = clamp(wrapRect.right - panelWidth, viewportGap, maxLeft)
+  const minTop = Math.max(viewportGap, boundaryRect.top + viewportGap)
+  const boundaryMaxTop = boundaryRect.bottom - panelHeight - viewportGap
+  const viewportMaxTop = window.innerHeight - panelHeight - viewportGap
+  const maxTop = Math.max(minTop, Math.min(viewportMaxTop, boundaryMaxTop))
   const top =
     direction === 'up'
-      ? clamp(wrapRect.top - panelHeight - offset, viewportGap, Math.max(viewportGap, window.innerHeight - panelHeight - viewportGap))
-      : clamp(wrapRect.bottom + offset, viewportGap, Math.max(viewportGap, window.innerHeight - panelHeight - viewportGap))
+      ? clamp(wrapRect.top - panelHeight - offset, minTop, maxTop)
+      : clamp(wrapRect.bottom + offset, minTop, maxTop)
 
   openThreadMenuStyle.value = {
     left: `${Math.round(left)}px`,
@@ -1576,6 +1589,10 @@ watch(openThreadMenuId, (threadId) => {
   nextTick(() => {
     updateOpenThreadMenuPlacement(threadId)
   })
+})
+
+defineExpose({
+  openRenameThreadDialogForThread,
 })
 
 onBeforeUnmount(() => {

@@ -2770,3 +2770,2594 @@ New TestChat threads use the provider-scoped model selected in the new-thread co
 
 #### Rollback/Cleanup
 - Switch provider/model settings back to preferred defaults if needed
+
+---
+
+### User message edit action replaces rollback button
+
+#### Feature/Change Name
+The old rollback button is replaced with an `Edit message` action under each eligible user message, while keeping the existing behavior that appends the original text into the composer and rolls the thread back from that turn.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. An existing thread with at least one completed user/assistant turn
+
+#### Steps
+1. Open a thread with multiple completed turns
+2. Hover a completed user message
+3. Confirm `Edit message` appears under that user message
+4. Confirm assistant responses no longer show the old `Rollback` button
+5. Click `Edit message` on an earlier user message with recognizable text
+6. Observe the composer draft after the click
+7. Confirm the thread rolls back from the selected turn
+
+#### Expected Results
+- The action under eligible user messages is labeled `Edit message`
+- Assistant responses no longer render the old rollback action
+- Clicking `Edit message` appends the original user text into the composer
+- The existing rollback behavior still truncates the selected turn and later turns
+
+#### Rollback/Cleanup
+- Re-send the edited message if you want to recreate the conversation path
+
+---
+
+### API perf log bodyMB uses one decimal place
+
+#### Feature/Change Name
+`[codex-api-perf]` log entries format `bodyMB` with one decimal place instead of four.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. A request large enough to trigger `[codex-api-perf]` logging
+
+#### Steps
+1. Trigger a `/codex-api/` request that exceeds the perf logging threshold
+2. Inspect the server log line that includes `bodyMB=...`
+
+#### Expected Results
+- `bodyMB` is formatted with one decimal place, such as `bodyMB=3.4`
+- The log does not print extra precision such as `bodyMB=3.4489`
+
+#### Rollback/Cleanup
+- None
+### Feature: Find in thread keyboard/action parity
+
+- Prerequisites/setup:
+  - Start the app with `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+  - Open any thread containing repeated words across multiple messages.
+- Steps:
+  1. Open a thread page.
+  2. Press `Cmd+F` (macOS) or `Ctrl+F` (Windows/Linux).
+  3. Confirm the header "Find in thread" input receives focus.
+  4. Enter a query that matches multiple messages.
+  5. Use `Enter` and `Shift+Enter` in the find input.
+  6. Use the `↑` and `↓` buttons beside the input.
+  7. Click `✕` to clear search state.
+- Expected result(s):
+  - Match counter updates as `current/total`.
+  - Active match cycles forward/backward and scrolls into view.
+  - Active matched message is visibly highlighted.
+  - Clearing search resets counter to `0/0` and removes highlight.
+- Rollback/cleanup notes:
+  - Revert changes in `src/App.vue` and `src/components/content/ThreadConversation.vue` if this behavior is not desired.
+
+### Feature: New thread keyboard shortcut parity (`Cmd/Ctrl+N`)
+
+- Prerequisites/setup:
+  - Start the app with `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+  - Ensure at least one existing thread is present.
+- Steps:
+  1. Open a thread route.
+  2. Press `Cmd+N` (macOS) or `Ctrl+N` (Windows/Linux).
+  3. Confirm app navigates to Home/New thread screen.
+  4. Press `Cmd+N`/`Ctrl+N` again while already on Home.
+- Expected result(s):
+  - Shortcut is intercepted by app (no browser/system default action inside app view).
+  - On thread route, it transitions to Home/New thread.
+  - On Home route, it is a no-op navigation-wise and keeps Home active.
+- Rollback/cleanup notes:
+  - Revert the `onWindowKeyDown` shortcut branch in `src/App.vue`.
+
+### Feature: Composer send shortcut parity alias (`Cmd/Ctrl+Shift+Enter`)
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+  - Ensure at least one thread exists.
+- Steps:
+  1. Open any thread.
+  2. Type a unique marker into composer.
+  3. Press `Cmd+Shift+Enter` (macOS) or `Ctrl+Shift+Enter` (Windows/Linux).
+- Expected result(s):
+  - Message submits successfully with `Cmd/Ctrl+Shift+Enter`.
+  - Existing send shortcuts (`Enter`/`Cmd/Ctrl+Enter` depending on setting) continue to work.
+- Rollback/cleanup notes:
+  - Revert `isModShiftEnter` shortcut alias handling in `onInputKeydown` in `src/components/content/ThreadComposer.vue`.
+
+### Feature: Composer plan-mode shortcut parity (`Shift+Tab`)
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+  - Ensure at least one thread exists and composer is available.
+- Steps:
+  1. Open a thread route.
+  2. Open composer attach menu and note plan-mode toggle aria label (`Enable plan mode` or `Disable plan mode`).
+  3. Focus composer textarea.
+  4. Press `Shift+Tab`.
+  5. Re-open attach menu and read plan-mode toggle aria label again.
+- Expected result(s):
+  - `Shift+Tab` toggles collaboration mode between default and plan.
+  - Plan-mode aria label flips (`Enable ...` <-> `Disable ...`) after shortcut.
+  - Shortcut only applies when both relevant collaboration modes are available.
+- Rollback/cleanup notes:
+  - Revert `Shift+Tab` shortcut handling and `toggleCollaborationModeViaShortcut` in `src/components/content/ThreadComposer.vue`.
+
+### Feature: Composer Shift+Tab mention guard parity
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+  - Open a thread route with composer visible.
+- Steps:
+  1. Open attach menu and note current plan-mode aria label.
+  2. Focus composer and open file mention menu by typing ` @`.
+  3. Press `Shift+Tab`.
+  4. Re-check plan-mode aria label.
+- Expected result(s):
+  - Plan mode remains unchanged while mention menu is active.
+  - Mention menu remains active (not auto-committed by `Shift+Tab`).
+- Rollback/cleanup notes:
+  - Revert mention-menu Tab handling guard and `Shift+Tab` mention-open guard in `src/components/content/ThreadComposer.vue`.
+
+### Feature: Composer escape handling parity (`Escape`)
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+  - Open a thread route with composer visible.
+- Steps:
+  1. Focus composer textarea.
+  2. Press `Escape` with no modifiers.
+  3. Check active focused element.
+- Expected result(s):
+  - Composer escape path runs when mention menu is not active.
+  - Textarea is blurred (focus leaves composer input).
+- Rollback/cleanup notes:
+  - Revert `Escape` branch and `handleComposerEscape` in `src/components/content/ThreadComposer.vue`.
+
+### Feature: Composer escape mention handling parity
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+  - Open a thread route with composer visible.
+- Steps:
+  1. Focus composer and open mention menu by typing ` @`.
+  2. Press `Escape`.
+  3. Check mention menu visibility and composer focus.
+- Expected result(s):
+  - Mention menu closes.
+  - Composer remains focused (no blur while clearing mention UI).
+- Rollback/cleanup notes:
+  - Revert mention-escape handling in `onInputKeydown` in `src/components/content/ThreadComposer.vue`.
+
+### Feature: Composer escape attach-menu handling parity
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+  - Open a thread route with composer visible.
+- Steps:
+  1. Focus composer input.
+  2. Open composer attach menu.
+  3. Press `Escape`.
+- Expected result(s):
+  - Attach menu closes.
+  - Composer input regains/keeps focus.
+- Rollback/cleanup notes:
+  - Revert attach-menu escape handling in `handleComposerEscape` in `src/components/content/ThreadComposer.vue`.
+
+### Feature: Composer model shortcut parity (`Cmd/Ctrl+T`)
+
+- Prerequisites/setup:
+  - Start the app with `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+  - Ensure at least one existing thread is present.
+- Steps:
+  1. Open a thread route and focus composer textarea.
+  2. Press `Cmd+T` (macOS) or `Ctrl+T` (Windows/Linux).
+  3. Confirm composer model dropdown opens.
+  4. Press `Cmd+T`/`Ctrl+T` again.
+- Expected result(s):
+  - Shortcut is intercepted by app.
+  - First press opens composer model dropdown.
+  - Second press keeps dropdown open and moves focus into model picker controls.
+- Rollback/cleanup notes:
+  - Revert the `key === 't'` composer shortcut branch in `onWindowKeyDown` in `src/App.vue`.
+
+### Feature: Settings keyboard shortcut parity (`Cmd/Ctrl+,`)
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+- Steps:
+  1. Press `Cmd+,` (macOS) or `Ctrl+,` (Windows/Linux).
+  2. Confirm Settings panel opens.
+  3. Press `Cmd+,` / `Ctrl+,` again.
+- Expected result(s):
+  - First press toggles Settings open.
+  - Second press toggles Settings closed.
+- Rollback/cleanup notes:
+  - Revert the `event.key === ','` shortcut branch in `src/App.vue`.
+
+### Feature: Thread cycle shortcuts parity (`Cmd/Ctrl+Shift+[`, `Cmd/Ctrl+Shift+]`)
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+  - Ensure multiple threads exist in sidebar.
+- Steps:
+  1. Open a thread.
+  2. Press `Cmd/Ctrl+Shift+]` and confirm next thread opens.
+  3. Press `Cmd/Ctrl+Shift+[` and confirm previous thread opens.
+  4. Repeat enough times to verify wrap-around behavior.
+- Expected result(s):
+  - Right cycle shortcut advances to next thread in current sidebar order.
+  - Left cycle shortcut moves to previous thread.
+  - Navigation wraps at boundaries.
+- Rollback/cleanup notes:
+  - Revert `navigateThreadByOffset` and bracket-key shortcut branches in `src/App.vue`.
+
+### Feature: Skills route shortcut parity (`Cmd/Ctrl+Shift+K`)
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+- Steps:
+  1. Open any non-skills route (`/` or thread route).
+  2. Press `Cmd+Shift+K` (macOS) or `Ctrl+Shift+K` (Windows/Linux).
+  3. Confirm app navigates to Skills route.
+  4. Press shortcut again while on Skills route.
+- Expected result(s):
+  - First press navigates to Skills.
+  - Second press on Skills is a no-op (remains on Skills).
+- Rollback/cleanup notes:
+  - Revert `key === 'k' && shiftKey` shortcut branch in `src/App.vue`.
+
+### Feature: Review pane shortcut parity (`Cmd/Ctrl+Shift+R`)
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+  - Open a thread route.
+- Steps:
+  1. Press `Cmd+Shift+R` (macOS) or `Ctrl+Shift+R` (Windows/Linux).
+  2. Confirm Review pane opens.
+  3. Press shortcut again.
+- Expected result(s):
+  - First press toggles Review pane open.
+  - Second press toggles Review pane closed.
+  - Shortcut does nothing outside thread routes.
+- Rollback/cleanup notes:
+  - Revert `key === 'r' && shiftKey` shortcut branch in `src/App.vue`.
+
+### Feature: Escape closes Review pane
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+  - Open a thread route.
+- Steps:
+  1. Open Review pane (header toggle or `Cmd/Ctrl+Shift+R`).
+  2. Press `Escape`.
+- Expected result(s):
+  - Review pane closes.
+  - Thread route remains active.
+- Rollback/cleanup notes:
+  - Revert `Escape` handling branch for `isReviewPaneOpen` in `src/App.vue`.
+
+### Feature: Route history shortcuts parity (`Cmd/Ctrl+[`, `Cmd/Ctrl+]`)
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+  - Ensure at least one thread exists.
+- Steps:
+  1. Open a thread route.
+  2. Navigate to Skills route (`/#/skills`) from the app.
+  3. Press `Cmd+[` (macOS) or `Ctrl+[` (Windows/Linux).
+  4. Confirm app navigates back to the previous route.
+  5. Press `Cmd+]` or `Ctrl+]`.
+- Expected result(s):
+  - `Cmd/Ctrl+[` navigates backward in app history.
+  - `Cmd/Ctrl+]` navigates forward in app history.
+  - Existing `Cmd/Ctrl+Shift+[` and `Cmd/Ctrl+Shift+]` thread cycle shortcuts still work.
+- Rollback/cleanup notes:
+  - Revert non-shift bracket shortcut branches in `onWindowKeyDown` in `src/App.vue`.
+
+### Feature: Sidebar search shortcut parity (`Cmd/Ctrl+G`)
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+- Steps:
+  1. Open app on any route.
+  2. Press `Cmd+G` (macOS) or `Ctrl+G` (Windows/Linux).
+  3. Confirm sidebar search input becomes visible and focused.
+  4. Type a query and verify sidebar thread list filters.
+- Expected result(s):
+  - `Cmd/Ctrl+G` opens sidebar search if hidden.
+  - Keyboard focus lands in the sidebar search input.
+  - Existing search behavior and clear/escape handling continue to work.
+- Rollback/cleanup notes:
+  - Revert `key === 'g'` shortcut branch in `onWindowKeyDown` in `src/App.vue`.
+
+### Feature: Alternate new-thread shortcut parity (`Cmd/Ctrl+Shift+O`)
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+- Steps:
+  1. Open any non-home route (for example Skills).
+  2. Press `Cmd+Shift+O` (macOS) or `Ctrl+Shift+O` (Windows/Linux).
+  3. Confirm app navigates to Home/New thread screen.
+  4. Press the shortcut again while on Home.
+- Expected result(s):
+  - Shortcut is intercepted by app.
+  - It triggers the same behavior as `Cmd/Ctrl+N` new-thread shortcut.
+  - Repeated invocation on Home keeps Home active.
+- Rollback/cleanup notes:
+  - Revert `key === 'o' && shiftKey` shortcut branch in `onWindowKeyDown` in `src/App.vue`.
+
+### Feature: Open-folder shortcut parity (`Cmd/Ctrl+O`)
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+- Steps:
+  1. Open any route.
+  2. Press `Cmd+O` (macOS) or `Ctrl+O` (Windows/Linux).
+  3. Confirm "Select folder" dialog opens.
+  4. Press `Escape` to close the dialog.
+- Expected result(s):
+  - Shortcut is intercepted by app and opens local folder picker dialog.
+  - Folder filter input is focused when dialog opens.
+  - Escape closes the dialog.
+- Rollback/cleanup notes:
+  - Revert non-shift `key === 'o'` shortcut branch in `onWindowKeyDown` in `src/App.vue`.
+
+### Feature: Archive-thread shortcut parity (`Cmd/Ctrl+Shift+A`)
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+  - Ensure at least one thread exists.
+- Steps:
+  1. Open an existing thread.
+  2. Press `Cmd+Shift+A` (macOS) or `Ctrl+Shift+A` (Windows/Linux).
+  3. Observe sidebar thread list for removal of archived thread.
+- Expected result(s):
+  - Shortcut is intercepted by app.
+  - Selected thread is archived using the same behavior as sidebar archive action.
+  - Archived thread disappears from the active sidebar list.
+- Rollback/cleanup notes:
+  - Revert `key === 'a' && shiftKey` archive shortcut branch in `onWindowKeyDown` in `src/App.vue`.
+
+### Feature: Quick-chat shortcut parity (`Cmd/Ctrl+Alt+N`)
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+- Steps:
+  1. Open any non-home route (for example Skills).
+  2. Press `Cmd+Alt+N` (macOS) or `Ctrl+Alt+N` (Windows/Linux).
+  3. Confirm app navigates to Home/New thread screen.
+- Expected result(s):
+  - Shortcut is intercepted by app.
+  - It triggers the same Home/New thread navigation as `Cmd/Ctrl+N`.
+- Rollback/cleanup notes:
+  - Revert `key === 'n' && altKey` shortcut branch in `onWindowKeyDown` in `src/App.vue`.
+
+### Feature: Sidebar file-search shortcut parity (`Cmd/Ctrl+P`)
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+- Steps:
+  1. Open app on any route.
+  2. Press `Cmd+P` (macOS) or `Ctrl+P` (Windows/Linux).
+  3. Confirm sidebar search input opens and receives focus.
+  4. Type a marker query.
+- Expected result(s):
+  - Browser print dialog is suppressed in-app.
+  - Sidebar search becomes visible and focused.
+  - Typed query is reflected in sidebar search input.
+- Rollback/cleanup notes:
+  - Revert `key === 'p'` shortcut branch in `onWindowKeyDown` in `src/App.vue`.
+
+### Feature: Command-surface shortcut parity (`Cmd/Ctrl+Shift+P`)
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+- Steps:
+  1. Open any non-skills route.
+  2. Press `Cmd+Shift+P` (macOS) or `Ctrl+Shift+P` (Windows/Linux).
+  3. Confirm app navigates to Skills hub route.
+  4. Press shortcut again while already on Skills route.
+- Expected result(s):
+  - Shortcut is intercepted by app.
+  - First press opens Skills hub command surface.
+  - Second press on Skills is a no-op (stays on Skills).
+- Rollback/cleanup notes:
+  - Revert shift-modified `key === 'p'` shortcut branch in `onWindowKeyDown` in `src/App.vue`.
+
+### Feature: Alternate command-surface shortcut parity (`Cmd/Ctrl+K`)
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+- Steps:
+  1. Open any non-skills route.
+  2. Press `Cmd+K` (macOS) or `Ctrl+K` (Windows/Linux).
+  3. Confirm app navigates to Skills hub route.
+  4. Press shortcut again while already on Skills route.
+- Expected result(s):
+  - Shortcut is intercepted by app.
+  - First press opens Skills hub command surface.
+  - Second press on Skills is a no-op (stays on Skills).
+- Rollback/cleanup notes:
+  - Revert non-shift `key === 'k'` shortcut branch in `onWindowKeyDown` in `src/App.vue`.
+
+### Feature: Diff-panel shortcut parity fallback (`Cmd/Ctrl+Alt+B`)
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+  - Open an existing thread route.
+- Steps:
+  1. Press `Cmd+Alt+B` (macOS) or `Ctrl+Alt+B` (Windows/Linux).
+  2. Confirm review/diff pane opens.
+  3. Press shortcut again.
+- Expected result(s):
+  - Shortcut is intercepted by app.
+  - First press toggles review pane open.
+  - Second press toggles review pane closed.
+  - Shortcut is no-op outside thread routes.
+- Rollback/cleanup notes:
+  - Revert `key === 'b' && altKey` shortcut branch in `onWindowKeyDown` in `src/App.vue`.
+
+### Feature: Browser-panel shortcut parity fallback (`Cmd/Ctrl+Shift+B`)
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+- Steps:
+  1. Open app on any route.
+  2. Press `Cmd+Shift+B` (macOS) or `Ctrl+Shift+B` (Windows/Linux).
+  3. Confirm settings panel opens.
+  4. Press shortcut again.
+- Expected result(s):
+  - Shortcut is intercepted by app.
+  - First press opens settings side panel.
+  - Second press closes settings side panel.
+- Rollback/cleanup notes:
+  - Revert `key === 'b' && shiftKey` shortcut branch in `onWindowKeyDown` in `src/App.vue`.
+
+### Feature: Terminal-toggle shortcut parity fallback (`Cmd/Ctrl+J`)
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+- Steps:
+  1. Open app on desktop layout.
+  2. Press `Cmd+J` (macOS) or `Ctrl+J` (Windows/Linux).
+  3. Confirm sidebar visibility toggles.
+  4. Press shortcut again.
+- Expected result(s):
+  - Shortcut is intercepted by app.
+  - First press toggles sidebar collapsed state.
+  - Second press restores previous sidebar visibility.
+- Rollback/cleanup notes:
+  - Revert `key === 'j'` shortcut branch in `onWindowKeyDown` in `src/App.vue`.
+
+### Feature: New-window shortcut parity fallback (`Cmd/Ctrl+Shift+N`)
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+- Steps:
+  1. Open any non-home route.
+  2. Press `Cmd+Shift+N` (macOS) or `Ctrl+Shift+N` (Windows/Linux).
+  3. Confirm app navigates to Home/New thread screen.
+  4. Press shortcut again while already on Home.
+- Expected result(s):
+  - Shortcut is intercepted by app.
+  - It triggers the same home/new-thread behavior as `Cmd/Ctrl+N`.
+  - Repeated invocation on Home keeps Home active.
+- Rollback/cleanup notes:
+  - Revert `key === 'n' && shiftKey` shortcut branch in `onWindowKeyDown` in `src/App.vue`.
+
+### Feature: Thread-pin shortcut parity (`Cmd/Ctrl+Alt+P`)
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+  - Ensure at least one thread exists in the sidebar.
+- Steps:
+  1. Select a thread row in the sidebar.
+  2. Press `Cmd+Alt+P` (macOS) or `Ctrl+Alt+P` (Windows/Linux).
+  3. Observe pinned state indicator for the selected thread.
+  4. Press shortcut again.
+- Expected result(s):
+  - Shortcut is intercepted by app.
+  - First press toggles selected thread pin state.
+  - Second press restores original pin state.
+- Rollback/cleanup notes:
+  - Revert `key === 'p' && altKey` shortcut branch in `onWindowKeyDown` in `src/App.vue`.
+
+### Feature: Trace-toggle shortcut parity fallback (`Cmd/Ctrl+Shift+S`)
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+- Steps:
+  1. Open app on any route.
+  2. Press `Cmd+Shift+S` (macOS) or `Ctrl+Shift+S` (Windows/Linux).
+  3. Confirm settings panel opens.
+  4. Press shortcut again.
+- Expected result(s):
+  - Shortcut is intercepted by app.
+  - First press toggles settings panel open.
+  - Second press toggles settings panel closed.
+- Rollback/cleanup notes:
+  - Revert `key === 's' && shiftKey` shortcut branch in `onWindowKeyDown` in `src/App.vue`.
+
+### Feature: Deeplink-copy shortcut parity (`Cmd/Ctrl+Alt+L`)
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+- Steps:
+  1. Open any route (for example `#/skills`).
+  2. Press `Cmd+Alt+L` (macOS) or `Ctrl+Alt+L` (Windows/Linux).
+  3. Read clipboard text.
+- Expected result(s):
+  - Shortcut is intercepted by app.
+  - Clipboard contains current app deeplink URL.
+- Rollback/cleanup notes:
+  - Revert `key === 'l' && altKey` shortcut branch and `copyCurrentDeeplink` helper in `src/App.vue`.
+
+### Feature: Session-id copy shortcut parity fallback (`Cmd/Ctrl+Alt+C`)
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+- Steps:
+  1. Open `#/skills`.
+  2. Press `Cmd+Alt+C` (macOS) or `Ctrl+Alt+C` (Windows/Linux).
+  3. Read clipboard text.
+- Expected result(s):
+  - Shortcut is intercepted by app.
+  - Clipboard contains current session identifier fallback (`skills` on Skills route, thread id on thread route).
+- Rollback/cleanup notes:
+  - Revert `key === 'c' && altKey` shortcut branch and `copySessionIdentifier` helper in `src/App.vue`.
+
+### Feature: Working-directory copy shortcut parity fallback (`Cmd/Ctrl+Shift+C`)
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+- Steps:
+  1. Open `#/skills`.
+  2. Press `Cmd+Shift+C` (macOS) or `Ctrl+Shift+C` (Windows/Linux).
+  3. Read clipboard text.
+- Expected result(s):
+  - Shortcut is intercepted by app.
+  - Clipboard contains active cwd when available; otherwise current route-name fallback (`skills` on Skills route).
+- Rollback/cleanup notes:
+  - Revert `key === 'c' && shiftKey` shortcut branch and `copyWorkingDirectoryIdentifier` helper in `src/App.vue`.
+
+### Feature: Conversation-path copy shortcut parity fallback (`Cmd/Ctrl+Alt+Shift+C`)
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+- Steps:
+  1. Open `#/skills`.
+  2. Press `Cmd+Alt+Shift+C` (macOS) or `Ctrl+Alt+Shift+C` (Windows/Linux).
+  3. Read clipboard text.
+- Expected result(s):
+  - Shortcut is intercepted by app.
+  - Clipboard contains current conversation/path context (`/skills` on Skills route, `/thread/<id>` on thread route).
+- Rollback/cleanup notes:
+  - Revert `key === 'c' && altKey && shiftKey` shortcut branch and `copyConversationPath` helper in `src/App.vue`.
+
+### Feature: Conversation-path copy shortcut parity alias (`Cmd/Ctrl+Alt+S`)
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+  - Ensure at least one thread exists in sidebar.
+- Steps:
+  1. Open a thread route.
+  2. Press `Cmd+Alt+S` (macOS) or `Ctrl+Alt+S` (Windows/Linux).
+  3. Read clipboard content.
+- Expected result(s):
+  - Clipboard contains current conversation route path (example: `/thread/<id>`).
+  - Existing fallback combo `Cmd/Ctrl+Alt+Shift+C` remains functional.
+- Rollback/cleanup notes:
+  - Revert `key === 's' && altKey` conversation-path shortcut branch in `onWindowKeyDown` in `src/App.vue`.
+
+### Feature: Direct thread-slot shortcuts parity (`Cmd/Ctrl+1..9`)
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+  - Ensure at least two threads exist.
+- Steps:
+  1. Press `Cmd/Ctrl+2`.
+  2. Confirm the second thread in sidebar order becomes active.
+  3. Press `Cmd/Ctrl+1`.
+  4. Confirm the first thread becomes active.
+- Expected result(s):
+  - Shortcuts are intercepted by app.
+  - Number keys jump to matching 1-based thread slot among visible sidebar order.
+  - Out-of-range slots are no-op.
+- Rollback/cleanup notes:
+  - Revert numeric-key branch in `onWindowKeyDown` and `navigateThreadByNumber` in `src/App.vue`.
+
+### Feature: File-tree panel shortcut parity fallback (`Cmd/Ctrl+Shift+E`)
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+- Steps:
+  1. Open app on desktop layout.
+  2. Press `Cmd+Shift+E` (macOS) or `Ctrl+Shift+E` (Windows/Linux).
+  3. Confirm sidebar visibility toggles.
+  4. Press the shortcut again.
+- Expected result(s):
+  - Shortcut is intercepted by app.
+  - First press toggles sidebar collapsed state.
+  - Second press restores previous sidebar visibility.
+- Rollback/cleanup notes:
+  - Revert `key === 'e' && shiftKey` shortcut branch in `onWindowKeyDown` in `src/App.vue`.
+
+### Feature: File-tree panel shortcut parity alias (`Cmd/Ctrl+Shift+I`)
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+- Steps:
+  1. Confirm sidebar is visible.
+  2. Press `Cmd+Shift+I` (macOS) or `Ctrl+Shift+I` (Windows/Linux).
+  3. Confirm sidebar collapses.
+  4. Press shortcut again.
+- Expected result(s):
+  - First press collapses sidebar.
+  - Second press restores sidebar.
+  - Existing `Cmd/Ctrl+Shift+E` fallback remains functional.
+- Rollback/cleanup notes:
+  - Revert `key === 'i' && shiftKey` shortcut branch in `onWindowKeyDown` in `src/App.vue`.
+
+### Feature: Composer model shortcut parity (`Cmd/Ctrl+Shift+M`)
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+  - Open any thread route.
+- Steps:
+  1. Focus the thread page with composer visible.
+  2. Press `Cmd+Shift+M` (macOS) or `Ctrl+Shift+M` (Windows/Linux).
+  3. Confirm composer model dropdown opens.
+  4. Press the shortcut again.
+- Expected result(s):
+  - First press opens model dropdown.
+  - Second press keeps dropdown open and focuses model picker controls.
+  - Shortcut does not collapse sidebar.
+- Rollback/cleanup notes:
+  - Revert `key === 'm' && shiftKey` composer model shortcut branch and `openComposerModelDropdownViaShortcut` helper in `src/App.vue`.
+
+### Feature: Composer model shortcut thread-view parity (`Cmd/Ctrl+Shift+M`)
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+  - Open any thread route.
+- Steps:
+  1. Focus a non-composer element in thread view (for example header area).
+  2. Trigger `Cmd/Ctrl+Shift+M`.
+  3. Inspect composer model dropdown visibility.
+- Expected result(s):
+  - Shortcut still opens model dropdown while thread view is focused.
+- Rollback/cleanup notes:
+  - Revert thread-route shortcut branches for `key === 't'` and `key === 'm'` in `src/App.vue`.
+
+### Feature: Rename-thread shortcut parity fallback (`Command+Control+R`)
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+  - Open any thread route with an existing thread.
+- Steps:
+  1. Press `Command+Control+R` on macOS.
+  2. Enter a new thread title in the rename dialog and confirm.
+  3. Verify sidebar/header title updates.
+- Expected result(s):
+  - Shortcut is intercepted by app.
+  - Rename dialog opens with current thread title prefilled.
+  - Rename dialog accessibility label is `Rename thread`.
+  - Confirming a non-empty new title invokes thread rename and updates visible thread title.
+  - If sidebar is collapsed, shortcut expands sidebar and opens the same rename dialog flow.
+- Rollback/cleanup notes:
+  - Revert `metaKey && ctrlKey && key === 'r'` shortcut branch, sidebar-tree exposed rename opener, and shortcut rename helper wiring in `src/App.vue` / `src/components/sidebar/SidebarThreadTree.vue`.
+
+### Feature: Dictation shortcut parity fallback (`Ctrl+M`)
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+  - Open an existing thread route where composer mic button is visible.
+- Steps:
+  1. Press `Ctrl+M`.
+  2. Observe dictation mic control behavior.
+- Expected result(s):
+  - Shortcut is intercepted by app on thread routes.
+  - Existing composer dictation control (`.thread-composer-mic`) is triggered.
+  - If microphone permissions are unavailable, existing dictation error handling is shown by composer.
+- Rollback/cleanup notes:
+  - Revert `code === 'KeyM' && ctrlKey` shortcut branch and `toggleComposerDictationViaButton` helper in `src/App.vue`.
+
+### Feature: Composer inline quota/context status visibility parity
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+  - Open an active thread.
+- Steps:
+  1. Observe composer footer area below control row.
+  2. If quota data is available, confirm quota summary text is visible inline.
+  3. If context usage data is available, confirm context summary and progress bar are visible inline.
+  4. Hover each segment and verify tooltip content appears.
+- Expected result(s):
+  - Status text is visible in the composer surface (not tooltip-only).
+  - Quota summary and context usage can render together on one row.
+  - Context usage bar width reflects remaining context percent.
+- Rollback/cleanup notes:
+  - Revert inline status row markup in `src/components/content/ThreadComposer.vue`.
+
+### Feature: Locale-aware compact weekly refresh dates in quota summaries
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+  - Ensure quota snapshot data is available.
+- Steps:
+  1. Open any active thread and inspect composer inline quota summary.
+  2. Open settings account list and inspect account quota summary text.
+  3. Confirm compact refresh segment uses localized month/day formatting (for example `Apr 28` in English locales).
+- Expected result(s):
+  - Compact weekly refresh date is date-only and locale-aware.
+  - No hardcoded `X月Y日` formatting appears in non-CJK locales.
+- Rollback/cleanup notes:
+  - Revert `formatResetDateCompact` in `src/components/content/ThreadComposer.vue` and `src/App.vue`.
+
+### Feature: Sidebar thread menu boundary-aware direction/placement parity
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+  - Ensure sidebar has enough threads to scroll.
+- Steps:
+  1. Scroll thread list near the bottom of the sidebar.
+  2. Open the context menu for a near-bottom thread row (right-click).
+  3. Observe menu open direction and panel bounds.
+- Expected result(s):
+  - Menu opens upward (`data-open-direction="up"`) when there is insufficient room below.
+  - Menu panel stays within the nearest clipping/scroll container bounds.
+  - Menu does not get placed off-screen while still respecting viewport limits.
+- Rollback/cleanup notes:
+  - Revert `updateOpenThreadMenuPlacement` boundary clamping changes in `src/components/sidebar/SidebarThreadTree.vue`.
+
+### Feature: Detached HEAD branch trigger labeling parity
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+  - Open an existing thread route where no branch name is available.
+- Steps:
+  1. Observe header branch dropdown trigger text.
+  2. Open dropdown and inspect options.
+- Expected result(s):
+  - Trigger explicitly shows `Detached HEAD` (not empty/placeholder) when current branch is missing.
+  - Dropdown includes `Detached HEAD` option and trigger label matches it.
+- Rollback/cleanup notes:
+  - Revert `contentHeaderBranchDropdownValue` normalization and trimmed comparison in `src/App.vue`.
+
+### Feature: Detached HEAD normalization on branch-state load
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+  - Open a thread in a detached-head workspace state.
+- Steps:
+  1. Open the thread so branch state is loaded from RPC.
+  2. Open the header branch dropdown trigger.
+  3. Confirm label/value behavior when server branch is empty or null.
+- Expected result(s):
+  - Empty/blank branch names from branch-state reads are normalized to detached-head state.
+  - Trigger continues to show `Detached HEAD` consistently after branch-state refreshes.
+- Rollback/cleanup notes:
+  - Revert `loadThreadBranches` branch normalization in `src/App.vue`.
+
+### Feature: Composer placeholder copy parity (`@` files, `/` commands)
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+  - Open an active thread route.
+- Steps:
+  1. Inspect composer textarea placeholder text.
+- Expected result(s):
+  - Placeholder reads exactly: `Ask Codex anything, @ to add files, / for commands`.
+- Rollback/cleanup notes:
+  - Revert `placeholderText` active-thread copy in `src/components/content/ThreadComposer.vue`.
+
+### Feature: Thread rename realtime notification alias compatibility
+
+- Prerequisites/setup:
+  - Build app and inspect realtime rename handler implementation.
+- Steps:
+  1. Verify `thread/name/updated` handler reads both `threadName` and `name` fields from notification params.
+  2. Confirm build/typecheck passes.
+- Expected result(s):
+  - Rename notifications using either payload field (`threadName` or `name`) update thread title state.
+- Rollback/cleanup notes:
+  - Revert thread rename notification alias support in `src/composables/useDesktopState.ts`.
+
+### Feature: Settings workspace-identity label hardening
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+  - Open Settings account list (when accounts are available).
+- Steps:
+  1. Inspect each `Workspace ...` ID line in account cards.
+  2. Hover workspace ID line.
+- Expected result(s):
+  - Workspace ID line remains a dedicated label line prefixed by `Workspace ID`.
+  - Displayed short id uses up to last 12 characters for better differentiation.
+  - Tooltip shows full workspace/account id (`Workspace ID: <full-id>`).
+  - Workspace identity chip wraps long values (`break-all`) instead of clipping in narrow panels.
+  - Account meta line uses wrap-safe text (not forced truncation) in narrow panel layouts.
+- Rollback/cleanup notes:
+  - Revert workspace-id label/title and `shortAccountId` length update in `src/App.vue`.
+
+### Feature: Browser-panel shortcut fallback (`Cmd/Ctrl+Shift+B`) toggles review pane on thread routes
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 5173`.
+  - Ensure at least one thread exists in sidebar.
+- Steps:
+  1. Open any thread from the sidebar.
+  2. Press `Cmd+Shift+B` (macOS) or `Ctrl+Shift+B` (Windows/Linux).
+  3. Press the same shortcut again.
+- Expected result(s):
+  - First press opens review pane (`.review-pane`) and header branch dropdown gains `is-review-open` class.
+  - Second press closes review pane.
+  - Settings panel is not toggled by this shortcut.
+- Rollback/cleanup notes:
+  - Revert `Cmd/Ctrl+Shift+B` key handler branch in `src/App.vue`.
+
+### Feature: Browser-panel shortcut fallback (`Cmd/Ctrl+Shift+B`) toggles sidebar on non-thread routes
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 5173`.
+  - Open the Home route (not inside a thread).
+- Steps:
+  1. Confirm sidebar is visible.
+  2. Press `Cmd+Shift+B` (macOS) or `Ctrl+Shift+B` (Windows/Linux).
+  3. Press the same shortcut again.
+- Expected result(s):
+  - First press collapses sidebar UI on Home route.
+  - Second press restores sidebar UI.
+  - Shortcut does not no-op outside thread routes.
+- Rollback/cleanup notes:
+  - Revert non-thread fallback branch under the `Cmd/Ctrl+Shift+B` handler in `src/App.vue`.
+
+### Feature: Composer model shortcuts target enabled dropdown trigger
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 5173`.
+  - Open a thread route.
+- Steps:
+  1. Ensure at least one `.thread-composer-control .composer-dropdown-trigger` is disabled (for example a placeholder control) and another is enabled.
+  2. Press `Cmd+T` (macOS) or `Ctrl+T` (Windows/Linux).
+  3. Press `Cmd+Shift+M` (macOS) or `Ctrl+Shift+M` (Windows/Linux).
+- Expected result(s):
+  - Model dropdown opens/focuses from shortcuts even when the first trigger element is disabled.
+  - Shortcut handling does not silently no-op by targeting a disabled trigger.
+- Rollback/cleanup notes:
+  - Revert enabled-trigger fallback selection logic in `openComposerModelDropdownViaShortcut` (`src/App.vue`).
+
+### Feature: Search shortcuts expand collapsed sidebar before focusing search input
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 5173`.
+  - Open Home route.
+- Steps:
+  1. Collapse sidebar (`Cmd/Ctrl+J`).
+  2. Press `Cmd+P` (macOS) or `Ctrl+P` (Windows/Linux). Repeat with `Cmd/Ctrl+G`.
+- Expected result(s):
+  - Sidebar expands automatically when search shortcut is pressed while collapsed.
+  - Sidebar search input appears and receives focus.
+  - Focus remains on sidebar search input immediately after expansion (no transient focus loss).
+  - Existing search query text is selected on focus so typing replaces the full query immediately.
+  - Shortcut does not silently fail due to hidden search input.
+- Rollback/cleanup notes:
+  - Revert collapsed-sidebar expansion guard in `Cmd/Ctrl+P` and `Cmd/Ctrl+G` key branches in `src/App.vue`.
+
+### Feature: Trace fallback shortcut (`Cmd/Ctrl+Shift+S`) opens Settings deterministically
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 5173`.
+  - Open Home route.
+- Steps:
+  1. Collapse sidebar (`Cmd/Ctrl+J`).
+  2. Press `Cmd+Shift+S` (macOS) or `Ctrl+Shift+S` (Windows/Linux).
+  3. Press the same shortcut again.
+- Expected result(s):
+  - First press expands sidebar and opens Settings panel.
+  - Second press keeps Settings panel open (does not toggle closed).
+  - Shortcut consistently lands on configuration surface from any sidebar state.
+- Rollback/cleanup notes:
+  - Revert `openSettingsPanelViaShortcut` usage in `Cmd/Ctrl+Shift+S` key branch in `src/App.vue`.
+
+### Feature: Settings shortcut (`Cmd/Ctrl+,`) opens Settings deterministically
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 5173`.
+  - Open Home route.
+- Steps:
+  1. Collapse sidebar (`Cmd/Ctrl+J`).
+  2. Press `Cmd+,` (macOS) or `Ctrl+,` (Windows/Linux).
+  3. Press the same shortcut again.
+- Expected result(s):
+  - First press expands sidebar and opens Settings panel.
+  - Second press keeps Settings panel open (no close-toggle side effect).
+  - Shortcut reliably lands on Settings regardless of sidebar collapsed state.
+- Rollback/cleanup notes:
+  - Revert `openSettingsPanelViaShortcut` usage in `Cmd/Ctrl+,` key branch in `src/App.vue`.
+
+### Feature: Command-surface shortcut (`Cmd/Ctrl+K`) opens Skills from collapsed sidebar
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 5173`.
+  - Open Home route.
+- Steps:
+  1. Collapse sidebar (`Cmd/Ctrl+J`).
+  2. Press `Cmd+K` (macOS) or `Ctrl+K` (Windows/Linux).
+- Expected result(s):
+  - Route switches to `#/skills`.
+  - Sidebar expands so Skills page controls are immediately visible.
+  - Shortcut does not no-op when sidebar is collapsed.
+- Rollback/cleanup notes:
+  - Revert `openSkillsHubViaShortcut` usage in `Cmd/Ctrl+K` / `Cmd/Ctrl+Shift+P` branches in `src/App.vue`.
+
+### Feature: Command-surface shortcut (`Cmd/Ctrl+Shift+P`) opens Skills from collapsed sidebar
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 5173`.
+  - Open Home route.
+- Steps:
+  1. Collapse sidebar (`Cmd/Ctrl+J`).
+  2. Press `Cmd+Shift+P` (macOS) or `Ctrl+Shift+P` (Windows/Linux).
+- Expected result(s):
+  - Route switches to `#/skills`.
+  - Sidebar expands so Skills page controls are immediately visible.
+  - Behavior matches `Cmd/Ctrl+K` path (no shortcut drift).
+- Rollback/cleanup notes:
+  - Revert `openSkillsHubViaShortcut` usage in the `Cmd/Ctrl+Shift+P` branch in `src/App.vue`.
+
+### Feature: Sidebar toggle shortcuts ignore active text-input focus
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 5173`.
+  - Open Home route.
+- Steps:
+  1. Press `Cmd/Ctrl+G` to focus sidebar search input.
+  2. Type any query (for example `typing`).
+  3. While input remains focused, press `Cmd/Ctrl+J`.
+  4. While input remains focused, press `Cmd/Ctrl+B`.
+  5. Blur the input and press `Cmd/Ctrl+J` again.
+- Expected result(s):
+  - Steps 3-4 do not collapse sidebar while typing in the focused input.
+  - Step 5 still toggles sidebar after focus leaves editable field.
+- Steps:
+  6. Refocus sidebar search input.
+  7. Press `Cmd/Ctrl+Shift+E`, `Cmd/Ctrl+Shift+I`, and `Cmd/Ctrl+Shift+B`.
+  8. Press `Cmd/Ctrl+Alt+B`.
+- Expected result(s):
+  - Step 7 does not toggle/collapse sidebar while typing in focused input for alias-based panel shortcuts either.
+  - Step 8 does not toggle review-panel shortcut state while typing in focused input.
+- Rollback/cleanup notes:
+  - Revert editable-target guards in `Cmd/Ctrl+J`, `Cmd/Ctrl+B`, `Cmd/Ctrl+Shift+E`, `Cmd/Ctrl+Shift+I`, `Cmd/Ctrl+Shift+B`, and `Cmd/Ctrl+Alt+B` branches in `src/App.vue`.
+
+### Feature: Pin shortcut (`Cmd/Ctrl+Alt+P`) ignores active text-input focus
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 5173`.
+  - Ensure sidebar search input can be focused.
+- Steps:
+  1. Focus sidebar search input and type any query.
+  2. Press `Cmd/Ctrl+Alt+P` while the input remains focused.
+- Expected result(s):
+  - Pin toggle shortcut does not execute while typing in focused input.
+  - Input focus/typing flow remains uninterrupted.
+- Rollback/cleanup notes:
+  - Revert editable-target guard in the `Cmd/Ctrl+Alt+P` shortcut branch in `src/App.vue`.
+
+### Feature: Archive shortcut (`Cmd/Ctrl+Shift+A`) ignores active text-input focus
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 5173`.
+  - Ensure a thread is selected and sidebar search input can be focused.
+- Steps:
+  1. Focus sidebar search input and type any query.
+  2. Press `Cmd/Ctrl+Shift+A` while input remains focused.
+- Expected result(s):
+  - Archive shortcut does not execute while typing in focused input.
+  - No accidental archive action occurs from typing context.
+- Rollback/cleanup notes:
+  - Revert editable-target guard in the `Cmd/Ctrl+Shift+A` shortcut branch in `src/App.vue`.
+
+### Feature: Navigation/thread-cycle shortcuts ignore active text-input focus
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 5173`.
+  - Open any thread route and focus sidebar search input.
+- Steps:
+  1. With input focused, press `Cmd/Ctrl+[`, `Cmd/Ctrl+]`, `Cmd/Ctrl+Shift+[`, `Cmd/Ctrl+Shift+]`.
+  2. With input focused, press `Cmd/Ctrl+1` (or another numeric slot).
+- Expected result(s):
+  - Route/thread context remains unchanged while typing.
+  - Navigation/cycle shortcuts only act when focus leaves editable input.
+- Rollback/cleanup notes:
+  - Revert editable-target guards in bracket and numeric navigation shortcut branches in `src/App.vue`.
+
+### Feature: Command/settings shortcuts ignore active text-input focus
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 5173`.
+  - Focus sidebar search input.
+- Steps:
+  1. While input is focused, press `Cmd/Ctrl+K` and `Cmd/Ctrl+Shift+P`.
+  2. While input is focused, press `Cmd/Ctrl+,` and `Cmd/Ctrl+Shift+S`.
+- Expected result(s):
+  - No route jump to Skills and no Settings panel open while typing.
+  - Normal shortcut behavior still works after focus leaves editable input.
+- Rollback/cleanup notes:
+  - Revert editable-target guards in `Cmd/Ctrl+K`, `Cmd/Ctrl+Shift+P`, `Cmd/Ctrl+,`, and `Cmd/Ctrl+Shift+S` branches in `src/App.vue`.
+
+### Feature: Dictation shortcut (`Ctrl+M`) ignores active text-input focus
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 5173`.
+  - Open thread route and focus sidebar search input.
+- Steps:
+  1. While input remains focused, press `Ctrl+M`.
+- Expected result(s):
+  - Shortcut event is not intercepted/prevented by app-level dictation handler while typing in input.
+  - Input focus remains intact and typing flow is uninterrupted.
+- Rollback/cleanup notes:
+  - Revert editable-target guard in `Ctrl+M` shortcut branch in `src/App.vue`.
+
+### Feature: New-thread/open-folder shortcuts ignore active text-input focus
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 5173`.
+  - Open thread route and focus sidebar search input.
+- Steps:
+  1. While input is focused, press `Cmd/Ctrl+N`, `Cmd/Ctrl+Shift+N`, `Cmd/Ctrl+Alt+N`.
+  2. While input is focused, press `Cmd/Ctrl+O` and `Cmd/Ctrl+Shift+O`.
+- Expected result(s):
+  - Route does not jump away from current thread while typing.
+  - New thread/home/open-folder shortcuts only execute after focus leaves editable input.
+- Rollback/cleanup notes:
+  - Revert editable-target guards in new-thread/open-folder shortcut branches in `src/App.vue`.
+
+### Feature: Thread `R` shortcuts ignore active text-input focus
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 5173`.
+  - Open thread route and focus sidebar search input.
+- Steps:
+  1. While input is focused, press `Cmd/Ctrl+Shift+R`.
+  2. While input is focused, press `Cmd+Ctrl+R`.
+- Expected result(s):
+  - Review pane does not open/toggle from step 1 while typing.
+  - Rename action is not intercepted/executed from step 2 while typing.
+  - Input focus remains intact.
+- Rollback/cleanup notes:
+  - Revert editable-target guards in thread `R` shortcut branches in `src/App.vue`.
+
+### Feature: Copy shortcuts ignore active text-input focus
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 5173`.
+  - Focus sidebar search input.
+- Steps:
+  1. While input is focused, press:
+     - `Cmd/Ctrl+Alt+L`
+     - `Cmd/Ctrl+Alt+Shift+C`
+     - `Cmd/Ctrl+Alt+S`
+     - `Cmd/Ctrl+Shift+C`
+     - `Cmd/Ctrl+Alt+C`
+- Expected result(s):
+  - Shortcut events are not intercepted/prevented by app-level copy handlers while typing.
+  - Input focus remains intact and typing flow is uninterrupted.
+- Rollback/cleanup notes:
+  - Revert editable-target guards in copy shortcut branches in `src/App.vue`.
+
+### Feature: Model shortcuts ignore active text-input focus
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 5173`.
+  - Open thread route and focus sidebar search input.
+- Steps:
+  1. While input is focused, press `Cmd/Ctrl+T`.
+  2. While input is focused, press `Cmd/Ctrl+Shift+M`.
+- Expected result(s):
+  - Composer model dropdown does not open while typing.
+  - Shortcut events are not intercepted/prevented by app-level model handlers while input is focused.
+  - Model shortcuts still work when focus leaves editable input.
+- Rollback/cleanup notes:
+  - Revert editable-target guards in model shortcut branches in `src/App.vue`.
+
+### Feature: Search shortcuts ignore active text-input focus
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 5173`.
+  - Focus sidebar search input with an existing query.
+- Steps:
+  1. While input is focused, press `Cmd/Ctrl+G`.
+  2. While input is focused, press `Cmd/Ctrl+P`.
+- Expected result(s):
+  - Shortcut events are not intercepted/prevented by app-level search handlers while typing.
+  - Input focus and existing query text remain unchanged.
+  - Search shortcut still works from collapsed sidebar when not focused in editable input.
+- Rollback/cleanup notes:
+  - Revert editable-target guards in `Cmd/Ctrl+G` and `Cmd/Ctrl+P` branches in `src/App.vue`.
+
+### Feature: Editable-target guard includes generic contenteditable surfaces
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 5173`.
+- Steps:
+  1. Place focus inside an element with `[contenteditable]` (except `contenteditable=\"false\"`).
+  2. Trigger representative guarded shortcuts (for example `Cmd/Ctrl+K`, `Cmd/Ctrl+T`).
+  3. Place focus inside a Settings `select` control (for example Provider dropdown) and trigger the same shortcuts.
+- Expected result(s):
+  - Guarded shortcuts are ignored while contenteditable focus is active.
+  - No route/panel/model shortcut side effects occur from typing in contenteditable editors.
+  - Guarded shortcuts are also ignored while native `select` controls are focused.
+  - Guarded shortcuts are also ignored while controls using `role=\"combobox\"` are focused.
+  - Guarded shortcuts are also ignored while controls using `role=\"searchbox\"` are focused.
+- Rollback/cleanup notes:
+  - Revert contenteditable selector broadening in `isEditableShortcutTarget` in `src/App.vue`.
+
+### Feature: Thread-find shortcut ignores active text-input focus
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 5173`.
+  - Open thread route and focus sidebar search input.
+- Steps:
+  1. While input is focused, press `Cmd/Ctrl+F`.
+- Expected result(s):
+  - Shortcut event is not intercepted/prevented by app-level thread-find handler while typing.
+  - Focus stays on current input and does not jump to `.thread-find-input`.
+  - `Cmd/Ctrl+F` still focuses thread-find input when no editable input is focused.
+- Rollback/cleanup notes:
+  - Revert editable-target guard in `Cmd/Ctrl+F` thread-find branch in `src/App.vue`.
+
+### Feature: Escape panel-close handling ignores active editable focus
+
+- Prerequisites/setup:
+  - Start app with `pnpm run dev -- --host 0.0.0.0 --port 5173`.
+  - Open Settings panel and focus an editable control (for example provider select).
+- Steps:
+  1. While control remains focused, press `Escape`.
+- Expected result(s):
+  - Settings panel remains open while editable control is focused.
+  - Escape panel-close behavior still works when focus leaves editable controls.
+- Rollback/cleanup notes:
+  - Revert editable-target guard in global `Escape` handling branches in `src/App.vue`.
+
+### Fix: Editable Shortcut Guard Includes `role="spinbutton"`
+
+- Prerequisites/Setup:
+  - Start the app with `pnpm run dev -- --host 127.0.0.1 --port 5173`.
+  - Ensure Settings can be opened from the header.
+- Steps:
+  1. Open `http://127.0.0.1:5173`.
+  2. Open Settings and focus a numeric spinbutton field (or inject a temporary `role="spinbutton"` input in test harness).
+  3. While spinbutton remains focused, press `Cmd/Ctrl+K`, `Cmd/Ctrl+T`, and `Cmd/Ctrl+J`.
+  4. Verify focus remains on the spinbutton and route/sidebar state does not change.
+  5. Run `node output/playwright/shortcuts-ignore-spinbutton-focus-assert.cjs`.
+- Expected Results:
+  - Guarded shortcuts are ignored while `role="spinbutton"` is focused.
+  - Focus remains on spinbutton; no Skills navigation and no sidebar toggle occurs.
+  - Assertion script reports `guarded: true`.
+- Rollback/Cleanup:
+  - Remove `role="spinbutton"` from `isEditableShortcutTarget` selector if this guard is intentionally reverted.
+
+### Fix: `Cmd/Ctrl+Shift+B` Requires Active Thread For Review Toggle
+
+- Prerequisites/Setup:
+  - Start app: `pnpm run dev -- --host 127.0.0.1 --port 5173`.
+  - Ensure at least one thread exists.
+- Steps:
+  1. Open a thread route and press `Cmd/Ctrl+Shift+B` twice.
+  2. Confirm review pane opens then closes.
+  3. Navigate to Home route (`#/`) and press `Cmd/Ctrl+Shift+B` twice.
+  4. Confirm sidebar toggles collapsed/expanded.
+  5. Run:
+     - `node output/playwright/review-shortcut-shift-b-toggle-assert.cjs`
+     - `node output/playwright/review-shortcut-shift-b-home-sidebar-toggle-assert.cjs`
+- Expected Results:
+  - Thread route: shortcut toggles review pane only when an active thread exists.
+  - Home route: shortcut toggles sidebar visibility.
+  - Both assertion scripts report success.
+- Rollback/Cleanup:
+  - Revert `Cmd/Ctrl+Shift+B` conditional in `onWindowKeyDown` if fallback behavior is intentionally changed.
+
+### Fix: `Cmd/Ctrl+Alt+B` Requires Active Thread Context
+
+- Prerequisites/Setup:
+  - Start app: `pnpm run dev -- --host 127.0.0.1 --port 5173`.
+  - Ensure at least one thread exists.
+- Steps:
+  1. Open a thread and press `Cmd/Ctrl+Alt+B` twice.
+  2. Confirm review pane opens then closes.
+  3. Focus a text input and press `Cmd/Ctrl+Alt+B`.
+  4. Run:
+     - `node output/playwright/review-alt-b-toggle-assert.cjs`
+     - `node output/playwright/review-alt-b-ignore-input-focus-assert.cjs`
+- Expected Results:
+  - Review pane toggles only with active thread context.
+  - While typing in focused inputs, shortcut is ignored.
+  - Both assertion scripts report success.
+- Rollback/Cleanup:
+  - Revert the `selectedThreadId` gate in `onWindowKeyDown` if Alt+B behavior is intentionally broadened.
+
+### Fix: `Cmd+Ctrl+R` Rename Shortcut Is Thread-Route Scoped
+
+- Prerequisites/Setup:
+  - Start app: `pnpm run dev -- --host 127.0.0.1 --port 5173`.
+  - Ensure at least one thread exists.
+- Steps:
+  1. Open a thread route and trigger `Cmd+Ctrl+R`.
+  2. Verify rename dialog appears.
+  3. Navigate to Home (`#/`) and trigger `Cmd+Ctrl+R` again.
+  4. Verify no rename dialog appears and route stays home.
+  5. Run:
+     - `node output/playwright/rename-shortcut-cmd-ctrl-r-thread-opens-assert.cjs`
+     - `node output/playwright/rename-shortcut-cmd-ctrl-r-home-ignored-assert.cjs`
+- Expected Results:
+  - Thread route: rename dialog opens.
+  - Home route: shortcut is ignored.
+  - Both assertion scripts pass.
+- Rollback/Cleanup:
+  - Revert `route.name === 'thread'` gate in the `Cmd+Ctrl+R` handler if global rename behavior is intentionally reintroduced.
+
+### Fix: `Cmd/Ctrl+Shift+A` Archive Shortcut Is Thread-Route Scoped
+
+- Prerequisites/Setup:
+  - Start app: `pnpm run dev -- --host 127.0.0.1 --port 5173`.
+- Steps:
+  1. Navigate to Home (`#/`).
+  2. Press `Cmd/Ctrl+Shift+A`.
+  3. Verify route remains `#/` and no archive action is triggered.
+  4. Run `node output/playwright/archive-shortcut-shift-a-home-ignored-assert.cjs`.
+- Expected Results:
+  - Archive shortcut is ignored on Home/non-thread routes.
+  - Assertion script reports `ignoredOnHome: true`.
+- Rollback/Cleanup:
+  - Revert `route.name === 'thread'` gate in archive shortcut handler if global archive behavior is intentionally required.
+
+### Fix: Pin Shortcut Uses Active Thread Only (No First-Row Fallback)
+
+- Prerequisites/Setup:
+  - Start app: `pnpm run dev -- --host 127.0.0.1 --port 5173`.
+- Steps:
+  1. Inspect `toggleSelectedThreadPin()` implementation.
+  2. Verify it queries only `.thread-row[data-active="true"]` and does not fallback to `.thread-row`.
+  3. Run:
+     - `node -e "const fs=require('fs');const s=fs.readFileSync('src/App.vue','utf8');const ok=!s.includes('?? document.querySelector<HTMLElement>(\\'.thread-row\\')')&&s.includes('document.querySelector<HTMLElement>(\\'.thread-row[data-active=\\\"true\\\"]\\')');console.log(JSON.stringify({pinFallbackRemoved:ok})); if(!ok) process.exit(1);"`
+- Expected Results:
+  - Pin shortcut targets active thread row only.
+  - Source assertion reports `{\"pinFallbackRemoved\":true}`.
+- Rollback/Cleanup:
+  - Reintroduce `.thread-row` fallback only if product behavior intentionally allows pinning first visible row without active selection.
+
+### Fix: `Cmd/Ctrl+Alt+P` Pin Shortcut Is Thread-Route Scoped
+
+- Prerequisites/Setup:
+  - Start app: `pnpm run dev -- --host 127.0.0.1 --port 5173`.
+- Steps:
+  1. Navigate to Home (`#/`).
+  2. Press `Cmd/Ctrl+Alt+P`.
+  3. Verify route remains `#/` and no pin action is consumed.
+  4. Run:
+     - `node output/playwright/pin-shortcut-alt-p-home-ignored-assert.cjs`
+     - `node -e "const fs=require('fs');const s=fs.readFileSync('src/App.vue','utf8');const ok=/event\\.code === 'KeyP'[\\s\\S]*route\\.name === 'thread'[\\s\\S]*selectedThreadId\\.value/.test(s);console.log(JSON.stringify({pinShortcutThreadScoped:ok})); if(!ok) process.exit(1);"`
+- Expected Results:
+  - Pin shortcut is ignored on non-thread routes.
+  - Runtime assertion reports `ignoredOnHome: true`.
+  - Source assertion reports `{\"pinShortcutThreadScoped\":true}`.
+- Rollback/Cleanup:
+  - Revert thread-route gate for `KeyP` shortcut if global pin behavior is intentionally restored.
+
+### Fix: Model Shortcuts Require Active Thread Selection (`Cmd/Ctrl+T`, `Cmd/Ctrl+Shift+M`)
+
+- Prerequisites/Setup:
+  - Start app: `pnpm run dev -- --host 127.0.0.1 --port 5173`.
+  - Ensure at least one thread exists.
+- Steps:
+  1. Open a thread and press `Cmd/Ctrl+T`.
+  2. Verify composer model control opens/focuses.
+  3. Focus a text input and press `Cmd/Ctrl+T` and `Cmd/Ctrl+Shift+M`.
+  4. Verify typing focus is preserved (shortcuts ignored while editing).
+  5. Run:
+     - `node output/playwright/model-shortcut-ctrl-t-thread-opens-assert.cjs`
+     - `node output/playwright/model-shortcuts-ignore-input-focus-assert.cjs`
+     - `node -e "const fs=require('fs');const s=fs.readFileSync('src/App.vue','utf8');const t=/event\\.key === 't'[\\s\\S]*route\\.name === 'thread'[\\s\\S]*selectedThreadId\\.value/.test(s);const m=/event\\.key === 'm'[\\s\\S]*event\\.shiftKey[\\s\\S]*route\\.name === 'thread'[\\s\\S]*selectedThreadId\\.value/.test(s);const ok=t&&m;console.log(JSON.stringify({modelShortcutsThreadSelectionScoped:ok})); if(!ok) process.exit(1);"`
+- Expected Results:
+  - `Cmd/Ctrl+T` opens model controls on active thread route.
+  - While typing in inputs, model shortcuts are ignored.
+  - Source assertion reports `{\"modelShortcutsThreadSelectionScoped\":true}`.
+- Rollback/Cleanup:
+  - Revert `selectedThreadId` gates on model shortcuts if no-selection model control behavior is intentionally required.
+
+### Fix: `Cmd/Ctrl+F` Selects Existing Thread-Find Query
+
+- Prerequisites/Setup:
+  - Start app: `pnpm run dev -- --host 127.0.0.1 --port 5173`.
+  - Ensure at least one thread exists.
+- Steps:
+  1. Open any thread.
+  2. Enter a query in thread-find input (for example `marker-query`).
+  3. Press `Cmd/Ctrl+F`.
+  4. Verify thread-find input remains focused and the full query text is selected.
+  5. Run:
+     - `node output/playwright/thread-find-shortcut-selects-query-assert.cjs`
+     - `node output/playwright/thread-find-shortcut-focuses-assert.cjs`
+- Expected Results:
+  - Existing query is fully selected (`selectionStart=0`, `selectionEnd=query.length`).
+  - Focus remains on thread-find input.
+  - Both assertion scripts pass.
+- Rollback/Cleanup:
+  - Revert `focusThreadFindInput()` usage in `Cmd/Ctrl+F` handler if selection-on-focus behavior is intentionally removed.
+
+### Fix: Dictation Shortcut (`Ctrl+M`) Ignores Terminal-Like Focus
+
+- Prerequisites/Setup:
+  - Start app: `pnpm run dev -- --host 127.0.0.1 --port 5173`.
+  - Ensure at least one thread exists.
+- Steps:
+  1. Open a thread route.
+  2. Focus a terminal-like element (`[data-codex-terminal]` / `.xterm` equivalent).
+  3. Press `Ctrl+M`.
+  4. Verify shortcut is ignored (no dictation toggle side effects) and terminal focus remains.
+  5. Run:
+     - `node output/playwright/dictation-shortcut-ignore-terminal-focus-assert.cjs`
+     - `node output/playwright/dictation-shortcut-ignore-input-focus-assert.cjs`
+- Expected Results:
+  - Dictation shortcut is ignored while terminal-like focus is active.
+  - Existing editable-input guard behavior still passes.
+- Rollback/Cleanup:
+  - Revert `!isTerminalLikeFocused()` gate in `Ctrl+M` handler if terminal contexts should intentionally allow dictation hotkey interception.
+
+### Fix: Thread `R` Shortcuts Ignore Terminal-Like Focus
+
+- Prerequisites/Setup:
+  - Start app: `pnpm run dev -- --host 127.0.0.1 --port 5173`.
+  - Ensure at least one thread exists.
+- Steps:
+  1. Open a thread route.
+  2. Focus terminal-like surface (`[data-codex-terminal]` / `.xterm` equivalent).
+  3. Trigger `Cmd+Ctrl+R` and `Cmd/Ctrl+Shift+R`.
+  4. Verify rename dialog and review pane states are unchanged.
+  5. Run:
+     - `node output/playwright/thread-r-shortcuts-ignore-terminal-focus-assert.cjs`
+     - `node output/playwright/rename-shortcut-cmd-ctrl-r-thread-opens-assert.cjs`
+     - `node output/playwright/review-shortcut-shift-b-toggle-assert.cjs`
+- Expected Results:
+  - Under terminal focus, both `R` shortcuts are ignored.
+  - Outside terminal focus, rename and review shortcuts still work as expected.
+- Rollback/Cleanup:
+  - Revert `!isTerminalLikeFocused()` guards on `R` shortcut handlers if terminal contexts should intentionally permit shortcut interception.
+
+### Fix: Global `Escape` Panel-Close Ignores Terminal-Like Focus
+
+- Prerequisites/Setup:
+  - Start app: `pnpm run dev -- --host 127.0.0.1 --port 5173`.
+  - Ensure at least one thread exists.
+- Steps:
+  1. Open Settings panel.
+  2. Focus terminal-like element (`[data-codex-terminal]` / `.xterm` equivalent).
+  3. Press `Escape` and verify Settings remains open.
+  4. Open thread review pane.
+  5. Focus terminal-like element again and press `Escape`.
+  6. Verify review pane remains open.
+  7. Run:
+     - `node output/playwright/escape-ignore-terminal-focus-panels-assert.cjs`
+     - `node output/playwright/escape-ignore-input-focus-settings-assert.cjs`
+- Expected Results:
+  - `Escape` is ignored for settings/review close while terminal-like focus is active.
+  - Existing editable-input escape guard remains intact.
+- Rollback/Cleanup:
+  - Revert `!isTerminalLikeFocused()` in global `Escape` handlers if terminal surfaces should intentionally allow panel-close behavior.
+
+### Fix: Command Surface Shortcuts Ignore Terminal-Like Focus (`Cmd/Ctrl+K`, `Cmd/Ctrl+Shift+P`)
+
+- Prerequisites/Setup:
+  - Start app: `pnpm run dev -- --host 127.0.0.1 --port 5173`.
+- Steps:
+  1. Focus terminal-like element (`[data-codex-terminal]` / `.xterm` equivalent), including a non-editable focus target.
+  2. Trigger `Cmd/Ctrl+K` and `Cmd/Ctrl+Shift+P`.
+  3. Verify route/hash does not jump to `#/skills` and terminal focus remains.
+  4. Run:
+     - `node output/playwright/command-shortcuts-ignore-terminal-focus-assert.cjs`
+     - `node output/playwright/skills-shortcut-k-opens-from-collapsed-assert.cjs`
+- Expected Results:
+  - Under terminal focus, command shortcuts are ignored.
+  - Outside terminal focus, `Cmd/Ctrl+K` still opens Skills and expands sidebar when collapsed.
+- Verification Note:
+  - Terminal-focus assertions should use a non-editable focus probe (`div` with `tabIndex=-1`) inside `[data-codex-terminal]`, not an `input` element.
+- Rollback/Cleanup:
+  - Revert `!isTerminalLikeFocused()` gates in `K` shortcut handlers if terminal contexts should intentionally allow command-surface accelerator interception.
+
+### Fix: Settings Shortcuts Ignore Terminal-Like Focus (`Cmd/Ctrl+,`, `Cmd/Ctrl+Shift+S`)
+
+- Prerequisites/Setup:
+  - Start app: `pnpm run dev -- --host 127.0.0.1 --port 5173`.
+- Steps:
+  1. Focus terminal-like element (`[data-codex-terminal]` / `.xterm` equivalent).
+  2. Trigger `Cmd/Ctrl+,` and `Cmd/Ctrl+Shift+S`.
+  3. Verify settings panel does not open and route/hash remains unchanged.
+  4. Run:
+     - `node output/playwright/settings-shortcuts-ignore-terminal-focus-assert.cjs`
+     - `node output/playwright/settings-shortcut-comma-opens-from-collapsed-assert.cjs`
+     - `node output/playwright/settings-shortcut-shift-s-opens-from-collapsed-assert.cjs`
+- Expected Results:
+  - Under terminal focus, settings shortcuts are ignored.
+  - Outside terminal focus, both shortcuts still open Settings and keep it open on repeated keypress.
+- Verification Note:
+  - Use non-editable terminal focus probes so the test validates terminal guards, not editable-input guards.
+- Rollback/Cleanup:
+  - Revert `!isTerminalLikeFocused()` gates in settings shortcut handlers if terminal contexts should intentionally allow settings-accelerator interception.
+
+### Fix: Search Shortcuts Ignore Terminal-Like Focus (`Cmd/Ctrl+G`, `Cmd/Ctrl+P`)
+
+- Prerequisites/Setup:
+  - Start app: `pnpm run dev -- --host 127.0.0.1 --port 5173`.
+- Steps:
+  1. Focus terminal-like element (`[data-codex-terminal]` / `.xterm` equivalent).
+  2. Trigger `Cmd/Ctrl+G` and `Cmd/Ctrl+P`.
+  3. Verify route/hash is unchanged and sidebar search does not open.
+  4. Run:
+     - `node output/playwright/search-shortcuts-ignore-terminal-focus-assert.cjs`
+     - `node output/playwright/sidebar-search-shortcut-expands-assert.cjs`
+     - `node output/playwright/sidebar-search-shortcut-g-expands-assert.cjs`
+- Expected Results:
+  - Under terminal focus, search shortcuts are ignored.
+  - Outside terminal focus, both shortcuts still uncollapse sidebar and focus search input.
+- Verification Note:
+  - Use non-editable terminal focus probes so the assertion cannot pass through editable-target gating.
+- Rollback/Cleanup:
+  - Revert `!isTerminalLikeFocused()` gates in `G`/`P` search handlers if terminal contexts should intentionally allow global search accelerator interception.
+
+### Fix: Navigation Shortcuts Ignore Terminal-Like Focus (`Cmd/Ctrl+1..9`, `Cmd/Ctrl+[`, `Cmd/Ctrl+]`, `Cmd/Ctrl+Shift+[`, `Cmd/Ctrl+Shift+]`)
+
+- Prerequisites/Setup:
+  - Start app: `pnpm run dev -- --host 127.0.0.1 --port 5173`.
+- Steps:
+  1. Focus terminal-like element (`[data-codex-terminal]` / `.xterm` equivalent).
+  2. Trigger digit thread shortcut (`Cmd/Ctrl+1`) and bracket navigation shortcuts with/without `Shift`.
+  3. Verify hash/route remains unchanged and terminal focus remains active.
+  4. Run:
+     - `node output/playwright/navigation-shortcuts-ignore-terminal-focus-assert.cjs`
+     - `node output/playwright/navigation-shortcuts-ignore-input-focus-assert.cjs`
+- Expected Results:
+  - Under terminal focus, all listed navigation shortcuts are ignored.
+  - Existing editable-input guard behavior remains intact.
+- Rollback/Cleanup:
+  - Revert `!isTerminalLikeFocused()` gates in digit/bracket navigation handlers if terminal contexts should intentionally allow navigation accelerator interception.
+
+### Fix: Sidebar/Panel Toggle Shortcuts Ignore Terminal-Like Focus
+
+- Prerequisites/Setup:
+  - Start app: `pnpm run dev -- --host 127.0.0.1 --port 5173`.
+- Steps:
+  1. Focus terminal-like element (`[data-codex-terminal]` / `.xterm` equivalent).
+  2. Trigger `Cmd/Ctrl+B`, `Cmd/Ctrl+J`, `Cmd/Ctrl+Shift+E`, `Cmd/Ctrl+Shift+I`, and `Cmd/Ctrl+Shift+B`.
+  3. Verify route/hash and sidebar state remain unchanged.
+  4. Run:
+     - `node output/playwright/sidebar-toggle-shortcuts-ignore-terminal-focus-assert.cjs`
+     - `node output/playwright/review-shortcut-shift-b-home-sidebar-toggle-assert.cjs`
+     - `node output/playwright/review-shortcut-shift-b-toggle-assert.cjs`
+- Expected Results:
+  - Under terminal focus, listed toggle shortcuts are ignored.
+  - Outside terminal focus, Shift+B still toggles review on thread route and sidebar on home route.
+- Rollback/Cleanup:
+  - Revert `!isTerminalLikeFocused()` gates in sidebar/panel toggle handlers if terminal contexts should intentionally allow these accelerators.
+
+### Fix: Copy Shortcuts Ignore Terminal-Like Focus
+
+- Prerequisites/Setup:
+  - Start app: `pnpm run dev -- --host 127.0.0.1 --port 5173`.
+- Steps:
+  1. Focus terminal-like element (`[data-codex-terminal]` / `.xterm` equivalent).
+  2. Trigger copy shortcuts: `Cmd/Ctrl+Alt+L`, `Cmd/Ctrl+Alt+Shift+C`, `Cmd/Ctrl+Alt+S`, `Cmd/Ctrl+Shift+C`, `Cmd/Ctrl+Alt+C`.
+  3. Verify route/hash remains unchanged and terminal focus remains active.
+  4. Run:
+     - `node output/playwright/copy-shortcuts-ignore-terminal-focus-assert.cjs`
+     - `node output/playwright/copy-shortcuts-ignore-input-focus-assert.cjs`
+- Expected Results:
+  - Under terminal focus, copy shortcuts are ignored.
+  - Existing editable-input guard behavior remains intact.
+- Rollback/Cleanup:
+  - Revert `!isTerminalLikeFocused()` gates in copy shortcut handlers if terminal contexts should intentionally allow these accelerators.
+
+### Fix: Thread-Find Shortcut (`Cmd/Ctrl+F`) Ignores Terminal-Like Focus
+
+- Prerequisites/Setup:
+  - Start app: `pnpm run dev -- --host 127.0.0.1 --port 5173`.
+  - Ensure at least one thread exists.
+- Steps:
+  1. Open a thread route.
+  2. Focus terminal-like element (`[data-codex-terminal]` / `.xterm` equivalent).
+  3. Press `Cmd/Ctrl+F`.
+  4. Verify thread-find input is not focused and route/hash remains unchanged.
+  5. Run:
+     - `node output/playwright/thread-find-shortcut-ignore-terminal-focus-assert.cjs`
+     - `node output/playwright/thread-find-shortcut-focuses-assert.cjs`
+     - `node output/playwright/thread-find-shortcut-selects-query-assert.cjs`
+- Expected Results:
+  - Under terminal focus, thread-find shortcut is ignored.
+  - Outside terminal focus, thread-find shortcut still focuses input and selects existing query text.
+- Rollback/Cleanup:
+  - Revert `!isTerminalLikeFocused()` gate in `Cmd/Ctrl+F` handler if terminal contexts should intentionally allow thread-find accelerator interception.
+
+### Fix: New-Thread/Open-Folder Shortcuts Ignore Terminal-Like Focus
+
+- Prerequisites/Setup:
+  - Start app: `pnpm run dev -- --host 127.0.0.1 --port 5173`.
+- Steps:
+  1. Focus terminal-like element (`[data-codex-terminal]` / `.xterm` equivalent).
+  2. Trigger `Cmd/Ctrl+N`, `Cmd/Ctrl+Shift+N`, `Cmd/Ctrl+Alt+N`, `Cmd/Ctrl+Shift+O`, and `Cmd/Ctrl+O`.
+  3. Verify route/hash stays unchanged and open-folder dialog does not appear.
+  4. Run:
+     - `node output/playwright/newthread-openfolder-shortcuts-ignore-terminal-focus-assert.cjs`
+     - `node output/playwright/newthread-openfolder-shortcuts-ignore-input-focus-assert.cjs`
+- Expected Results:
+  - Under terminal focus, new-thread/open-folder shortcuts are ignored.
+  - Existing editable-input guard behavior remains intact.
+- Rollback/Cleanup:
+  - Revert `!isTerminalLikeFocused()` gates in `N/O` shortcut handlers if terminal contexts should intentionally allow workspace/thread navigation accelerators.
+
+### Fix: Thread Action Shortcuts Ignore Terminal-Like Focus (`Cmd/Ctrl+Alt+P`, `Cmd/Ctrl+Alt+B`, `Cmd/Ctrl+Shift+A`)
+
+- Prerequisites/Setup:
+  - Start app: `pnpm run dev -- --host 127.0.0.1 --port 5173`.
+  - Ensure at least one thread exists.
+- Steps:
+  1. Open a thread route.
+  2. Focus terminal-like element (`[data-codex-terminal]` / `.xterm` equivalent).
+  3. Trigger `Cmd/Ctrl+Alt+P`, `Cmd/Ctrl+Alt+B`, and `Cmd/Ctrl+Shift+A`.
+  4. Verify thread route/hash, review-open state, and active thread pin state remain unchanged.
+  5. Run:
+     - `node output/playwright/thread-action-shortcuts-ignore-terminal-focus-assert.cjs`
+     - `node output/playwright/review-alt-b-toggle-assert.cjs`
+     - `node output/playwright/archive-shortcut-shift-a-home-ignored-assert.cjs`
+- Expected Results:
+  - Under terminal focus, thread action shortcuts are ignored.
+  - Outside terminal focus, review shortcut behavior remains intact.
+- Rollback/Cleanup:
+  - Revert `!isTerminalLikeFocused()` gates in pin/review/archive shortcut handlers if terminal contexts should intentionally allow these accelerators.
+
+### Verification Utility: Terminal-Focus Probe Audit
+
+- Purpose:
+  - Ensure every `*-ignore-terminal-focus-*.cjs` Playwright assertion uses non-editable terminal probes (not `<input>`), preventing false positives from editable-target guards.
+- Steps:
+  1. Run `node output/playwright/audit-terminal-focus-probes.cjs`.
+- Expected Results:
+  - `allCompliant: true`
+  - each listed script reports `usesEditableInputProbe: false` and `usesNonEditableProbe: true`.
+
+### Verification Utility: Source Audit For Terminal Shortcut Guards
+
+- Purpose:
+  - Ensure `onWindowKeyDown` global shortcut branches that already use editable-target checks also include terminal-focus guards.
+- Steps:
+  1. Run `node output/playwright/audit-shortcut-terminal-guards.cjs`.
+- Expected Results:
+  - `allCompliant: true`
+  - `missingTerminalGuard: 0`.
+
+### Verification Utility: Full Terminal-Focus Guard Suite
+
+- Purpose:
+  - Run all terminal-focus runtime assertions in one command and fail fast on any regression.
+- Steps:
+  1. Run `node output/playwright/run-terminal-focus-suite.cjs`.
+  2. (Optional structural checks) run:
+     - `node output/playwright/audit-terminal-focus-probes.cjs`
+     - `node output/playwright/audit-shortcut-terminal-guards.cjs`
+- Expected Results:
+  - Suite summary reports `failed: 0`.
+  - Structural audits report full compliance.
+
+### Verification Utility: One-Command Parity Checkpoint
+
+- Purpose:
+  - Run full parity verification stack (build + positive shortcut smoke + terminal-focus suite + structural audits) in one command.
+- Steps:
+  1. Run `node output/playwright/run-parity-verification-all.cjs`.
+- Expected Results:
+  - Summary reports all 6 steps passed and `failed: 0`.
+
+### Verification Utility: Thread-Scoped Shortcut Gate Audit
+
+- Purpose:
+  - Ensure any `onWindowKeyDown` branch relying on `selectedThreadId.value` is explicitly thread-route scoped.
+- Steps:
+  1. Run `node output/playwright/audit-shortcut-thread-scope.cjs`.
+  2. (Behavior spot-check) run:
+     - `node output/playwright/rename-shortcut-cmd-ctrl-r-home-ignored-assert.cjs`
+     - `node output/playwright/review-alt-b-toggle-assert.cjs`
+- Expected Results:
+  - Audit reports `allCompliant: true` and `missingThreadRouteGate: 0`.
+  - Home-route rename shortcut remains ignored; thread-route review shortcut still toggles.
+
+### Feature: Review-pane shortcut parity alias (`Cmd/Ctrl+Shift+R`)
+
+- Prerequisites/Setup:
+  - Start app: `pnpm run dev -- --host 127.0.0.1 --port 5173`.
+  - Ensure at least one thread exists.
+- Steps:
+  1. Open an existing thread.
+  2. Press `Cmd/Ctrl+Shift+R` once.
+  3. Verify review pane opens (`.content-header-branch-dropdown.is-review-open` appears).
+  4. Press `Cmd/Ctrl+Shift+R` again.
+  5. Verify review pane closes.
+  6. Run:
+     - `node output/playwright/review-shortcut-shift-r-toggle-assert.cjs`
+     - `node output/playwright/run-shortcut-parity-smoke.cjs`
+- Expected Results:
+  - `Cmd/Ctrl+Shift+R` toggles review pane open and closed on thread route.
+  - Shortcut smoke suite includes this alias and remains green.
+- Rollback/Cleanup:
+  - Revert Shift+R review shortcut branch and remove the assertion script if parity behavior is intentionally changed.
+
+### Feature: Sidebar toggle shortcut parity checkpoint (`Cmd/Ctrl+J`)
+
+- Prerequisites/Setup:
+  - Start app: `pnpm run dev -- --host 127.0.0.1 --port 5173`.
+  - Ensure at least one thread exists.
+- Steps:
+  1. Open a thread route.
+  2. Press `Cmd/Ctrl+J` once.
+  3. Confirm `data-sidebar-collapsed` changes and route hash remains stable.
+  4. Press `Cmd/Ctrl+J` again.
+  5. Confirm sidebar state restores to baseline.
+  6. Run:
+     - `node output/playwright/toggle-terminal-shortcut-assert.cjs`
+     - `node output/playwright/run-shortcut-parity-smoke.cjs`
+- Expected Results:
+  - `Cmd/Ctrl+J` toggles sidebar collapsed state and restores it on second press.
+  - Shortcut smoke suite includes this assertion and remains green.
+- Rollback/Cleanup:
+  - Revert `KeyJ` shortcut branch behavior and remove the dedicated assertion if parity behavior intentionally changes.
+
+### Feature: New-thread alias shortcut parity checkpoint (`Cmd/Ctrl+Shift+O`)
+
+- Prerequisites/Setup:
+  - Start app: `pnpm run dev -- --host 127.0.0.1 --port 5173`.
+- Steps:
+  1. Navigate to `#/skills`.
+  2. Trigger `Cmd/Ctrl+Shift+O` once.
+  3. Confirm route moves to `#/`.
+  4. Trigger `Cmd/Ctrl+Shift+O` again.
+  5. Confirm route remains `#/`.
+  6. Run:
+     - `node output/playwright/new-thread-alt-shortcut-assert.cjs`
+     - `node output/playwright/run-shortcut-parity-smoke.cjs`
+- Expected Results:
+  - The alias shortcut navigates to Home/New-thread route and remains stable on repeated press.
+  - Smoke suite includes this assertion and stays green.
+- Rollback/Cleanup:
+  - Revert `Cmd/Ctrl+Shift+O` shortcut branch behavior and remove this assertion if parity intentionally changes.
+
+### Feature: New-thread shortcut parity checkpoint (`Cmd/Ctrl+N`)
+
+- Prerequisites/Setup:
+  - Start app: `pnpm run dev -- --host 127.0.0.1 --port 5173`.
+  - Ensure at least one thread exists.
+- Steps:
+  1. Open a thread route (`#/thread/...`).
+  2. Trigger `Cmd/Ctrl+N` once.
+  3. Confirm route moves to `#/`.
+  4. Trigger `Cmd/Ctrl+N` again.
+  5. Confirm route remains `#/`.
+  6. Run:
+     - `node output/playwright/new-thread-shortcut-assert.cjs`
+     - `node output/playwright/run-shortcut-parity-smoke.cjs`
+- Expected Results:
+  - `Cmd/Ctrl+N` navigates from a thread route to Home/New-thread route.
+  - Repeated press on Home keeps route stable.
+  - Smoke suite includes this assertion and stays green.
+- Rollback/Cleanup:
+  - Revert `Cmd/Ctrl+N` shortcut branch behavior and remove this assertion if parity intentionally changes.
+
+### Feature: New-window alias shortcut parity checkpoint (`Cmd/Ctrl+Shift+N`)
+
+- Prerequisites/Setup:
+  - Start app: `pnpm run dev -- --host 127.0.0.1 --port 5173`.
+- Steps:
+  1. Navigate to `#/skills`.
+  2. Trigger `Cmd/Ctrl+Shift+N` once.
+  3. Confirm route moves to `#/`.
+  4. Trigger `Cmd/Ctrl+Shift+N` again.
+  5. Confirm route remains `#/`.
+  6. Run:
+     - `node output/playwright/new-window-shortcut-assert.cjs`
+     - `node output/playwright/run-shortcut-parity-smoke.cjs`
+- Expected Results:
+  - The alias shortcut navigates to Home/New-thread route and remains stable on repeated press.
+  - Smoke suite includes this assertion and stays green.
+- Rollback/Cleanup:
+  - Revert `Cmd/Ctrl+Shift+N` shortcut branch behavior and remove this assertion if parity intentionally changes.
+
+### Feature: Thread-cycle shortcut parity checkpoint (`Cmd/Ctrl+Shift+[`, `Cmd/Ctrl+Shift+]`)
+
+- Prerequisites/Setup:
+  - Start app: `pnpm run dev -- --host 127.0.0.1 --port 5173`.
+  - Ensure at least two threads exist in the sidebar.
+- Steps:
+  1. Select the first thread in the sidebar.
+  2. Trigger `Cmd/Ctrl+Shift+]` once and confirm navigation to a different thread.
+  3. Trigger `Cmd/Ctrl+Shift+[` once and confirm it returns to the original thread.
+  4. From the first thread, trigger `Cmd/Ctrl+Shift+[` once and confirm wrap-around to another thread.
+  5. Run:
+     - `node output/playwright/thread-cycle-shortcuts-assert.cjs`
+     - `node output/playwright/run-shortcut-parity-smoke.cjs`
+- Expected Results:
+  - Next/previous cycling works and wrap-around from the first thread is functional.
+  - Smoke suite includes this assertion and remains green.
+- Rollback/Cleanup:
+  - Revert bracket-cycle shortcut branches and remove this assertion if parity behavior intentionally changes.
+
+### Feature: Thread pin toggle shortcut parity checkpoint (`Ctrl+Alt+P`)
+
+- Prerequisites/Setup:
+  - Start app: `pnpm run dev -- --host 127.0.0.1 --port 5173`.
+  - Ensure at least one thread exists.
+- Steps:
+  1. Open any thread route (`#/thread/...`).
+  2. Trigger `Ctrl+Alt+P` once.
+  3. Confirm the active thread pinned state flips.
+  4. Trigger `Ctrl+Alt+P` again.
+  5. Confirm pinned state returns to the original value.
+  6. Run:
+     - `node output/playwright/toggle-thread-pin-shortcut-assert.cjs`
+     - `node output/playwright/run-shortcut-parity-smoke.cjs`
+- Expected Results:
+  - First press toggles thread pin state.
+  - Second press restores original pin state.
+  - Route remains on the same thread throughout.
+  - Smoke suite includes this assertion and remains green.
+- Rollback/Cleanup:
+  - Revert the pin shortcut handling and remove this assertion if parity behavior intentionally changes.
+
+### Feature: Diff panel toggle shortcut parity checkpoint (`Cmd/Ctrl+Alt+B`)
+
+- Prerequisites/Setup:
+  - Start app: `pnpm run dev -- --host 127.0.0.1 --port 5173`.
+  - Ensure at least one thread exists.
+- Steps:
+  1. Open any thread route (`#/thread/...`).
+  2. Trigger `Cmd/Ctrl+Alt+B` once.
+  3. Confirm review/diff panel opens.
+  4. Trigger `Cmd/Ctrl+Alt+B` again.
+  5. Confirm review/diff panel closes.
+  6. Run:
+     - `node output/playwright/toggle-diff-panel-shortcut-assert.cjs`
+     - `node output/playwright/run-shortcut-parity-smoke.cjs`
+- Expected Results:
+  - First press opens review/diff panel.
+  - Second press closes it.
+  - Route remains on the same thread throughout.
+  - Smoke suite includes this assertion and remains green.
+- Rollback/Cleanup:
+  - Revert diff panel shortcut handling and remove this assertion if parity behavior intentionally changes.
+
+### Feature: Copy session ID shortcut parity checkpoint (`Cmd/Ctrl+Alt+C`)
+
+- Prerequisites/Setup:
+  - Start app: `pnpm run dev -- --host 127.0.0.1 --port 5173`.
+  - Ensure at least one thread exists.
+- Steps:
+  1. Open any thread route (`#/thread/...`).
+  2. Trigger `Cmd/Ctrl+Alt+C` once.
+  3. Read clipboard contents.
+  4. Confirm clipboard value exactly matches active thread ID.
+  5. Run:
+     - `node output/playwright/copy-session-id-thread-shortcut-assert.cjs`
+     - `node output/playwright/run-shortcut-parity-smoke.cjs`
+- Expected Results:
+  - Clipboard text equals current thread ID.
+  - Route remains stable on the same thread during copy action.
+  - Smoke suite includes this assertion and remains green.
+- Rollback/Cleanup:
+  - Revert session-id copy shortcut handling and remove this assertion if parity behavior intentionally changes.
+
+### Feature: Copy conversation path shortcut parity checkpoint (`Cmd/Ctrl+Alt+Shift+C`)
+
+- Prerequisites/Setup:
+  - Start app: `pnpm run dev -- --host 127.0.0.1 --port 5173`.
+  - Ensure at least one thread exists.
+- Steps:
+  1. Open any thread route (`#/thread/...`).
+  2. Trigger `Cmd/Ctrl+Alt+Shift+C` once.
+  3. Read clipboard contents.
+  4. Confirm clipboard value equals `/thread/<active-thread-id>`.
+  5. Run:
+     - `node output/playwright/copy-conversation-path-thread-shortcut-assert.cjs`
+     - `node output/playwright/run-shortcut-parity-smoke.cjs`
+- Expected Results:
+  - Clipboard text matches current conversation path.
+  - Route remains stable on the active thread during copy action.
+  - Smoke suite includes this assertion and remains green.
+- Rollback/Cleanup:
+  - Revert conversation-path copy shortcut handling and remove this assertion if parity behavior intentionally changes.
+
+### Feature: Copy working directory shortcut parity checkpoint (`Cmd/Ctrl+Shift+C`)
+
+- Prerequisites/Setup:
+  - Start app: `pnpm run dev -- --host 127.0.0.1 --port 5173`.
+  - Ensure at least one thread exists.
+- Steps:
+  1. Open any thread route (`#/thread/...`).
+  2. Trigger `Cmd/Ctrl+Shift+C` once.
+  3. Read clipboard contents.
+  4. Confirm clipboard contains a path-like working directory value.
+  5. Run:
+     - `node output/playwright/copy-working-directory-thread-shortcut-assert.cjs`
+     - `node output/playwright/run-shortcut-parity-smoke.cjs`
+- Expected Results:
+  - Clipboard value is a valid filesystem-like path.
+  - Route remains stable on the active thread during copy action.
+  - Smoke suite includes this assertion and remains green.
+- Rollback/Cleanup:
+  - Revert working-directory copy shortcut handling and remove this assertion if parity behavior intentionally changes.
+
+### Feature: Copy conversation path alias shortcut parity checkpoint (`Cmd/Ctrl+Alt+S`)
+
+- Prerequisites/Setup:
+  - Start app: `pnpm run dev -- --host 127.0.0.1 --port 5173`.
+  - Ensure at least one thread exists.
+- Steps:
+  1. Open any thread route (`#/thread/...`).
+  2. Trigger `Cmd/Ctrl+Alt+S` once.
+  3. Read clipboard contents.
+  4. Confirm clipboard value equals `/thread/<active-thread-id>`.
+  5. Run:
+     - `node output/playwright/copy-conversation-path-alt-s-shortcut-assert.cjs`
+     - `node output/playwright/run-shortcut-parity-smoke.cjs`
+- Expected Results:
+  - Clipboard text matches current conversation path.
+  - Route remains stable on the active thread during copy action.
+  - Smoke suite includes this assertion and remains green.
+- Rollback/Cleanup:
+  - Revert conversation-path alias shortcut handling and remove this assertion if parity behavior intentionally changes.
+
+### Feature: Copy deeplink shortcut parity checkpoint (`Cmd/Ctrl+Alt+L`)
+
+- Prerequisites/Setup:
+  - Start app: `pnpm run dev -- --host 127.0.0.1 --port 5173`.
+- Steps:
+  1. Navigate to `#/skills`.
+  2. Trigger `Cmd/Ctrl+Alt+L` once.
+  3. Read clipboard contents.
+  4. Confirm clipboard text equals full current page URL.
+  5. Run:
+     - `node output/playwright/copy-deeplink-shortcut-assert.cjs`
+     - `node output/playwright/run-shortcut-parity-smoke.cjs`
+- Expected Results:
+  - Clipboard contains the exact current deeplink URL.
+  - Route remains stable after shortcut execution.
+  - Smoke suite includes this assertion and remains green.
+- Rollback/Cleanup:
+  - Revert deeplink copy shortcut handling and remove this assertion if parity behavior intentionally changes.
+
+### Feature: Copy session ID shortcut parity checkpoint (`Cmd/Ctrl+Alt+C` on non-thread route)
+
+- Prerequisites/Setup:
+  - Start app: `pnpm run dev -- --host 127.0.0.1 --port 5173`.
+- Steps:
+  1. Navigate to `#/skills`.
+  2. Trigger `Cmd/Ctrl+Alt+C` once.
+  3. Read clipboard contents.
+  4. Confirm clipboard text equals `skills`.
+  5. Run:
+     - `node output/playwright/copy-session-id-shortcut-assert.cjs`
+     - `node output/playwright/run-shortcut-parity-smoke.cjs`
+- Expected Results:
+  - Clipboard contains current non-thread session identifier (`skills`).
+  - Route remains stable during shortcut execution.
+  - Smoke suite includes this assertion and remains green.
+- Rollback/Cleanup:
+  - Revert non-thread session-id copy shortcut handling and remove this assertion if parity behavior intentionally changes.
+
+### Feature: Copy working directory shortcut parity checkpoint (`Cmd/Ctrl+Shift+C` on non-thread route)
+
+- Prerequisites/Setup:
+  - Start app: `pnpm run dev -- --host 127.0.0.1 --port 5173`.
+- Steps:
+  1. Navigate to `#/skills`.
+  2. Trigger `Cmd/Ctrl+Shift+C` once.
+  3. Read clipboard contents.
+  4. Confirm clipboard text equals `skills`.
+  5. Run:
+     - `node output/playwright/copy-working-directory-shortcut-assert.cjs`
+     - `node output/playwright/run-shortcut-parity-smoke.cjs`
+- Expected Results:
+  - Clipboard contains current non-thread working-directory identifier fallback (`skills`).
+  - Route remains stable during shortcut execution.
+  - Smoke suite includes this assertion and remains green.
+- Rollback/Cleanup:
+  - Revert non-thread working-directory copy shortcut handling and remove this assertion if parity behavior intentionally changes.
+
+### Feature: Command menu alias shortcut parity checkpoint (`Cmd/Ctrl+Shift+P`)
+
+- Prerequisites/Setup:
+  - Start app: `pnpm run dev -- --host 127.0.0.1 --port 5173`.
+- Steps:
+  1. Navigate to `#/`.
+  2. Trigger `Cmd/Ctrl+Shift+P` once.
+  3. Confirm route navigates to `#/skills`.
+  4. Trigger `Cmd/Ctrl+Shift+P` again.
+  5. Confirm route stays on `#/skills`.
+  6. Run:
+     - `node output/playwright/open-command-menu-shortcut-assert.cjs`
+     - `node output/playwright/run-shortcut-parity-smoke.cjs`
+- Expected Results:
+  - First press opens command-menu flow (skills route).
+  - Second press remains stable on skills route.
+  - Smoke suite includes this assertion and remains green.
+- Rollback/Cleanup:
+  - Revert command-menu alias shortcut handling and remove this assertion if parity behavior intentionally changes.
+
+### Feature: Command menu primary shortcut parity checkpoint (`Cmd/Ctrl+K`)
+
+- Prerequisites/Setup:
+  - Start app: `pnpm run dev -- --host 127.0.0.1 --port 5173`.
+- Steps:
+  1. Navigate to `#/`.
+  2. Trigger `Cmd/Ctrl+K` once.
+  3. Confirm route navigates to `#/skills`.
+  4. Trigger `Cmd/Ctrl+K` again.
+  5. Confirm route stays on `#/skills`.
+  6. Run:
+     - `node output/playwright/open-command-menu-alt-shortcut-assert.cjs`
+     - `node output/playwright/run-shortcut-parity-smoke.cjs`
+- Expected Results:
+  - First press opens command-menu flow (skills route).
+  - Second press remains stable on skills route.
+  - Smoke suite includes this assertion and remains green.
+- Rollback/Cleanup:
+  - Revert command-menu primary shortcut handling and remove this assertion if parity behavior intentionally changes.
+
+### Feature: Copy conversation path shortcut parity checkpoint (`Cmd/Ctrl+Alt+Shift+C` on non-thread route)
+
+- Prerequisites/Setup:
+  - Start app: `pnpm run dev -- --host 127.0.0.1 --port 5173`.
+- Steps:
+  1. Navigate to `#/skills`.
+  2. Trigger `Cmd/Ctrl+Alt+Shift+C` once.
+  3. Read clipboard contents.
+  4. Confirm clipboard text equals `/skills`.
+  5. Run:
+     - `node output/playwright/copy-conversation-path-shortcut-assert.cjs`
+     - `node output/playwright/run-shortcut-parity-smoke.cjs`
+- Expected Results:
+  - Clipboard contains current non-thread conversation path (`/skills`).
+  - Route remains stable during shortcut execution.
+  - Smoke suite includes this assertion and remains green.
+- Rollback/Cleanup:
+  - Revert non-thread conversation-path copy shortcut handling and remove this assertion if parity behavior intentionally changes.
+
+### Feature: Skills shortcut parity checkpoint (`Cmd/Ctrl+Shift+P` from collapsed sidebar)
+
+- Prerequisites/Setup:
+  - Start app: `pnpm run dev -- --host 127.0.0.1 --port 5173`.
+- Steps:
+  1. Collapse sidebar (`Cmd/Ctrl+J`).
+  2. Trigger `Cmd/Ctrl+Shift+P` once.
+  3. Confirm route goes to `#/skills` and sidebar expands.
+  4. Run:
+     - `node output/playwright/skills-shortcut-shift-p-opens-from-collapsed-assert.cjs`
+     - `node output/playwright/run-shortcut-parity-smoke.cjs`
+- Expected Results:
+  - Shortcut opens Skills route from collapsed state.
+  - Sidebar expands after shortcut.
+  - Smoke suite includes this assertion and remains green.
+- Rollback/Cleanup:
+  - Revert skills shortcut collapsed-state behavior and remove this assertion if parity behavior intentionally changes.
+
+### Feature: Sidebar search shortcut query-selection parity checkpoint (`Cmd/Ctrl+G`)
+
+- Prerequisites/Setup:
+  - Start app: `pnpm run dev -- --host 127.0.0.1 --port 5173`.
+- Steps:
+  1. Trigger `Cmd/Ctrl+G` and type a query in sidebar search.
+  2. Collapse sidebar (`Cmd/Ctrl+J`).
+  3. Trigger `Cmd/Ctrl+G` again.
+  4. Confirm previous query is focused and fully selected.
+  5. Run:
+     - `node output/playwright/sidebar-search-shortcut-selects-query-assert.cjs`
+     - `node output/playwright/run-shortcut-parity-smoke.cjs`
+- Expected Results:
+  - Reopened sidebar search preserves query and selects all text for replacement.
+  - Input is focused after reopening.
+  - Smoke suite includes this assertion and remains green.
+- Rollback/Cleanup:
+  - Revert sidebar-search shortcut selection behavior and remove this assertion if parity behavior intentionally changes.
+
+### Feature: Sidebar search shortcut input parity checkpoint (`Cmd/Ctrl+G`)
+
+- Prerequisites/Setup:
+  - Start app: `pnpm run dev -- --host 127.0.0.1 --port 5173`.
+- Steps:
+  1. Trigger `Cmd/Ctrl+G` once.
+  2. Confirm sidebar search input is visible and focused.
+  3. Type a marker query.
+  4. Confirm the input value matches the marker.
+  5. Run:
+     - `node output/playwright/sidebar-search-shortcut-assert.cjs`
+     - `node output/playwright/run-shortcut-parity-smoke.cjs`
+- Expected Results:
+  - Sidebar search opens and receives focus with shortcut.
+  - Typed value is retained in the search input.
+  - Route remains stable while interacting with search.
+  - Smoke suite includes this assertion and remains green.
+- Rollback/Cleanup:
+  - Revert sidebar-search shortcut focus/input behavior and remove this assertion if parity behavior intentionally changes.
+
+### Feature: Settings shortcut parity checkpoint (Cmd/Ctrl+,)
+
+Prerequisites/setup:
+- Install dependencies with `pnpm install`.
+- Start dev server from repo root: `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+- Open app at `http://127.0.0.1:4173`.
+
+Step-by-step actions:
+1. Ensure no settings panel is open in the sidebar.
+2. Press `Cmd+,` on macOS (or `Ctrl+,` on Linux/Windows).
+3. Verify the sidebar settings panel appears.
+4. Press `Cmd+,`/`Ctrl+,` again.
+5. Verify the sidebar settings panel remains open.
+6. Confirm the current route/hash remains unchanged throughout.
+
+Expected result(s):
+- First shortcut press opens `.sidebar-settings-panel`.
+- Second shortcut press keeps `.sidebar-settings-panel` open (no toggle-close).
+- Route/hash remains stable (no unintended navigation).
+
+Rollback/cleanup notes (if applicable):
+- Remove `settings-shortcut-assert.cjs` from `output/playwright/run-shortcut-parity-smoke.cjs` if this checkpoint is intentionally excluded later.
+
+### Feature: Search files shortcut parity checkpoint (Cmd/Ctrl+P)
+
+Prerequisites/setup:
+- Install dependencies with `pnpm install`.
+- Start dev server from repo root: `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+- Open app at `http://127.0.0.1:4173`.
+
+Step-by-step actions:
+1. Navigate to any route where the sidebar is available.
+2. Press `Cmd+P` on macOS (or `Ctrl+P` on Linux/Windows).
+3. Verify sidebar search input becomes visible and focused.
+4. Type a marker string (for example `parity-p-shortcut`).
+5. Confirm the route/hash remains unchanged.
+
+Expected result(s):
+- `.sidebar-search-input` is visible and focused after shortcut.
+- Entered marker text is retained in the input.
+- Route/hash is stable while using the shortcut.
+
+Rollback/cleanup notes (if applicable):
+- Remove `search-files-shortcut-assert.cjs` from `output/playwright/run-shortcut-parity-smoke.cjs` if this checkpoint is intentionally excluded later.
+
+### Feature: Archive shortcut home-route guard parity (Cmd/Ctrl+Shift+A)
+
+Prerequisites/setup:
+- Install dependencies with `pnpm install`.
+- Start dev server from repo root: `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+- Open app at `http://127.0.0.1:4173/#/` (home route).
+
+Step-by-step actions:
+1. Ensure current route is home (`#/`) and no thread row is active.
+2. Press `Cmd+Shift+A` on macOS (or `Ctrl+Shift+A` on Linux/Windows).
+3. Observe that no archive action is triggered and route remains unchanged.
+
+Expected result(s):
+- Archive shortcut is ignored on home route.
+- Route/hash remains `#/`.
+- Shortcut event is not consumed by archive action.
+
+Rollback/cleanup notes (if applicable):
+- Remove `archive-shortcut-shift-a-home-ignored-assert.cjs` from `output/playwright/run-shortcut-parity-smoke.cjs` if behavior is intentionally changed later.
+
+### Feature: Pin shortcut home-route guard parity (Cmd/Ctrl+Alt+P)
+
+Prerequisites/setup:
+- Install dependencies with `pnpm install`.
+- Start dev server from repo root: `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+- Open app at `http://127.0.0.1:4173/#/` (home route).
+
+Step-by-step actions:
+1. Ensure current route is home (`#/`) and no thread route is active.
+2. Press `Cmd+Alt+P` on macOS (or `Ctrl+Alt+P` on Linux/Windows).
+3. Confirm no pin action occurs and route remains unchanged.
+
+Expected result(s):
+- Pin shortcut is ignored on home route.
+- Route/hash remains `#/`.
+- Event is not consumed by pin action (`defaultPrevented` remains false).
+
+Rollback/cleanup notes (if applicable):
+- Remove `pin-shortcut-alt-p-home-ignored-assert.cjs` from `output/playwright/run-shortcut-parity-smoke.cjs` if behavior is intentionally changed later.
+
+### Feature: Rename shortcut home-route guard parity (Cmd+Ctrl+R)
+
+Prerequisites/setup:
+- Install dependencies with `pnpm install`.
+- Start dev server from repo root: `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+- Open app at `http://127.0.0.1:4173/#/` (home route).
+
+Step-by-step actions:
+1. Ensure current route is home (`#/`) and no thread is selected.
+2. Press `Cmd+Ctrl+R`.
+3. Verify no rename dialog appears.
+4. Confirm the route/hash remains unchanged.
+
+Expected result(s):
+- Rename shortcut is ignored on home route.
+- `.rename-thread-overlay .rename-thread-panel[aria-label="Rename thread"]` does not appear.
+- Route/hash remains `#/`.
+
+Rollback/cleanup notes (if applicable):
+- Remove `rename-shortcut-cmd-ctrl-r-home-ignored-assert.cjs` from `output/playwright/run-shortcut-parity-smoke.cjs` if behavior is intentionally changed later.
+
+### Feature: Command/settings shortcuts input-focus guard parity
+
+Prerequisites/setup:
+- Install dependencies with `pnpm install`.
+- Start dev server from repo root: `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+- Open app at `http://127.0.0.1:4173`.
+
+Step-by-step actions:
+1. Open sidebar search input (`Cmd+G`/`Ctrl+G`) and type any text.
+2. Keep focus inside the search input.
+3. Press `Cmd+K`/`Ctrl+K`, `Cmd+Shift+P`/`Ctrl+Shift+P`, `Cmd+,`/`Ctrl+,`, and `Cmd+Shift+S`/`Ctrl+Shift+S`.
+4. Observe route and settings panel state.
+
+Expected result(s):
+- Route/hash remains unchanged while typing in search input.
+- Settings panel does not open from `Cmd+,` or `Cmd+Shift+S` when input is focused.
+- Command palette shortcuts are ignored while input is focused.
+
+Rollback/cleanup notes (if applicable):
+- Remove `command-settings-shortcuts-ignore-input-focus-assert.cjs` from `output/playwright/run-shortcut-parity-smoke.cjs` if focus-guard behavior is intentionally changed.
+
+### Feature: Copy shortcuts input-focus guard parity
+
+Prerequisites/setup:
+- Install dependencies with `pnpm install`.
+- Start dev server from repo root: `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+- Open app at `http://127.0.0.1:4173`.
+
+Step-by-step actions:
+1. Focus sidebar search input (`Cmd+G`/`Ctrl+G`) and type text.
+2. While input stays focused, trigger copy shortcuts:
+   - `Cmd/Ctrl+Alt+L`
+   - `Cmd/Ctrl+Alt+Shift+C`
+   - `Cmd/Ctrl+Alt+S`
+   - `Cmd/Ctrl+Shift+C`
+   - `Cmd/Ctrl+Alt+C`
+3. Verify focus remains in input and no shortcut action is consumed.
+
+Expected result(s):
+- All copy shortcuts are ignored while text input is focused.
+- Keyboard events remain unconsumed (`defaultPrevented: false`).
+- Input focus is retained throughout.
+
+Rollback/cleanup notes (if applicable):
+- Remove `copy-shortcuts-ignore-input-focus-assert.cjs` from `output/playwright/run-shortcut-parity-smoke.cjs` if focus-guard behavior is intentionally changed.
+
+### Feature: Dictation shortcut input-focus guard parity
+
+Prerequisites/setup:
+- Install dependencies with `pnpm install`.
+- Start dev server from repo root: `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+- Open app at `http://127.0.0.1:4173` and ensure at least one thread exists.
+
+Step-by-step actions:
+1. Open a thread and focus sidebar search input (`Cmd+G`/`Ctrl+G`).
+2. Type text in the input.
+3. Press dictation shortcut (`Cmd/Ctrl+M`) while input remains focused.
+
+Expected result(s):
+- Dictation shortcut is ignored while input is focused.
+- Event remains unconsumed (`defaultPrevented: false`).
+- Focus stays in the search input.
+
+Rollback/cleanup notes (if applicable):
+- Remove `dictation-shortcut-ignore-input-focus-assert.cjs` from `output/playwright/run-shortcut-parity-smoke.cjs` if focus-guard behavior is intentionally changed.
+
+### Feature: Navigation shortcuts input-focus guard parity
+
+Prerequisites/setup:
+- Install dependencies with `pnpm install`.
+- Start dev server from repo root: `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+- Open app at `http://127.0.0.1:4173` with at least one thread.
+
+Step-by-step actions:
+1. Open a thread, then focus sidebar search input (`Cmd+G`/`Ctrl+G`) and type text.
+2. While input remains focused, press navigation shortcuts:
+   - `Cmd/Ctrl+[`
+   - `Cmd/Ctrl+]`
+   - `Cmd/Ctrl+Shift+[`
+   - `Cmd/Ctrl+Shift+]`
+3. Observe route/hash after each key press.
+
+Expected result(s):
+- Route/hash remains unchanged while input is focused.
+- Navigation shortcuts are ignored in focused text input context.
+
+Rollback/cleanup notes (if applicable):
+- Remove `navigation-shortcuts-ignore-input-focus-assert.cjs` from `output/playwright/run-shortcut-parity-smoke.cjs` if focus-guard behavior is intentionally changed.
+
+### Feature: Search shortcuts input-focus guard parity
+
+Prerequisites/setup:
+- Install dependencies with `pnpm install`.
+- Start dev server from repo root: `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+- Open app at `http://127.0.0.1:4173`.
+
+Step-by-step actions:
+1. Focus sidebar search input (`Cmd+G`/`Ctrl+G`) and type text.
+2. While input remains focused, press `Cmd/Ctrl+G` and `Cmd/Ctrl+P`.
+3. Observe input value, focus state, and whether shortcut event is consumed.
+
+Expected result(s):
+- Search shortcuts are ignored while input is focused.
+- Input value remains unchanged.
+- Focus remains in input and events are not consumed (`defaultPrevented: false`).
+
+Rollback/cleanup notes (if applicable):
+- Remove `search-shortcuts-ignore-input-focus-assert.cjs` from `output/playwright/run-shortcut-parity-smoke.cjs` if focus-guard behavior is intentionally changed.
+
+### Feature: Model shortcuts input-focus guard parity
+
+Prerequisites/setup:
+- Install dependencies with `pnpm install`.
+- Start dev server from repo root: `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+- Open app at `http://127.0.0.1:4173` with at least one thread.
+
+Step-by-step actions:
+1. Open a thread and focus sidebar search input (`Cmd+G`/`Ctrl+G`), then type text.
+2. While input remains focused, press model shortcuts:
+   - `Cmd/Ctrl+T`
+   - `Cmd/Ctrl+Shift+M`
+3. Observe composer model menu and focus state.
+
+Expected result(s):
+- Model shortcuts are ignored while text input is focused.
+- Composer model menu does not open.
+- Input focus remains intact and events are not consumed (`defaultPrevented: false`).
+
+Rollback/cleanup notes (if applicable):
+- Remove `model-shortcuts-ignore-input-focus-assert.cjs` from `output/playwright/run-shortcut-parity-smoke.cjs` if focus-guard behavior is intentionally changed.
+
+### Feature: New-thread/open-folder shortcuts input-focus guard parity
+
+Prerequisites/setup:
+- Install dependencies with `pnpm install`.
+- Start dev server from repo root: `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+- Open app at `http://127.0.0.1:4173` with at least one thread.
+
+Step-by-step actions:
+1. Open a thread, focus sidebar search input (`Cmd+G`/`Ctrl+G`), and type text.
+2. While input remains focused, press:
+   - `Cmd/Ctrl+N`
+   - `Cmd/Ctrl+Shift+N`
+   - `Cmd/Ctrl+Alt+N`
+   - `Cmd/Ctrl+O`
+3. Observe route/hash after each shortcut.
+
+Expected result(s):
+- New-thread/new-window/open-folder shortcuts are ignored while input is focused.
+- Route/hash remains unchanged.
+
+Rollback/cleanup notes (if applicable):
+- Remove `newthread-openfolder-shortcuts-ignore-input-focus-assert.cjs` from `output/playwright/run-shortcut-parity-smoke.cjs` if focus-guard behavior is intentionally changed.
+
+### Feature: Review shortcut input-focus guard parity (Cmd/Ctrl+Alt+B)
+
+Prerequisites/setup:
+- Install dependencies with `pnpm install`.
+- Start dev server from repo root: `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+- Open app at `http://127.0.0.1:4173` and ensure at least one thread exists.
+
+Step-by-step actions:
+1. Open a thread, focus a text input (for example sidebar search via `Cmd+G`/`Ctrl+G`), and type text.
+2. While input remains focused, press `Cmd/Ctrl+Alt+B`.
+3. Observe review pane visibility before and after key press.
+
+Expected result(s):
+- Review shortcut is ignored while text input is focused.
+- Review pane state remains unchanged.
+- Event is not consumed (`defaultPrevented: false`) and input focus remains.
+
+Rollback/cleanup notes (if applicable):
+- Remove `review-alt-b-ignore-input-focus-assert.cjs` from `output/playwright/run-shortcut-parity-smoke.cjs` if focus-guard behavior is intentionally changed.
+
+### Feature: Keyboard shortcuts ignore select/spinbutton focus
+
+Prerequisites/setup:
+- Install dependencies with `pnpm install`.
+- Start dev server from repo root: `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+- Open app at `http://127.0.0.1:4173`.
+
+Step-by-step actions:
+1. Focus a `<select>` control in the UI and press representative shortcuts such as `Cmd/Ctrl+K` and `Cmd/Ctrl+T`.
+2. Focus a spinbutton/number input control and press representative shortcuts such as `Cmd/Ctrl+K`, `Cmd/Ctrl+T`, and `Cmd/Ctrl+J`.
+3. Observe route/hash, command/menu visibility, and whether focus stays on the form control.
+
+Expected result(s):
+- Global keyboard shortcuts are ignored while a select or spinbutton control has focus.
+- Route/hash and global UI state do not change from those key presses.
+- Events are not consumed (`defaultPrevented: false`) and focus remains on the current control.
+
+Rollback/cleanup notes (if applicable):
+- Remove `shortcuts-ignore-select-focus-assert.cjs` and `shortcuts-ignore-spinbutton-focus-assert.cjs` from `output/playwright/run-shortcut-parity-smoke.cjs` if this guard behavior is intentionally changed.
+
+### Feature: Sidebar toggle alias shortcuts ignore input focus
+
+Prerequisites/setup:
+- Install dependencies with `pnpm install`.
+- Start dev server from repo root: `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+- Open app at `http://127.0.0.1:4173`.
+
+Step-by-step actions:
+1. Focus a text input (for example sidebar search).
+2. While input remains focused, press sidebar-toggle alias shortcuts used by the app (`Cmd/Ctrl+Shift+E`, `Cmd/Ctrl+Shift+I`, `Cmd/Ctrl+B`).
+3. Observe sidebar collapsed/expanded state before and after each shortcut.
+
+Expected result(s):
+- Sidebar state remains unchanged while text input is focused.
+- Alias shortcuts are ignored in editable-input context.
+
+Rollback/cleanup notes (if applicable):
+- Remove `sidebar-toggle-aliases-ignore-input-focus-assert.cjs` from `output/playwright/run-shortcut-parity-smoke.cjs` if this guard behavior is intentionally changed.
+
+### Feature: Search shortcuts ignore terminal focus (smoke parity)
+
+Prerequisites/setup:
+- Install dependencies with `pnpm install`.
+- Start dev server from repo root: `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+- Open app at `http://127.0.0.1:4173`.
+
+Step-by-step actions:
+1. Focus terminal panel container (non-editable focus probe).
+2. Press `Cmd/Ctrl+G` and `Cmd/Ctrl+P`.
+3. Observe route/hash and search input visibility.
+
+Expected result(s):
+- Both search shortcuts are ignored while terminal focus is active.
+- Route/hash remains unchanged and search input is not opened.
+
+Rollback/cleanup notes (if applicable):
+- Remove `search-shortcuts-ignore-terminal-focus-assert.cjs` from `output/playwright/run-shortcut-parity-smoke.cjs` if terminal-focus behavior is intentionally changed.
+
+### Feature: Dictation shortcut ignores terminal focus (smoke parity)
+
+Prerequisites/setup:
+- Install dependencies with `pnpm install`.
+- Start dev server from repo root: `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+- Open app at `http://127.0.0.1:4173`.
+
+Step-by-step actions:
+1. Focus terminal panel container (non-editable focus probe).
+2. Press dictation shortcut `Cmd/Ctrl+M`.
+3. Observe focus and whether any dictation toggle side effect appears.
+
+Expected result(s):
+- Dictation shortcut is ignored while terminal focus is active.
+- Event is not consumed (`defaultPrevented: false`) and terminal focus remains.
+
+Rollback/cleanup notes (if applicable):
+- Remove `dictation-shortcut-ignore-terminal-focus-assert.cjs` from `output/playwright/run-shortcut-parity-smoke.cjs` if terminal-focus behavior is intentionally changed.
+
+### Feature: Command shortcuts ignore terminal focus (smoke parity)
+
+Prerequisites/setup:
+- Install dependencies with `pnpm install`.
+- Start dev server from repo root: `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+- Open app at `http://127.0.0.1:4173`.
+
+Step-by-step actions:
+1. Focus terminal panel container (non-editable focus probe).
+2. Press command shortcuts `Cmd/Ctrl+K` and `Cmd/Ctrl+Shift+P`.
+3. Observe route/hash and focus state.
+
+Expected result(s):
+- Command shortcuts are ignored while terminal focus is active.
+- Route/hash stays unchanged and focus remains in terminal container.
+- Events are not consumed (`defaultPrevented: false`).
+
+Rollback/cleanup notes (if applicable):
+- Remove `command-shortcuts-ignore-terminal-focus-assert.cjs` from `output/playwright/run-shortcut-parity-smoke.cjs` if terminal-focus behavior is intentionally changed.
+
+### Feature: Settings shortcuts ignore terminal focus (smoke parity)
+
+Prerequisites/setup:
+- Install dependencies with `pnpm install`.
+- Start dev server from repo root: `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+- Open app at `http://127.0.0.1:4173`.
+
+Step-by-step actions:
+1. Focus terminal panel container (non-editable focus probe).
+2. Press `Cmd/Ctrl+,` and `Cmd/Ctrl+Shift+S`.
+3. Observe route/hash and Settings panel visibility.
+
+Expected result(s):
+- Settings shortcuts are ignored while terminal focus is active.
+- Route/hash remains unchanged and Settings panel does not open.
+- Events are not consumed (`defaultPrevented: false`).
+
+Rollback/cleanup notes (if applicable):
+- Remove `settings-shortcuts-ignore-terminal-focus-assert.cjs` from `output/playwright/run-shortcut-parity-smoke.cjs` if terminal-focus behavior is intentionally changed.
+
+### Feature: Navigation shortcuts ignore terminal focus (smoke parity)
+
+Prerequisites/setup:
+- Install dependencies with `pnpm install`.
+- Start dev server from repo root: `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+- Open app at `http://127.0.0.1:4173`.
+
+Step-by-step actions:
+1. Focus terminal panel container (non-editable focus probe).
+2. Press navigation shortcuts used in parity checks:
+   - `Cmd/Ctrl+1`
+   - `Cmd/Ctrl+[`
+   - `Cmd/Ctrl+]`
+   - `Cmd/Ctrl+Shift+[`
+   - `Cmd/Ctrl+Shift+]`
+3. Observe route/hash and focus state after each keypress.
+
+Expected result(s):
+- Navigation shortcuts are ignored while terminal focus is active.
+- Route/hash remains unchanged and terminal focus is preserved.
+- Events are not consumed (`defaultPrevented: false`).
+
+Rollback/cleanup notes (if applicable):
+- Remove `navigation-shortcuts-ignore-terminal-focus-assert.cjs` from `output/playwright/run-shortcut-parity-smoke.cjs` if terminal-focus behavior is intentionally changed.
+
+### Feature: Copy shortcuts ignore terminal focus (smoke parity)
+
+Prerequisites/setup:
+- Install dependencies with `pnpm install`.
+- Start dev server from repo root: `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+- Open app at `http://127.0.0.1:4173`.
+
+Step-by-step actions:
+1. Focus terminal panel container (non-editable focus probe).
+2. Press copy-related shortcuts covered by parity checks (deeplink, conversation path variants, working directory, session id).
+3. Observe route/hash and focus state.
+
+Expected result(s):
+- Copy shortcuts are ignored while terminal focus is active.
+- Route/hash remains unchanged and terminal focus is preserved.
+- Events are not consumed (`defaultPrevented: false`).
+
+Rollback/cleanup notes (if applicable):
+- Remove `copy-shortcuts-ignore-terminal-focus-assert.cjs` from `output/playwright/run-shortcut-parity-smoke.cjs` if terminal-focus behavior is intentionally changed.
+
+### Feature: Thread-find shortcut ignores terminal focus (smoke parity)
+
+Prerequisites/setup:
+- Install dependencies with `pnpm install`.
+- Start dev server from repo root: `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+- Open app at `http://127.0.0.1:4173` and ensure at least one thread exists.
+
+Step-by-step actions:
+1. Focus terminal panel container (non-editable focus probe) while on a thread route.
+2. Press thread-find shortcut `Cmd/Ctrl+F`.
+3. Observe route/hash and thread-find input focus state.
+
+Expected result(s):
+- Thread-find shortcut is ignored while terminal focus is active.
+- Route/hash remains unchanged and thread-find input does not receive focus.
+- Event is not consumed (`defaultPrevented: false`) and terminal focus remains.
+
+Rollback/cleanup notes (if applicable):
+- Remove `thread-find-shortcut-ignore-terminal-focus-assert.cjs` from `output/playwright/run-shortcut-parity-smoke.cjs` if terminal-focus behavior is intentionally changed.
+
+### Feature: Thread action shortcuts ignore terminal focus (smoke parity)
+
+Prerequisites/setup:
+- Install dependencies with `pnpm install`.
+- Start dev server from repo root: `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+- Open app at `http://127.0.0.1:4173` and ensure at least one thread exists.
+
+Step-by-step actions:
+1. Focus terminal panel container (non-editable focus probe) on a thread route.
+2. Press thread action shortcuts used in parity checks (`pin`, `review`, `archive` combos).
+3. Observe route/hash, review open state, and pin state.
+
+Expected result(s):
+- Thread action shortcuts are ignored while terminal focus is active.
+- Route/hash, review open state, and pin state remain unchanged.
+- Events are not consumed (`defaultPrevented: false`) and terminal focus remains.
+
+Rollback/cleanup notes (if applicable):
+- Remove `thread-action-shortcuts-ignore-terminal-focus-assert.cjs` from `output/playwright/run-shortcut-parity-smoke.cjs` if terminal-focus behavior is intentionally changed.
+
+### Feature: Sidebar toggle shortcuts ignore terminal focus (smoke parity)
+
+Prerequisites/setup:
+- Install dependencies with `pnpm install`.
+- Start dev server from repo root: `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+- Open app at `http://127.0.0.1:4173`.
+
+Step-by-step actions:
+1. Focus terminal panel container (non-editable focus probe).
+2. Press sidebar toggle shortcut set (`Cmd/Ctrl+B`, `Cmd/Ctrl+J`, `Cmd/Ctrl+Shift+E`, `Cmd/Ctrl+Shift+I`, `Cmd/Ctrl+Shift+B`).
+3. Observe route/hash, sidebar collapsed state, and focus.
+
+Expected result(s):
+- Sidebar toggle shortcuts are ignored while terminal focus is active.
+- Route/hash and sidebar state remain unchanged.
+- Events are not consumed (`defaultPrevented: false`) and terminal focus remains.
+
+Rollback/cleanup notes (if applicable):
+- Remove `sidebar-toggle-shortcuts-ignore-terminal-focus-assert.cjs` from `output/playwright/run-shortcut-parity-smoke.cjs` if terminal-focus behavior is intentionally changed.
+
+### Feature: Thread R shortcuts ignore terminal focus (smoke parity)
+
+Prerequisites/setup:
+- Install dependencies with `pnpm install`.
+- Start dev server from repo root: `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+- Open app at `http://127.0.0.1:4173` and ensure at least one thread exists.
+
+Step-by-step actions:
+1. Focus terminal panel container (non-editable focus probe) on a thread route.
+2. Press thread `R` shortcut variants (rename/review combos in parity check).
+3. Observe rename dialog and review pane states.
+
+Expected result(s):
+- Thread `R` shortcuts are ignored while terminal focus is active.
+- Rename dialog and review pane remain closed.
+- Events are not consumed (`defaultPrevented: false`) and terminal focus remains.
+
+Rollback/cleanup notes (if applicable):
+- Remove `thread-r-shortcuts-ignore-terminal-focus-assert.cjs` from `output/playwright/run-shortcut-parity-smoke.cjs` if terminal-focus behavior is intentionally changed.
+
+### Feature: New-thread/open-folder shortcuts ignore terminal focus (smoke parity)
+
+Prerequisites/setup:
+- Install dependencies with `pnpm install`.
+- Start dev server from repo root: `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+- Open app at `http://127.0.0.1:4173`.
+
+Step-by-step actions:
+1. Focus terminal panel container (non-editable focus probe).
+2. Press new-thread/open-folder shortcut set used in parity checks:
+   - `Cmd/Ctrl+N`
+   - `Cmd/Ctrl+Shift+N`
+   - `Cmd/Ctrl+Q`
+   - `Cmd/Ctrl+Alt+N`
+   - `Cmd/Ctrl+O`
+3. Observe route/hash and open-folder dialog state.
+
+Expected result(s):
+- New-thread/open-folder shortcuts are ignored while terminal focus is active.
+- Route/hash remains unchanged and open-folder dialog stays closed.
+- Events are not consumed (`defaultPrevented: false`) and terminal focus remains.
+
+Rollback/cleanup notes (if applicable):
+- Remove `newthread-openfolder-shortcuts-ignore-terminal-focus-assert.cjs` from `output/playwright/run-shortcut-parity-smoke.cjs` if terminal-focus behavior is intentionally changed.
+
+### Feature: Review shortcut toggle parity in smoke (`Cmd/Ctrl+Shift+R`)
+
+Prerequisites/setup:
+- Install dependencies with `pnpm install`.
+- Start dev server from repo root: `pnpm run dev -- --host 0.0.0.0 --port 4173`.
+- Open app and ensure at least one thread exists.
+
+Step-by-step actions:
+1. Open a thread in the conversation area.
+2. Press `Cmd+Shift+R` (macOS) or `Ctrl+Shift+R` (Windows/Linux) once.
+3. Verify review pane opens.
+4. Press the same shortcut again and verify review pane closes.
+5. Navigate to Home (`#/`) and press the same shortcut again.
+
+Expected result(s):
+- On a thread route, `Cmd/Ctrl+Shift+R` toggles the review pane open then closed.
+- On Home route, the shortcut does not navigate away or open thread-scoped review UI.
+
+Rollback/cleanup notes (if applicable):
+- Remove `review-shortcut-assert.cjs` from `output/playwright/run-shortcut-parity-smoke.cjs` if this parity behavior is intentionally changed.

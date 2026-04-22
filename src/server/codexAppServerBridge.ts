@@ -3042,7 +3042,7 @@ export function createCodexBridgeMiddleware(): CodexBridgeMiddleware {
       if (!shouldLog) return
       didLog = true
       const rpcPart = rpcMethod ? `, rpcMethod=${rpcMethod}` : ''
-      console.info(`[codex-api-perf] ${requestMethod} ${requestPath} -> ${res.statusCode} (${durationMs}ms, bodyMB=${bodyMbValue.toFixed(4)}${rpcPart})`)
+      console.info(`[codex-api-perf] ${requestMethod} ${requestPath} -> ${res.statusCode} (${durationMs}ms, bodyMB=${bodyMbValue.toFixed(1)}${rpcPart})`)
     }
     res.once('finish', logApiRequestDuration)
     res.once('close', logApiRequestDuration)

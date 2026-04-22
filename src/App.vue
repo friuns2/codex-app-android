@@ -54,7 +54,7 @@
             Skills Hub
           </button>
 
-          <SidebarThreadTree :groups="projectGroups" :project-display-name-by-id="projectDisplayNameById"
+          <SidebarThreadTree ref="sidebarThreadTreeRef" :groups="projectGroups" :project-display-name-by-id="projectDisplayNameById"
             v-if="!isSidebarCollapsed"
             :selected-thread-id="selectedThreadId" :is-loading="isLoadingThreads"
             :search-query="sidebarSearchQuery"
@@ -133,8 +133,8 @@
                       <p class="sidebar-settings-account-quota">
                         {{ formatAccountQuota(account) }}
                       </p>
-                      <p class="sidebar-settings-account-id">
-                        Workspace {{ shortAccountId(account.accountId) }}
+                      <p class="sidebar-settings-account-id" :title="`Workspace ID: ${account.accountId}`">
+                        Workspace ID {{ shortAccountId(account.accountId) }}
                       </p>
                     </div>
                     <div class="sidebar-settings-account-actions">
@@ -451,6 +451,20 @@
             />
           </template>
           <template #actions>
+            <div v-if="route.name === 'thread' && selectedThreadId" class="thread-find">
+              <input
+                ref="threadFindInputRef"
+                v-model="threadFindQuery"
+                class="thread-find-input"
+                type="text"
+                placeholder="Find in thread"
+                @keydown.enter.prevent="onThreadFindInputEnter"
+              />
+              <span class="thread-find-count">{{ threadFindCountLabel }}</span>
+              <button class="thread-find-button" type="button" :disabled="threadFindMatchCount === 0" @click="onThreadFindStep(false)">↑</button>
+              <button class="thread-find-button" type="button" :disabled="threadFindMatchCount === 0" @click="onThreadFindStep(true)">↓</button>
+              <button class="thread-find-button" type="button" @click="clearThreadFind">✕</button>
+            </div>
             <ComposerDropdown
               v-if="route.name === 'thread' && selectedThreadId"
               class="content-header-branch-dropdown"
@@ -725,6 +739,8 @@
                     :active-thread-id="composerThreadContextId" :cwd="composerCwd" :scroll-state="selectedThreadScrollState"
                     :live-overlay="liveOverlay"
                     :pending-requests="selectedThreadServerRequests"
+                    :find-query="threadFindQuery"
+                    :highlight-message-id="threadFindActiveMessageId"
                     @update-scroll-state="onUpdateThreadScrollState"
                     @fork-thread="onForkThreadFromMessage"
                     @rollback="onRollback"
@@ -1036,6 +1052,7 @@ const { isMobile } = useMobile()
 const homeThreadComposerRef = ref<ThreadComposerExposed | null>(null)
 const threadComposerRef = ref<ThreadComposerExposed | null>(null)
 const threadConversationRef = ref<{ jumpToLatest: () => void } | null>(null)
+const sidebarThreadTreeRef = ref<{ openRenameThreadDialogForThread: (threadId: string) => void } | null>(null)
 const trendingProjects = ref<GithubTrendingProject[]>([])
 const isTrendingProjectsLoading = ref(false)
 const githubTipsScope = ref<GithubTipsScope>('trending-daily')
@@ -1058,6 +1075,9 @@ const isSidebarCollapsed = ref(loadSidebarCollapsed())
 const sidebarSearchQuery = ref('')
 const isSidebarSearchVisible = ref(false)
 const sidebarSearchInputRef = ref<HTMLInputElement | null>(null)
+const threadFindInputRef = ref<HTMLInputElement | null>(null)
+const threadFindQuery = ref('')
+const threadFindActiveIndex = ref(0)
 const settingsAreaRef = ref<HTMLElement | null>(null)
 const settingsPanelRef = ref<HTMLElement | null>(null)
 const settingsButtonRef = ref<HTMLElement | null>(null)
@@ -1162,6 +1182,9 @@ const knownThreadIdSet = computed(() => {
   }
   return ids
 })
+const orderedThreadIds = computed(() =>
+  projectGroups.value.flatMap((group) => group.threads.map((thread) => thread.id)),
+)
 
 const isHomeRoute = computed(() => route.name === 'home')
 const isSkillsRoute = computed(() => route.name === 'skills')
@@ -1186,6 +1209,29 @@ const filteredMessages = computed(() =>
     return true
   }),
 )
+const threadFindMatchIds = computed(() => {
+  const query = threadFindQuery.value.trim().toLowerCase()
+  if (!query) return [] as string[]
+  return filteredMessages.value
+    .filter((message) => {
+      const text = (message.text || '').toLowerCase()
+      return text.includes(query)
+    })
+    .map((message) => message.id)
+})
+const threadFindMatchCount = computed(() => threadFindMatchIds.value.length)
+const threadFindActiveMessageId = computed(() => {
+  const ids = threadFindMatchIds.value
+  if (ids.length === 0) return ''
+  const safeIndex = Math.min(Math.max(threadFindActiveIndex.value, 0), ids.length - 1)
+  return ids[safeIndex] ?? ''
+})
+const threadFindCountLabel = computed(() => {
+  const total = threadFindMatchCount.value
+  if (total === 0) return '0/0'
+  const current = Math.min(Math.max(threadFindActiveIndex.value + 1, 1), total)
+  return `${current}/${total}`
+})
 const latestUserTurnId = computed(() => {
   for (let index = messages.value.length - 1; index >= 0; index -= 1) {
     const message = messages.value[index]
@@ -1318,7 +1364,10 @@ const selectedWorktreeBranchLabel = computed(() => {
   const selected = newWorktreeBranchDropdownOptions.value.find((option) => option.value === selectedBranch)
   return selected?.label ?? selectedBranch
 })
-const contentHeaderBranchDropdownValue = computed(() => currentThreadBranch.value ?? '__detached_head__')
+const contentHeaderBranchDropdownValue = computed(() => {
+  const currentBranch = currentThreadBranch.value?.trim() ?? ''
+  return currentBranch || '__detached_head__'
+})
 const contentHeaderBranchDropdownOptions = computed<Array<{ value: string; label: string }>>(() => {
   const options: Array<{ value: string; label: string }> = [
     {
@@ -1478,6 +1527,17 @@ watch(sidebarSearchQuery, (value) => {
   }, 220)
 })
 
+watch(threadFindQuery, () => {
+  threadFindActiveIndex.value = 0
+})
+
+watch(
+  () => selectedThreadId.value,
+  () => {
+    clearThreadFind()
+  },
+)
+
 watch(accounts, () => {
   if (typeof window === 'undefined') return
   const shouldPoll = accounts.value.some((account) => account.quotaStatus === 'loading')
@@ -1575,9 +1635,48 @@ async function saveTelegramConfig(): Promise<void> {
 function toggleSidebarSearch(): void {
   isSidebarSearchVisible.value = !isSidebarSearchVisible.value
   if (isSidebarSearchVisible.value) {
-    nextTick(() => sidebarSearchInputRef.value?.focus())
+    focusSidebarSearchInput()
   } else {
     sidebarSearchQuery.value = ''
+  }
+}
+
+function focusSidebarSearchInput(): void {
+  nextTick(() => {
+    const input = sidebarSearchInputRef.value
+    input?.focus()
+    input?.select()
+    if (!input) return
+    window.requestAnimationFrame(() => {
+      input.focus()
+      input.select()
+    })
+  })
+}
+
+function openSidebarSearchViaShortcut(): void {
+  if (isSidebarCollapsed.value) {
+    setSidebarCollapsed(false)
+  }
+  if (!isSidebarSearchVisible.value) {
+    isSidebarSearchVisible.value = true
+  }
+  focusSidebarSearchInput()
+}
+
+function openSettingsPanelViaShortcut(): void {
+  if (isSidebarCollapsed.value) {
+    setSidebarCollapsed(false)
+  }
+  isSettingsOpen.value = true
+}
+
+function openSkillsHubViaShortcut(): void {
+  if (isSidebarCollapsed.value) {
+    setSidebarCollapsed(false)
+  }
+  if (route.name !== 'skills') {
+    void router.push({ name: 'skills' })
   }
 }
 
@@ -1611,7 +1710,7 @@ async function onExportThread(threadId: string): Promise<void> {
 }
 
 function shortAccountId(accountId: string): string {
-  return accountId.length > 8 ? accountId.slice(-8) : accountId
+  return accountId.length > 12 ? accountId.slice(-12) : accountId
 }
 
 function formatAccountMeta(account: UiAccountEntry): string {
@@ -1691,8 +1790,10 @@ function pickWeeklyQuotaWindow(account: UiAccountEntry) {
 
 function formatResetDateCompact(resetsAt: number | null): string {
   if (typeof resetsAt !== 'number' || !Number.isFinite(resetsAt)) return ''
-  const date = new Date(resetsAt * 1000)
-  return `${date.getMonth() + 1}月${date.getDate()}日`
+  return new Intl.DateTimeFormat(undefined, {
+    month: 'short',
+    day: 'numeric',
+  }).format(new Date(resetsAt * 1000))
 }
 
 function formatAccountQuota(account: UiAccountEntry): string {
@@ -1734,7 +1835,7 @@ function buildAccountTitle(account: UiAccountEntry): string {
     formatAccountMeta(account),
     isAccountUnavailable(account) ? 'Unavailable account' : null,
     formatAccountQuota(account),
-    `Workspace ${account.accountId}`,
+    `Workspace ID: ${account.accountId}`,
   ].filter(Boolean).join('\n')
 }
 
@@ -1906,12 +2007,60 @@ function onStartNewThreadFromToolbar(): void {
   void router.push({ name: 'home' })
 }
 
+function navigateThreadByOffset(offset: 1 | -1): void {
+  const ids = orderedThreadIds.value
+  const total = ids.length
+  if (total === 0) return
+
+  const currentId = routeThreadId.value.trim() || selectedThreadId.value.trim()
+  const currentIndex = ids.indexOf(currentId)
+  const startIndex = currentIndex >= 0
+    ? currentIndex
+    : (offset > 0 ? -1 : 0)
+  const nextIndex = (startIndex + offset + total) % total
+  const nextThreadId = ids[nextIndex]
+  if (!nextThreadId) return
+  onSelectThread(nextThreadId)
+}
+
+function navigateThreadByNumber(slot: number): void {
+  if (!Number.isInteger(slot) || slot < 1 || slot > 9) return
+  const ids = orderedThreadIds.value
+  const targetIndex = slot - 1
+  if (targetIndex < 0 || targetIndex >= ids.length) return
+  const threadId = ids[targetIndex]
+  if (!threadId) return
+  onSelectThread(threadId)
+}
+
 function onRenameProject(payload: { projectName: string; displayName: string }): void {
   renameProject(payload.projectName, payload.displayName)
 }
 
 function onRenameThread(payload: { threadId: string; title: string }): void {
   void renameThreadById(payload.threadId, payload.title)
+}
+
+function promptRenameSelectedThread(): void {
+  const threadId = selectedThreadId.value.trim()
+  if (!threadId) return
+  if (sidebarThreadTreeRef.value?.openRenameThreadDialogForThread) {
+    sidebarThreadTreeRef.value.openRenameThreadDialogForThread(threadId)
+    return
+  }
+  if (isSidebarCollapsed.value) {
+    setSidebarCollapsed(false)
+    nextTick(() => {
+      sidebarThreadTreeRef.value?.openRenameThreadDialogForThread(threadId)
+    })
+  }
+}
+
+function toggleComposerDictationViaButton(): void {
+  if (typeof document === 'undefined') return
+  const button = document.querySelector<HTMLButtonElement>('.thread-composer-mic')
+  if (!button || button.disabled) return
+  button.click()
 }
 
 async function onRemoveProject(projectName: string): Promise<void> {
@@ -1962,15 +2111,615 @@ function setSidebarCollapsed(nextValue: boolean): void {
 
 function onWindowKeyDown(event: KeyboardEvent): void {
   if (event.defaultPrevented) return
-  if (event.key === 'Escape' && isSettingsOpen.value) {
+  if (
+    (event.metaKey || event.ctrlKey)
+    && !event.shiftKey
+    && !event.altKey
+    && /^Digit[1-9]$/u.test(event.code)
+    && !isEditableShortcutTarget(event.target)
+    && !isTerminalLikeFocused()
+  ) {
+    event.preventDefault()
+    navigateThreadByNumber(Number.parseInt(event.code.slice(5), 10))
+    return
+  }
+  if (
+    (event.metaKey || event.ctrlKey)
+    && !event.shiftKey
+    && event.altKey
+    && event.code === 'KeyP'
+    && !isEditableShortcutTarget(event.target)
+    && route.name === 'thread'
+    && selectedThreadId.value
+    && !isTerminalLikeFocused()
+  ) {
+    event.preventDefault()
+    toggleSelectedThreadPin()
+    return
+  }
+  if (
+    event.code === 'KeyM'
+    && event.ctrlKey
+    && !event.metaKey
+    && !event.shiftKey
+    && !event.altKey
+    && !isEditableShortcutTarget(event.target)
+    && route.name === 'thread'
+    && selectedThreadId.value
+    && !isTerminalLikeFocused()
+  ) {
+    event.preventDefault()
+    toggleComposerDictationViaButton()
+    return
+  }
+  if (
+    (event.key === 'r' || event.key === 'R')
+    && event.metaKey
+    && event.ctrlKey
+    && !event.shiftKey
+    && !event.altKey
+    && !isEditableShortcutTarget(event.target)
+    && route.name === 'thread'
+    && selectedThreadId.value
+    && !isTerminalLikeFocused()
+  ) {
+    event.preventDefault()
+    promptRenameSelectedThread()
+    return
+  }
+  if (
+    (event.key === 'r' || event.key === 'R')
+    && (event.metaKey || event.ctrlKey)
+    && event.shiftKey
+    && !event.altKey
+    && !isEditableShortcutTarget(event.target)
+    && route.name === 'thread'
+    && selectedThreadId.value
+    && !isTerminalLikeFocused()
+  ) {
+    event.preventDefault()
+    isReviewPaneOpen.value = !isReviewPaneOpen.value
+    return
+  }
+  if (
+    (event.key === 'b' || event.key === 'B')
+    && (event.metaKey || event.ctrlKey)
+    && event.shiftKey
+    && !event.altKey
+    && !isEditableShortcutTarget(event.target)
+    && !isTerminalLikeFocused()
+  ) {
+    event.preventDefault()
+    if (route.name === 'thread' && selectedThreadId.value) {
+      isReviewPaneOpen.value = !isReviewPaneOpen.value
+    } else {
+      setSidebarCollapsed(!isSidebarCollapsed.value)
+    }
+    return
+  }
+  if (
+    (event.key === 's' || event.key === 'S')
+    && (event.metaKey || event.ctrlKey)
+    && event.shiftKey
+    && !event.altKey
+    && !isEditableShortcutTarget(event.target)
+    && !isTerminalLikeFocused()
+  ) {
+    event.preventDefault()
+    openSettingsPanelViaShortcut()
+    return
+  }
+  if (
+    (event.key === 'e' || event.key === 'E')
+    && (event.metaKey || event.ctrlKey)
+    && event.shiftKey
+    && !event.altKey
+    && !isEditableShortcutTarget(event.target)
+    && !isTerminalLikeFocused()
+  ) {
+    event.preventDefault()
+    setSidebarCollapsed(!isSidebarCollapsed.value)
+    return
+  }
+  if (
+    (event.key === 'i' || event.key === 'I')
+    && (event.metaKey || event.ctrlKey)
+    && event.shiftKey
+    && !event.altKey
+    && !isEditableShortcutTarget(event.target)
+    && !isTerminalLikeFocused()
+  ) {
+    event.preventDefault()
+    setSidebarCollapsed(!isSidebarCollapsed.value)
+    return
+  }
+  if (
+    (event.key === 'm' || event.key === 'M')
+    && (event.metaKey || event.ctrlKey)
+    && event.shiftKey
+    && !event.altKey
+    && !isEditableShortcutTarget(event.target)
+    && route.name === 'thread'
+    && selectedThreadId.value
+    && !isTerminalLikeFocused()
+  ) {
+    event.preventDefault()
+    openComposerModelDropdownViaShortcut()
+    return
+  }
+  if (
+    (event.key === 'k' || event.key === 'K')
+    && (event.metaKey || event.ctrlKey)
+    && event.shiftKey
+    && !event.altKey
+    && !isEditableShortcutTarget(event.target)
+    && !isTerminalLikeFocused()
+  ) {
+    event.preventDefault()
+    openSkillsHubViaShortcut()
+    return
+  }
+  if (
+    (event.key === 'k' || event.key === 'K')
+    && (event.metaKey || event.ctrlKey)
+    && !event.shiftKey
+    && !event.altKey
+    && !isEditableShortcutTarget(event.target)
+    && !isTerminalLikeFocused()
+  ) {
+    event.preventDefault()
+    openSkillsHubViaShortcut()
+    return
+  }
+  if (
+    (event.metaKey || event.ctrlKey)
+    && event.shiftKey
+    && !event.altKey
+    && event.code === 'BracketLeft'
+    && !isEditableShortcutTarget(event.target)
+    && !isTerminalLikeFocused()
+  ) {
+    event.preventDefault()
+    navigateThreadByOffset(-1)
+    return
+  }
+  if (
+    (event.metaKey || event.ctrlKey)
+    && event.shiftKey
+    && !event.altKey
+    && event.code === 'BracketRight'
+    && !isEditableShortcutTarget(event.target)
+    && !isTerminalLikeFocused()
+  ) {
+    event.preventDefault()
+    navigateThreadByOffset(1)
+    return
+  }
+  if (
+    (event.metaKey || event.ctrlKey)
+    && !event.shiftKey
+    && !event.altKey
+    && event.code === 'BracketLeft'
+    && !isEditableShortcutTarget(event.target)
+    && !isTerminalLikeFocused()
+  ) {
+    event.preventDefault()
+    router.back()
+    return
+  }
+  if (
+    (event.metaKey || event.ctrlKey)
+    && !event.shiftKey
+    && !event.altKey
+    && event.code === 'BracketRight'
+    && !isEditableShortcutTarget(event.target)
+    && !isTerminalLikeFocused()
+  ) {
+    event.preventDefault()
+    router.forward()
+    return
+  }
+  if (
+    event.key === ','
+    && (event.metaKey || event.ctrlKey)
+    && !event.shiftKey
+    && !event.altKey
+    && !isEditableShortcutTarget(event.target)
+    && !isTerminalLikeFocused()
+  ) {
+    event.preventDefault()
+    openSettingsPanelViaShortcut()
+    return
+  }
+  if (
+    (event.key === 'n' || event.key === 'N')
+    && (event.metaKey || event.ctrlKey)
+    && !event.shiftKey
+    && !event.altKey
+    && !isEditableShortcutTarget(event.target)
+    && !isTerminalLikeFocused()
+  ) {
+    event.preventDefault()
+    onStartNewThreadFromToolbar()
+    return
+  }
+  if (
+    (event.key === 't' || event.key === 'T')
+    && (event.metaKey || event.ctrlKey)
+    && !event.shiftKey
+    && !event.altKey
+    && !isEditableShortcutTarget(event.target)
+    && route.name === 'thread'
+    && selectedThreadId.value
+    && !isTerminalLikeFocused()
+  ) {
+    event.preventDefault()
+    openComposerModelDropdownViaShortcut()
+    return
+  }
+  if (
+    (event.key === 'n' || event.key === 'N')
+    && (event.metaKey || event.ctrlKey)
+    && event.shiftKey
+    && !event.altKey
+    && !isEditableShortcutTarget(event.target)
+    && !isTerminalLikeFocused()
+  ) {
+    event.preventDefault()
+    onStartNewThreadFromToolbar()
+    return
+  }
+  if (
+    (event.key === 'n' || event.key === 'N')
+    && (event.metaKey || event.ctrlKey)
+    && !event.shiftKey
+    && event.altKey
+    && !isEditableShortcutTarget(event.target)
+    && !isTerminalLikeFocused()
+  ) {
+    event.preventDefault()
+    onStartNewThreadFromToolbar()
+    return
+  }
+  if (
+    (event.key === 'o' || event.key === 'O')
+    && (event.metaKey || event.ctrlKey)
+    && event.shiftKey
+    && !event.altKey
+    && !isEditableShortcutTarget(event.target)
+    && !isTerminalLikeFocused()
+  ) {
+    event.preventDefault()
+    onStartNewThreadFromToolbar()
+    return
+  }
+  if (
+    (event.key === 'o' || event.key === 'O')
+    && (event.metaKey || event.ctrlKey)
+    && !event.shiftKey
+    && !event.altKey
+    && !isEditableShortcutTarget(event.target)
+    && !isTerminalLikeFocused()
+  ) {
+    event.preventDefault()
+    void onOpenExistingFolder()
+    return
+  }
+  if (
+    (event.key === 'a' || event.key === 'A')
+    && (event.metaKey || event.ctrlKey)
+    && event.shiftKey
+    && !event.altKey
+    && !isEditableShortcutTarget(event.target)
+    && route.name === 'thread'
+    && selectedThreadId.value
+    && !isTerminalLikeFocused()
+  ) {
+    event.preventDefault()
+    void archiveThreadById(selectedThreadId.value)
+    return
+  }
+  if (
+    (event.key === 'f' || event.key === 'F')
+    && (event.metaKey || event.ctrlKey)
+    && !event.shiftKey
+    && !event.altKey
+    && !isEditableShortcutTarget(event.target)
+    && route.name === 'thread'
+    && selectedThreadId.value
+    && !isTerminalLikeFocused()
+  ) {
+    event.preventDefault()
+    focusThreadFindInput()
+    return
+  }
+  if (
+    (event.key === 'g' || event.key === 'G')
+    && (event.metaKey || event.ctrlKey)
+    && !event.shiftKey
+    && !event.altKey
+    && !isEditableShortcutTarget(event.target)
+    && !isTerminalLikeFocused()
+  ) {
+    event.preventDefault()
+    openSidebarSearchViaShortcut()
+    return
+  }
+  if (
+    (event.key === 'p' || event.key === 'P')
+    && (event.metaKey || event.ctrlKey)
+    && event.shiftKey
+    && !event.altKey
+    && !isEditableShortcutTarget(event.target)
+    && !isTerminalLikeFocused()
+  ) {
+    event.preventDefault()
+    openSkillsHubViaShortcut()
+    return
+  }
+  if (
+    (event.key === 'p' || event.key === 'P')
+    && (event.metaKey || event.ctrlKey)
+    && !event.shiftKey
+    && !event.altKey
+    && !isEditableShortcutTarget(event.target)
+    && !isTerminalLikeFocused()
+  ) {
+    event.preventDefault()
+    openSidebarSearchViaShortcut()
+    return
+  }
+  if (
+    (event.metaKey || event.ctrlKey)
+    && !event.shiftKey
+    && event.altKey
+    && event.code === 'KeyB'
+    && !isEditableShortcutTarget(event.target)
+    && route.name === 'thread'
+    && selectedThreadId.value
+    && !isTerminalLikeFocused()
+  ) {
+    event.preventDefault()
+    isReviewPaneOpen.value = !isReviewPaneOpen.value
+    return
+  }
+  if (
+    (event.key === 'l' || event.key === 'L')
+    && (event.metaKey || event.ctrlKey)
+    && !event.shiftKey
+    && event.altKey
+    && !isEditableShortcutTarget(event.target)
+    && !isTerminalLikeFocused()
+  ) {
+    event.preventDefault()
+    void copyCurrentDeeplink()
+    return
+  }
+  if (
+    (event.key === 'c' || event.key === 'C')
+    && (event.metaKey || event.ctrlKey)
+    && event.shiftKey
+    && event.altKey
+    && !isEditableShortcutTarget(event.target)
+    && !isTerminalLikeFocused()
+  ) {
+    event.preventDefault()
+    void copyConversationPath()
+    return
+  }
+  if (
+    (event.key === 's' || event.key === 'S')
+    && (event.metaKey || event.ctrlKey)
+    && !event.shiftKey
+    && event.altKey
+    && !isEditableShortcutTarget(event.target)
+    && !isTerminalLikeFocused()
+  ) {
+    event.preventDefault()
+    void copyConversationPath()
+    return
+  }
+  if (
+    (event.key === 'c' || event.key === 'C')
+    && (event.metaKey || event.ctrlKey)
+    && event.shiftKey
+    && !event.altKey
+    && !isEditableShortcutTarget(event.target)
+    && !isTerminalLikeFocused()
+  ) {
+    event.preventDefault()
+    void copyWorkingDirectoryIdentifier()
+    return
+  }
+  if (
+    (event.key === 'c' || event.key === 'C')
+    && (event.metaKey || event.ctrlKey)
+    && !event.shiftKey
+    && event.altKey
+    && !isEditableShortcutTarget(event.target)
+    && !isTerminalLikeFocused()
+  ) {
+    event.preventDefault()
+    void copySessionIdentifier()
+    return
+  }
+  if (
+    event.key === 'Escape'
+    && isSettingsOpen.value
+    && !isEditableShortcutTarget(event.target)
+    && !isTerminalLikeFocused()
+  ) {
     isSettingsOpen.value = false
+    return
+  }
+  if (
+    event.key === 'Escape'
+    && isReviewPaneOpen.value
+    && !isEditableShortcutTarget(event.target)
+    && !isTerminalLikeFocused()
+  ) {
+    isReviewPaneOpen.value = false
+    return
+  }
+  if (
+    (event.key === 'j' || event.key === 'J')
+    && (event.metaKey || event.ctrlKey)
+    && !event.shiftKey
+    && !event.altKey
+    && !isEditableShortcutTarget(event.target)
+    && !isTerminalLikeFocused()
+  ) {
+    event.preventDefault()
+    setSidebarCollapsed(!isSidebarCollapsed.value)
     return
   }
   if (!event.ctrlKey && !event.metaKey) return
   if (event.shiftKey || event.altKey) return
   if (event.key.toLowerCase() !== 'b') return
+  if (isEditableShortcutTarget(event.target)) return
+  if (isTerminalLikeFocused()) return
   event.preventDefault()
   setSidebarCollapsed(!isSidebarCollapsed.value)
+}
+
+function isEditableShortcutTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false
+  return Boolean(target.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="textbox"], [role="searchbox"], [role="combobox"], [role="spinbutton"]'))
+}
+
+function clearThreadFind(): void {
+  threadFindQuery.value = ''
+  threadFindActiveIndex.value = 0
+}
+
+function onThreadFindStep(next: boolean): void {
+  const total = threadFindMatchCount.value
+  if (total <= 0) return
+  if (next) {
+    threadFindActiveIndex.value = (threadFindActiveIndex.value + 1) % total
+    return
+  }
+  threadFindActiveIndex.value = (threadFindActiveIndex.value - 1 + total) % total
+}
+
+function onThreadFindInputEnter(event: KeyboardEvent): void {
+  onThreadFindStep(!event.shiftKey)
+}
+
+function focusThreadFindInput(): void {
+  nextTick(() => {
+    const input = threadFindInputRef.value
+    input?.focus()
+    input?.select()
+    if (!input) return
+    window.requestAnimationFrame(() => {
+      input.focus()
+      input.select()
+    })
+  })
+}
+
+function toggleSelectedThreadPin(): void {
+  if (typeof document === 'undefined') return
+  const selectedRow = document.querySelector<HTMLElement>('.thread-row[data-active="true"]')
+  if (!selectedRow) return
+  const pinButton = selectedRow.querySelector<HTMLButtonElement>('.thread-pin-button')
+  pinButton?.click()
+}
+
+function openComposerModelDropdownViaShortcut(): void {
+  if (typeof document === 'undefined') return
+  const openOrFocus = (): boolean => {
+    const selectedOption = document.querySelector<HTMLButtonElement>(
+      '.thread-composer-control .composer-dropdown-option.is-selected',
+    )
+    if (selectedOption) {
+      selectedOption.focus()
+      return true
+    }
+    const searchInput = document.querySelector<HTMLInputElement>(
+      '.thread-composer-control .composer-dropdown-search-input',
+    )
+    if (searchInput) {
+      searchInput.focus()
+      return true
+    }
+    const trigger = document.querySelector<HTMLButtonElement>(
+      '.thread-composer-control .composer-dropdown-trigger',
+    )
+    if (!trigger || trigger.disabled) {
+      const fallbackTrigger = Array.from(
+        document.querySelectorAll<HTMLButtonElement>('.thread-composer-control .composer-dropdown-trigger'),
+      ).find((candidate) => !candidate.disabled)
+      if (!fallbackTrigger) return false
+      fallbackTrigger.click()
+      return true
+    }
+    trigger.click()
+    return true
+  }
+  if (openOrFocus()) return
+  window.requestAnimationFrame(() => {
+    void openOrFocus()
+  })
+}
+
+function isTerminalLikeFocused(): boolean {
+  if (typeof document === 'undefined') return false
+  const active = document.activeElement
+  if (!(active instanceof HTMLElement)) return false
+  return Boolean(
+    active.closest('[data-codex-terminal], .xterm, [data-terminal-input], [data-terminal-root]'),
+  )
+}
+
+async function copyCurrentDeeplink(): Promise<void> {
+  if (typeof window === 'undefined') return
+  await copyTextToClipboard(window.location.href)
+}
+
+async function copySessionIdentifier(): Promise<void> {
+  const sessionId = route.name === 'thread' && routeThreadId.value
+    ? routeThreadId.value
+    : String(route.name ?? 'home')
+  await copyTextToClipboard(sessionId)
+}
+
+async function copyWorkingDirectoryIdentifier(): Promise<void> {
+  const cwd = selectedThread.value?.cwd?.trim() || composerCwd.value.trim()
+  const value = cwd.length > 0 ? cwd : String(route.name ?? 'home')
+  await copyTextToClipboard(value)
+}
+
+async function copyConversationPath(): Promise<void> {
+  if (typeof window === 'undefined') return
+  const hashPath = window.location.hash.startsWith('#') ? window.location.hash.slice(1) : window.location.hash
+  const value = route.name === 'thread' && routeThreadId.value
+    ? `/thread/${routeThreadId.value}`
+    : hashPath || '/'
+  await copyTextToClipboard(value)
+}
+
+async function copyTextToClipboard(value: string): Promise<void> {
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(value)
+      return
+    }
+  } catch {
+    // Fallback to execCommand below.
+  }
+
+  if (typeof document === 'undefined') return
+  const textArea = document.createElement('textarea')
+  textArea.value = value
+  textArea.setAttribute('readonly', '')
+  textArea.style.position = 'absolute'
+  textArea.style.left = '-9999px'
+  document.body.appendChild(textArea)
+  textArea.select()
+  document.execCommand('copy')
+  document.body.removeChild(textArea)
 }
 
 function onDocumentPointerDown(event: PointerEvent): void {
@@ -2159,7 +2908,8 @@ async function loadThreadBranches(cwd: string): Promise<void> {
   try {
     const state = await getGitBranchState(targetCwd)
     threadBranchOptions.value = state.options
-    currentThreadBranch.value = state.currentBranch
+    const normalizedBranch = state.currentBranch?.trim() ?? ''
+    currentThreadBranch.value = normalizedBranch.length > 0 ? normalizedBranch : null
   } catch {
     threadBranchOptions.value = []
     currentThreadBranch.value = null
@@ -2176,7 +2926,7 @@ function onSelectContentHeaderBranch(value: string): void {
   if (value === '__detached_head__') return
   if (isSwitchingThreadBranch.value) return
   const targetBranch = value.trim()
-  if (!targetBranch || targetBranch === (currentThreadBranch.value ?? '')) return
+  if (!targetBranch || targetBranch === (currentThreadBranch.value?.trim() ?? '')) return
   const cwd = composerCwd.value.trim()
   if (!cwd) return
 
@@ -3388,6 +4138,22 @@ async function loadWorktreeBranches(sourceCwd: string): Promise<void> {
   @apply rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-xs text-zinc-700 transition hover:bg-zinc-50;
 }
 
+.thread-find {
+  @apply inline-flex items-center gap-1 mr-2;
+}
+
+.thread-find-input {
+  @apply w-40 rounded-md border border-zinc-200 bg-white px-2 py-1 text-xs text-zinc-800 outline-none;
+}
+
+.thread-find-count {
+  @apply text-[11px] text-zinc-500 tabular-nums min-w-8 text-center;
+}
+
+.thread-find-button {
+  @apply rounded border border-zinc-200 bg-white px-1.5 py-1 text-[11px] leading-none text-zinc-700 transition hover:bg-zinc-50 disabled:opacity-50 disabled:cursor-default;
+}
+
 .content-header-branch-dropdown :deep(.composer-dropdown-value) {
   @apply max-w-40 truncate;
 }
@@ -3861,7 +4627,7 @@ async function loadWorktreeBranches(sourceCwd: string): Promise<void> {
 }
 
 .sidebar-settings-account-meta {
-  @apply truncate text-[11px] text-zinc-500;
+  @apply text-[11px] leading-tight text-zinc-500 break-words;
 }
 
 .sidebar-settings-account-quota {
@@ -3869,7 +4635,7 @@ async function loadWorktreeBranches(sourceCwd: string): Promise<void> {
 }
 
 .sidebar-settings-account-id {
-  @apply mt-1 inline-flex max-w-full rounded-full bg-zinc-100 px-2 py-0.5 font-mono text-[11px] text-zinc-700;
+  @apply mt-1 inline-flex max-w-full break-all whitespace-normal rounded-full bg-zinc-100 px-2 py-0.5 font-mono text-[11px] leading-tight text-zinc-700;
 }
 
 .sidebar-settings-account-item.is-active .sidebar-settings-account-id {

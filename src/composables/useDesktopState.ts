@@ -3093,7 +3093,7 @@ export function useDesktopState() {
     if (notification.method === 'thread/name/updated') {
       const params = asRecord(notification.params)
       const threadId = readString(params?.threadId)
-      const threadName = readString(params?.threadName)
+      const threadName = readString(params?.threadName) || readString(params?.name)
       if (threadId && threadName) {
         threadTitleById.value = { ...threadTitleById.value, [threadId]: threadName }
         applyThreadFlags()
