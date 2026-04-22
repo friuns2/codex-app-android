@@ -636,3 +636,10 @@ After each feature implementation session that uses this skill:
   - exposes a conversation snapshot shape `{ cwd, shell, buffer, truncated }`
   - emits renderer messages including `terminal-data`, `terminal-init-log`, `terminal-attached`, `terminal-exit`, and `terminal-error`
 - Web parity implementation should use `/codex-api/ws` and HTTP endpoints instead of Electron IPC, but preserve the same event names and snapshot shape where practical.
+- Web implementation lessons from screenshot review and edge-case tests:
+  - Keep the terminal panel outside the pending-request/composer `v-if` / `v-else` pair; otherwise the composer can disappear when the terminal is open.
+  - Collapse the mobile sidebar immediately on first render for direct thread routes; otherwise the drawer can cover terminal screenshots.
+  - Normalize PTY locale (`en_US.UTF-8` on macOS) and remove `TERMINFO` / `TERMINFO_DIRS` to avoid visible shell startup warnings.
+  - Restore executable permissions on `node-pty` `spawn-helper` at runtime when pnpm ignores native package build scripts.
+  - Unit-test terminal manager behavior through dependency injection instead of spawning real shells for every edge case.
+  - Edge cases worth preserving in tests: missing thread id rejection, cwd fallback, dimension clamping, 16 KiB buffer truncation, reattach init-log emission, shell-quoted cwd sync, new-session replacement, and close/exit snapshot cleanup.

@@ -1,5 +1,11 @@
 # Log
 
+## [2026-04-22] ingest | integrated terminal implementation
+- Added source: `raw/features/integrated-terminal.md`.
+- Created wiki page: `concepts/integrated-terminal.md`.
+- Documents: Codex.app terminal parity facts, web endpoint design, PTY manager edge cases, visual review fixes, and verification coverage.
+- Updated `overview.md`, `entities/codex-web-local.md`, and `index.md`.
+
 ## [2026-04-13] ingest | OpenCode Zen Big Pickle + Codex CLI fix
 - Added source: `raw/fixes/opencode-zen-big-pickle-codex-cli.md`.
 - Created wiki page: `concepts/opencode-zen-big-pickle.md`.
