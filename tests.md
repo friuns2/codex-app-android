@@ -2770,3 +2770,85 @@ New TestChat threads use the provider-scoped model selected in the new-thread co
 
 #### Rollback/Cleanup
 - Switch provider/model settings back to preferred defaults if needed
+
+---
+
+### User message edit action replaces rollback button
+
+#### Feature/Change Name
+The old rollback button is replaced with an `Edit message` action under each eligible user message, while keeping the existing behavior that appends the original text into the composer and rolls the thread back from that turn.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. An existing thread with at least one completed user/assistant turn
+
+#### Steps
+1. Open a thread with multiple completed turns
+2. Hover a completed user message
+3. Confirm `Edit message` appears under that user message
+4. Confirm assistant responses no longer show the old `Rollback` button
+5. Click `Edit message` on an earlier user message with recognizable text
+6. Observe the composer draft after the click
+7. Confirm the thread rolls back from the selected turn
+
+#### Expected Results
+- The action under eligible user messages is labeled `Edit message`
+- Assistant responses no longer render the old rollback action
+- Clicking `Edit message` appends the original user text into the composer
+- The existing rollback behavior still truncates the selected turn and later turns
+
+#### Rollback/Cleanup
+- Re-send the edited message if you want to recreate the conversation path
+
+---
+
+### API perf log bodyMB uses one decimal place
+
+#### Feature/Change Name
+`[codex-api-perf]` log entries format `bodyMB` with one decimal place instead of four.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. A request large enough to trigger `[codex-api-perf]` logging
+
+#### Steps
+1. Trigger a `/codex-api/` request that exceeds the perf logging threshold
+2. Inspect the server log line that includes `bodyMB=...`
+
+#### Expected Results
+- `bodyMB` is formatted with one decimal place, such as `bodyMB=3.4`
+- The log does not print extra precision such as `bodyMB=3.4489`
+
+
+---
+
+### Settings parity wrap-up (top-level controls + thread utilities)
+
+#### Feature/Change Name
+Top-level Settings parity updates: clearer labels for core controls, provider/model/reasoning cycles, sandbox/approval/network/search controls, ambient suggestions, and thread utility actions (`Compact current thread`, `Clean background terminals`).
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Codex app-server reachable
+3. Open any thread to validate thread utility actions
+
+#### Steps
+1. Open sidebar `Settings`.
+2. Verify top-level rows are present and readable:
+   - Collaboration mode, Model, Reasoning effort, Provider
+   - Approval policy, Sandbox mode, Agent network access, Web search mode
+   - Agent speed, Agent ambient suggestions
+   - Appearance, Chat width, send behavior, dictation language
+3. Cycle/toggle each row once and confirm value text updates.
+4. With a selected thread, click:
+   - `Compact current thread`
+   - `Clean background terminals`
+
+#### Expected Results
+- All rows render with clear human labels (not raw internal values).
+- Toggle/cycle actions update state without UI crashes.
+- Thread utility actions execute and UI remains responsive.
+- Settings panel accessibility attributes remain intact (`aria-*` dialog semantics).
+
+#### Rollback/Cleanup
+- Restore previous user preferences after validation.

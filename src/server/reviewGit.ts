@@ -7,7 +7,6 @@ import { isAbsolute, join, resolve } from 'node:path'
 type ReviewScope = 'workspace' | 'baseBranch'
 type ReviewWorkspaceView = 'unstaged' | 'staged'
 type ReviewAction = 'stage' | 'unstage' | 'revert'
-type ReviewActionLevel = 'all' | 'file' | 'hunk'
 
 type ReviewDiffLine = {
   key: string

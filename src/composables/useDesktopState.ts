@@ -2,6 +2,8 @@ import { computed, ref } from 'vue'
 import {
 
   archiveThread,
+  cleanThreadBackgroundTerminals,
+  compactThread,
   forkThread,
   getAvailableCollaborationModes,
   getAccountRateLimits,
@@ -24,10 +26,12 @@ import {
   persistThreadTitle,
   generateThreadTitle,
   resumeThread,
+  steerThreadTurn,
 
   startThread,
   subscribeCodexNotifications,
   startThreadTurn,
+  unarchiveThread,
   type RpcNotification,
   type SkillInfo,
 } from '../api/codexGateway'
@@ -1039,6 +1043,7 @@ export function useDesktopState() {
 
   const installedSkills = ref<SkillInfo[]>([])
   const accountRateLimitSnapshots = ref<UiRateLimitSnapshot[]>([])
+  const appListRevision = ref(0)
 
   const isLoadingThreads = ref(false)
   const isLoadingMessages = ref(false)
@@ -2149,6 +2154,15 @@ export function useDesktopState() {
     }
   }
 
+  function readThreadCompacted(notification: RpcNotification): { threadId: string; turnId: string } | null {
+    if (notification.method !== 'thread/compacted') return null
+    const params = asRecord(notification.params)
+    const threadId = readString(params?.threadId) || readString(params?.thread_id)
+    const turnId = readString(params?.turnId) || readString(params?.turn_id)
+    if (!threadId || !turnId) return null
+    return { threadId, turnId }
+  }
+
   function asRecord(value: unknown): Record<string, unknown> | null {
     return value !== null && typeof value === 'object' && !Array.isArray(value)
       ? (value as Record<string, unknown>)
@@ -2833,12 +2847,62 @@ export function useDesktopState() {
     return ''
   }
 
+  function readGlobalWarningMessage(notification: RpcNotification): string {
+    if (
+      notification.method !== 'configWarning'
+      && notification.method !== 'deprecationNotice'
+      && notification.method !== 'windows/worldWritableWarning'
+    ) {
+      return ''
+    }
+    const params = asRecord(notification.params)
+    return (
+      readString(params?.message)
+      || readString(params?.warning)
+      || readString(params?.text)
+      || ''
+    )
+  }
+
+  function readAccountLoginCompletedState(notification: RpcNotification): { success: boolean; error: string } | null {
+    if (notification.method !== 'account/login/completed') return null
+    const params = asRecord(notification.params)
+    const success = typeof params?.success === 'boolean' ? params.success : null
+    if (success === null) return null
+    const errorMessage = readString(params?.error)
+    return {
+      success,
+      error: errorMessage,
+    }
+  }
+
+  function readMcpOauthCompletedState(notification: RpcNotification): { name: string; success: boolean; error: string } | null {
+    if (notification.method !== 'mcpServer/oauthLogin/completed') return null
+    const params = asRecord(notification.params)
+    const name = readString(params?.name)
+    const success = typeof params?.success === 'boolean' ? params.success : null
+    if (!name || success === null) return null
+    const errorMessage = readString(params?.error)
+    return {
+      name,
+      success,
+      error: errorMessage,
+    }
+  }
+
   function readReasoningDelta(notification: RpcNotification): { messageId: string; delta: string } | null {
     const params = asRecord(notification.params)
     if (!params) return null
 
     // Канонический источник дельт для UI — уже нормализованный item/*.
     if (notification.method === 'item/reasoning/summaryTextDelta') {
+      const itemId = readString(params.itemId)
+      const delta = readString(params.delta)
+      if (!itemId || !delta) return null
+      return { messageId: liveReasoningMessageId(itemId), delta }
+    }
+
+    if (notification.method === 'item/reasoning/textDelta') {
       const itemId = readString(params.itemId)
       const delta = readString(params.delta)
       if (!itemId || !delta) return null
@@ -2986,6 +3050,77 @@ export function useDesktopState() {
       commandExecution: { command, cwd, status, aggregatedOutput, exitCode },
       turnId: turnId || undefined,
       turnIndex: typeof turnIndex === 'number' ? turnIndex : undefined,
+    }
+  }
+
+  function readTerminalInteraction(notification: RpcNotification): { threadId: string; label: string } | null {
+    if (notification.method !== 'item/commandExecution/terminalInteraction') return null
+    const threadId = extractThreadIdFromNotification(notification)
+    if (!threadId) return null
+    const params = asRecord(notification.params)
+    const prompt =
+      readString(params?.prompt)
+      || readString(params?.message)
+      || readString(params?.text)
+      || 'Waiting for terminal interaction'
+    return {
+      threadId,
+      label: prompt,
+    }
+  }
+
+  function readMcpToolCallProgress(notification: RpcNotification): { threadId: string; label: string } | null {
+    if (notification.method !== 'item/mcpToolCall/progress') return null
+    const threadId = extractThreadIdFromNotification(notification)
+    if (!threadId) return null
+    const params = asRecord(notification.params)
+    const progress = readString(params?.progress) || readString(params?.message) || readString(params?.text)
+    const name = readString(params?.name) || readString(params?.toolName) || 'MCP tool'
+    const label = progress ? `${name}: ${progress}` : `${name}: in progress`
+    return { threadId, label }
+  }
+
+  function readTurnDiffUpdated(notification: RpcNotification): { threadId: string; hasDiff: boolean } | null {
+    if (notification.method !== 'turn/diff/updated') return null
+    const params = asRecord(notification.params)
+    const threadId = readString(params?.threadId) || readString(params?.thread_id)
+    if (!threadId) return null
+    const diff = readString(params?.diff) || ''
+    return {
+      threadId,
+      hasDiff: diff.trim().length > 0,
+    }
+  }
+
+  function readFuzzyFileSearchSessionProgress(notification: RpcNotification): { threadId: string; label: string } | null {
+    if (
+      notification.method !== 'fuzzyFileSearch/sessionUpdated'
+      && notification.method !== 'fuzzyFileSearch/sessionCompleted'
+    ) {
+      return null
+    }
+    const params = asRecord(notification.params)
+    const threadId = readString(params?.threadId) || readString(params?.thread_id)
+    if (!threadId) return null
+    const statusText = notification.method === 'fuzzyFileSearch/sessionCompleted'
+      ? 'Search completed'
+      : 'Search in progress'
+    const fileCount = readNumber(params?.matchedFileCount) ?? readNumber(params?.matchCount)
+    return {
+      threadId,
+      label: fileCount !== null ? `${statusText} (${fileCount} matches)` : statusText,
+    }
+  }
+
+  function readRawResponseItemCompleted(notification: RpcNotification): { threadId: string; label: string } | null {
+    if (notification.method !== 'rawResponseItem/completed') return null
+    const threadId = extractThreadIdFromNotification(notification)
+    if (!threadId) return null
+    const params = asRecord(notification.params)
+    const itemType = readString(params?.itemType) || readString(params?.type) || 'raw response item'
+    return {
+      threadId,
+      label: `${itemType} completed`,
     }
   }
 
@@ -3151,7 +3286,6 @@ export function useDesktopState() {
       completedThreadModelId !== MODEL_FALLBACK_ID &&
       isUnsupportedChatGptModelError(new Error(turnErrorMessage))
     if (completedTurn) {
-      const pendingTurnRequest = pendingTurnRequestByThreadId.value[completedTurn.threadId]
       const startedTurnState = pendingTurnStartsById.get(completedTurn.turnId)
       if (startedTurnState) {
         pendingTurnStartsById.delete(completedTurn.turnId)
@@ -3213,6 +3347,29 @@ export function useDesktopState() {
       }
     }
 
+    const globalWarningMessage = readGlobalWarningMessage(notification)
+    if (globalWarningMessage) {
+      error.value = globalWarningMessage
+    }
+
+    const accountLoginCompleted = readAccountLoginCompletedState(notification)
+    if (accountLoginCompleted) {
+      if (!accountLoginCompleted.success) {
+        error.value = accountLoginCompleted.error || 'Account login failed'
+      } else if (error.value.toLowerCase().includes('login')) {
+        error.value = ''
+      }
+    }
+
+    const mcpOauthCompleted = readMcpOauthCompletedState(notification)
+    if (mcpOauthCompleted) {
+      if (!mcpOauthCompleted.success) {
+        error.value = mcpOauthCompleted.error || `MCP OAuth login failed for ${mcpOauthCompleted.name}`
+      } else if (error.value.toLowerCase().includes('oauth')) {
+        error.value = ''
+      }
+    }
+
     const planUpdate = readPlanUpdate(notification)
     if (planUpdate) {
       upsertLivePlanMessage(planUpdate.threadId, planUpdate.message)
@@ -3229,6 +3386,28 @@ export function useDesktopState() {
         label: 'Planning',
         details: [],
       })
+    }
+
+    const compacted = readThreadCompacted(notification)
+    if (compacted) {
+      setTurnActivityForThread(compacted.threadId, {
+        label: 'Context compacted',
+        details: [],
+      })
+      markThreadUnreadByEvent(compacted.threadId)
+    }
+
+    if (
+      notification.method === 'app/list/updated'
+      || notification.method === 'mcpServer/oauthLogin/completed'
+      || notification.method === 'account/updated'
+      || notification.method === 'account/rateLimits/updated'
+      || notification.method === 'account/login/completed'
+      || notification.method === 'authStatusChange'
+      || notification.method === 'loginChatGptComplete'
+      || notification.method === 'sessionConfigured'
+    ) {
+      appListRevision.value += 1
     }
 
     if (!notificationThreadId || notificationThreadId !== selectedThreadId.value) return
@@ -3301,6 +3480,51 @@ export function useDesktopState() {
     const commandCompleted = readCommandExecutionCompleted(notification)
     if (commandCompleted) {
       upsertLiveCommand(notificationThreadId, commandCompleted)
+    }
+
+    const terminalInteraction = readTerminalInteraction(notification)
+    if (terminalInteraction) {
+      setTurnActivityForThread(terminalInteraction.threadId, {
+        label: 'Terminal interaction',
+        details: [terminalInteraction.label],
+      })
+      markThreadUnreadByEvent(terminalInteraction.threadId)
+    }
+
+    const mcpProgress = readMcpToolCallProgress(notification)
+    if (mcpProgress) {
+      setTurnActivityForThread(mcpProgress.threadId, {
+        label: 'MCP tool progress',
+        details: [mcpProgress.label],
+      })
+      markThreadUnreadByEvent(mcpProgress.threadId)
+    }
+
+    const turnDiffUpdated = readTurnDiffUpdated(notification)
+    if (turnDiffUpdated) {
+      setTurnActivityForThread(turnDiffUpdated.threadId, {
+        label: 'Turn diff updated',
+        details: turnDiffUpdated.hasDiff ? ['Changes available'] : ['No diff content'],
+      })
+      markThreadUnreadByEvent(turnDiffUpdated.threadId)
+    }
+
+    const fuzzyFileSearchProgress = readFuzzyFileSearchSessionProgress(notification)
+    if (fuzzyFileSearchProgress) {
+      setTurnActivityForThread(fuzzyFileSearchProgress.threadId, {
+        label: 'Fuzzy file search',
+        details: [fuzzyFileSearchProgress.label],
+      })
+      markThreadUnreadByEvent(fuzzyFileSearchProgress.threadId)
+    }
+
+    const rawResponseItemCompleted = readRawResponseItemCompleted(notification)
+    if (rawResponseItemCompleted) {
+      setTurnActivityForThread(rawResponseItemCompleted.threadId, {
+        label: 'Raw response item',
+        details: [rawResponseItemCompleted.label],
+      })
+      markThreadUnreadByEvent(rawResponseItemCompleted.threadId)
     }
 
     const completedFileChange = readCompletedFileChange(notification)
@@ -3647,6 +3871,47 @@ export function useDesktopState() {
     }
   }
 
+  async function unarchiveThreadById(threadId: string): Promise<void> {
+    const normalizedThreadId = threadId.trim()
+    if (!normalizedThreadId) return
+    try {
+      error.value = ''
+      await unarchiveThread(normalizedThreadId)
+      await loadThreads()
+    } catch (unknownError) {
+      error.value = unknownError instanceof Error ? unknownError.message : 'Unknown application error'
+    }
+  }
+
+  async function compactSelectedThread(): Promise<void> {
+    const threadId = selectedThreadId.value.trim()
+    if (!threadId) return
+
+    try {
+      error.value = ''
+      await compactThread(threadId)
+      pendingThreadsRefresh = true
+      pendingThreadMessageRefresh.add(threadId)
+      await syncFromNotifications()
+    } catch (unknownError) {
+      error.value = unknownError instanceof Error ? unknownError.message : 'Failed to compact thread'
+    }
+  }
+
+  async function cleanSelectedThreadBackgroundTerminals(): Promise<void> {
+    const threadId = selectedThreadId.value.trim()
+    if (!threadId) return
+
+    try {
+      error.value = ''
+      await cleanThreadBackgroundTerminals(threadId)
+      pendingThreadsRefresh = true
+      await syncFromNotifications()
+    } catch (unknownError) {
+      error.value = unknownError instanceof Error ? unknownError.message : 'Failed to clean background terminals'
+    }
+  }
+
   async function renameThreadById(threadId: string, threadName: string) {
     const normalizedName = threadName.trim()
     if (!threadId || !normalizedName) return
@@ -3842,7 +4107,7 @@ export function useDesktopState() {
 
     if (isInProgress) {
       shouldAutoScrollOnNextAgentEvent = true
-      void startTurnForThread(threadId, nextText, imageUrls, skills, fileAttachments).catch((unknownError) => {
+      void steerSelectedThreadTurn(threadId, nextText, imageUrls, skills, fileAttachments).catch((unknownError) => {
         const errorMessage = unknownError instanceof Error ? unknownError.message : 'Unknown application error'
         setTurnErrorForThread(threadId, errorMessage)
         error.value = errorMessage
@@ -3878,6 +4143,35 @@ export function useDesktopState() {
       error.value = errorMessage
       throw unknownError
     }
+  }
+
+  async function steerSelectedThreadTurn(
+    threadId: string,
+    nextText: string,
+    imageUrls: string[] = [],
+    skills: Array<{ name: string; path: string }> = [],
+    fileAttachments: FileAttachment[] = [],
+  ): Promise<void> {
+    let turnId = activeTurnIdByThreadId.value[threadId]
+    if (!turnId) {
+      const detail = await getThreadDetail(threadId)
+      turnId = detail.activeTurnId
+      if (turnId) {
+        activeTurnIdByThreadId.value = {
+          ...activeTurnIdByThreadId.value,
+          [threadId]: turnId,
+        }
+      }
+    }
+    if (!turnId) {
+      throw new Error('Could not determine active turn id for steer')
+    }
+
+    await steerThreadTurn(threadId, turnId, nextText, imageUrls, skills, fileAttachments)
+    pendingThreadMessageRefresh.add(threadId)
+    pendingThreadsRefresh = true
+    await syncFromNotifications()
+    scheduleDelayedTurnSync(threadId)
   }
 
   async function sendMessageToNewThread(
@@ -4398,31 +4692,6 @@ export function useDesktopState() {
     }
   }
 
-  async function syncThreadStatus(): Promise<void> {
-    if (isPolling.value) return
-    isPolling.value = true
-
-    try {
-      await loadThreads()
-
-      if (!selectedThreadId.value) return
-
-      const threadId = selectedThreadId.value
-      const currentVersion = currentThreadVersion(threadId)
-      const loadedVersion = loadedVersionByThreadId.value[threadId] ?? ''
-      const hasVersionChange = currentVersion.length > 0 && currentVersion !== loadedVersion
-      const isInProgress = inProgressById.value[threadId] === true
-
-      if (isInProgress || hasVersionChange) {
-        await loadMessages(threadId, { silent: true })
-      }
-    } catch {
-      // ignore poll failures and keep last known state
-    } finally {
-      isPolling.value = false
-    }
-  }
-
   async function syncFromNotifications(): Promise<void> {
     if (isPolling.value) {
       if (typeof window !== 'undefined' && eventSyncTimer === null) {
@@ -4610,6 +4879,7 @@ export function useDesktopState() {
     projectDisplayNameById,
     selectedThread,
     selectedThreadTokenUsage,
+    appListRevision,
     selectedThreadScrollState,
     isSelectedThreadInterruptPending,
     selectedThreadServerRequests,
@@ -4640,6 +4910,9 @@ export function useDesktopState() {
     ensureThreadMessagesLoaded,
     setThreadScrollState,
     archiveThreadById,
+    unarchiveThreadById,
+    compactSelectedThread,
+    cleanSelectedThreadBackgroundTerminals,
     renameThreadById,
     forkThreadById,
     forkThreadFromTurn,

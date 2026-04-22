@@ -35,7 +35,6 @@ import type {
   CollaborationModeKind,
   CollaborationModeOption,
   UiCreditsSnapshot,
-  UiFileChange,
   UiMessage,
   UiProjectGroup,
   UiReviewAction,
@@ -187,12 +186,6 @@ export type AccountsListResult = {
   importedAccountId?: string
 }
 
-type ThreadFileChangeFallbackEntry = {
-  turnId: string
-  turnIndex: number
-  fileChanges: UiFileChange[]
-}
-
 type ThreadTurnIndexById = Record<string, number>
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -211,6 +204,18 @@ function readNumber(value: unknown): number | null {
 
 function readBoolean(value: unknown): boolean | null {
   return typeof value === 'boolean' ? value : null
+}
+
+function readConfigPathValue(config: Record<string, unknown> | null, path: string): unknown {
+  if (!config) return undefined
+  const parts = path.split('.').filter((part) => part.length > 0)
+  let current: unknown = config
+  for (const part of parts) {
+    const record = asRecord(current)
+    if (!record || !Object.prototype.hasOwnProperty.call(record, part)) return undefined
+    current = record[part]
+  }
+  return current
 }
 
 function normalizeAccountUnavailableReason(value: unknown): UiAccountUnavailableReason | null {
@@ -318,50 +323,6 @@ async function callRpc<T>(method: string, params?: unknown): Promise<T> {
   }
 }
 
-function normalizeFallbackFileChange(value: unknown): UiFileChange | null {
-  const record = asRecord(value)
-  if (!record) return null
-
-  const path = readString(record.path)
-  const operation = readString(record.operation)
-  if (!path || (operation !== 'add' && operation !== 'delete' && operation !== 'update')) {
-    return null
-  }
-
-  return {
-    path,
-    operation,
-    movedToPath: readString(record.movedToPath) ?? null,
-    diff: readString(record.diff) ?? '',
-    addedLineCount: readNumber(record.addedLineCount) ?? 0,
-    removedLineCount: readNumber(record.removedLineCount) ?? 0,
-  }
-}
-
-function normalizeThreadFileChangeFallback(value: unknown): ThreadFileChangeFallbackEntry[] {
-  const payload = asRecord(value)
-  const rows = Array.isArray(payload?.data) ? payload.data : []
-  const normalized: ThreadFileChangeFallbackEntry[] = []
-
-  for (const row of rows) {
-    const record = asRecord(row)
-    if (!record) continue
-
-    const turnId = readString(record.turnId)
-    const turnIndex = readNumber(record.turnIndex)
-    const fileChanges = Array.isArray(record.fileChanges)
-      ? record.fileChanges
-        .map((entry) => normalizeFallbackFileChange(entry))
-        .filter((entry): entry is UiFileChange => entry !== null)
-      : []
-
-    if (!turnId || turnIndex === null || fileChanges.length === 0) continue
-    normalized.push({ turnId, turnIndex, fileChanges })
-  }
-
-  return normalized
-}
-
 function buildTurnIndexByTurnId(payload: ThreadReadResponse): ThreadTurnIndexById {
   const turns = Array.isArray(payload.thread.turns) ? payload.thread.turns : []
   const lookup: ThreadTurnIndexById = {}
@@ -373,86 +334,6 @@ function buildTurnIndexByTurnId(payload: ThreadReadResponse): ThreadTurnIndexByI
   }
 
   return lookup
-}
-
-async function fetchThreadFileChangeFallback(threadId: string): Promise<ThreadFileChangeFallbackEntry[]> {
-  const response = await fetch(`/codex-api/thread-file-change-fallback?threadId=${encodeURIComponent(threadId)}`)
-  if (!response.ok) {
-    throw new Error(`Fallback request failed with ${response.status}`)
-  }
-  return normalizeThreadFileChangeFallback(await response.json())
-}
-
-function mergeRecoveredFileChangeMessages(messages: UiMessage[], fallbackEntries: ThreadFileChangeFallbackEntry[]): UiMessage[] {
-  if (fallbackEntries.length === 0) return messages
-
-  const localTurnIndexByTurnId = new Map<string, number>()
-  const coveredTurnIds = new Set<string>()
-
-  for (const message of messages) {
-    const tid = typeof message.turnId === 'string' && message.turnId.length > 0 ? message.turnId : undefined
-    const tIdx = typeof message.turnIndex === 'number' ? message.turnIndex : undefined
-    if (tid && tIdx !== undefined) localTurnIndexByTurnId.set(tid, tIdx)
-
-    const hasFileData =
-      message.messageType === 'fileChange' ||
-      (Array.isArray(message.fileChanges) && message.fileChanges.length > 0)
-    if (hasFileData && tid) coveredTurnIds.add(tid)
-  }
-
-  const extraMessages = fallbackEntries
-    .filter((entry) => localTurnIndexByTurnId.has(entry.turnId) && !coveredTurnIds.has(entry.turnId))
-    .map<UiMessage>((entry) => ({
-      id: `session-file-change:${entry.turnId}`,
-      role: 'system',
-      text: '',
-      messageType: 'fileChange',
-      fileChangeStatus: 'completed',
-      fileChanges: entry.fileChanges,
-      turnId: entry.turnId,
-      turnIndex: localTurnIndexByTurnId.get(entry.turnId) ?? entry.turnIndex,
-    }))
-
-  if (extraMessages.length === 0) return messages
-
-  const extrasByTurnIndex = new Map<number, UiMessage[]>()
-  for (const message of extraMessages) {
-    const turnIndex = message.turnIndex
-    if (typeof turnIndex !== 'number') continue
-    const current = extrasByTurnIndex.get(turnIndex)
-    if (current) current.push(message)
-    else extrasByTurnIndex.set(turnIndex, [message])
-  }
-
-  const insertedTurnIndices = new Set<number>()
-  const merged: UiMessage[] = []
-
-  for (let index = 0; index < messages.length; index += 1) {
-    const message = messages[index]
-    merged.push(message)
-
-    const turnIndex = message.turnIndex
-    if (typeof turnIndex !== 'number' || insertedTurnIndices.has(turnIndex)) continue
-    const nextTurnIndex = messages[index + 1]?.turnIndex
-    if (nextTurnIndex === turnIndex) continue
-
-    const extras = extrasByTurnIndex.get(turnIndex)
-    if (!extras || extras.length === 0) continue
-
-    merged.push(...extras)
-    insertedTurnIndices.add(turnIndex)
-  }
-
-  return merged
-}
-
-async function enrichThreadMessagesWithFallback(threadId: string, messages: UiMessage[]): Promise<UiMessage[]> {
-  try {
-    const fallbackEntries = await fetchThreadFileChangeFallback(threadId)
-    return mergeRecoveredFileChangeMessages(messages, fallbackEntries)
-  } catch {
-    return messages
-  }
 }
 
 function normalizeReasoningEffort(value: unknown): ReasoningEffort | '' {
@@ -927,6 +808,18 @@ export async function archiveThread(threadId: string): Promise<void> {
   await callRpc('thread/archive', { threadId })
 }
 
+export async function unarchiveThread(threadId: string): Promise<void> {
+  await callRpc('thread/unarchive', { threadId })
+}
+
+export async function compactThread(threadId: string): Promise<void> {
+  await callRpc('thread/compact/start', { threadId })
+}
+
+export async function cleanThreadBackgroundTerminals(threadId: string): Promise<void> {
+  await callRpc('thread/backgroundTerminals/clean', { threadId })
+}
+
 export async function renameThread(threadId: string, threadName: string): Promise<void> {
   await callRpc('thread/name/set', { threadId, name: threadName })
 }
@@ -1235,6 +1128,67 @@ export async function startThreadTurn(
     return typeof payload?.turn?.id === 'string' ? payload.turn.id.trim() : ''
   } catch (error) {
     throw normalizeCodexApiError(error, `Failed to start turn for thread ${threadId}`, 'turn/start')
+  }
+}
+
+export async function steerThreadTurn(
+  threadId: string,
+  expectedTurnId: string,
+  text: string,
+  imageUrls: string[] = [],
+  skills?: Array<{ name: string; path: string }>,
+  fileAttachments: FileAttachmentParam[] = [],
+): Promise<string> {
+  try {
+    const normalizedExpectedTurnId = expectedTurnId.trim()
+    if (!normalizedExpectedTurnId) {
+      throw new Error('turn/steer requires expectedTurnId')
+    }
+    const localImageAttachments: FileAttachmentParam[] = []
+    for (const imageUrl of imageUrls) {
+      const localImagePath = extractLocalImagePathFromUrl(imageUrl.trim())
+      if (!localImagePath) continue
+      localImageAttachments.push({
+        label: fileNameFromPath(localImagePath),
+        path: localImagePath,
+        fsPath: localImagePath,
+      })
+    }
+    const allFileAttachments = [...fileAttachments, ...localImageAttachments]
+    const dedupedFileAttachments = allFileAttachments.filter((entry, index) =>
+      allFileAttachments.findIndex((candidate) => candidate.fsPath === entry.fsPath) === index)
+    const finalText = buildTextWithAttachments(text, dedupedFileAttachments)
+    const input: Array<Record<string, unknown>> = [{ type: 'text', text: finalText }]
+    for (const imageUrl of imageUrls) {
+      const normalizedUrl = imageUrl.trim()
+      if (!normalizedUrl) continue
+      const localImagePath = extractLocalImagePathFromUrl(normalizedUrl)
+      if (localImagePath) {
+        input.push({
+          type: 'localImage',
+          path: localImagePath,
+        })
+        continue
+      }
+      input.push({
+        type: 'image',
+        url: normalizedUrl,
+        image_url: normalizedUrl,
+      })
+    }
+    if (skills) {
+      for (const skill of skills) {
+        input.push({ type: 'skill', name: skill.name, path: skill.path })
+      }
+    }
+    const payload = await callRpc<{ turnId?: string }>('turn/steer', {
+      threadId,
+      expectedTurnId: normalizedExpectedTurnId,
+      input,
+    })
+    return typeof payload?.turnId === 'string' ? payload.turnId.trim() : ''
+  } catch (error) {
+    throw normalizeCodexApiError(error, `Failed to steer active turn for thread ${threadId}`, 'turn/steer')
   }
 }
 
@@ -1629,7 +1583,7 @@ export async function initializeReviewGit(cwd: string): Promise<void> {
 export async function startThreadReview(
   threadId: string,
   scope: UiReviewScope,
-  workspaceView: UiReviewWorkspaceView,
+  _workspaceView: UiReviewWorkspaceView,
   baseBranch?: string | null,
 ): Promise<void> {
   const target = scope === 'baseBranch'
@@ -2154,6 +2108,133 @@ export type SkillInfo = {
   enabled: boolean
 }
 
+export type AppInfo = {
+  id: string
+  name: string
+  description: string
+  distributionChannel: string
+  installUrl: string
+  isAccessible: boolean
+  isEnabled: boolean
+}
+
+export type ExperimentalFeatureInfo = {
+  name: string
+  displayName: string
+  description: string
+  stage: string
+  enabled: boolean
+  defaultEnabled: boolean
+}
+
+export type McpServerStatusInfo = {
+  name: string
+  authStatus: string
+  toolCount: number
+  resourceCount: number
+  resourceTemplateCount: number
+}
+
+export type ConfigRequirementsInfo = {
+  allowedApprovalPolicies: string[]
+  allowedSandboxModes: string[]
+  allowedWebSearchModes: string[]
+  networkEnabled: boolean | null
+  enforceResidency: string | null
+}
+
+export type ArchivedThreadInfo = {
+  id: string
+  title: string
+  updatedAtIso: string
+}
+
+export type CommandExecResult = {
+  exitCode: number
+  stdout: string
+  stderr: string
+}
+
+export type FeedbackUploadResult = {
+  threadId: string
+}
+
+export type McpOauthLoginResult = {
+  authorizationUrl: string
+}
+
+export type ConfigValueWriteResult = {
+  filePath: string
+  status: string
+  version: string
+}
+
+export type ConfigBatchWriteEdit = {
+  keyPath: string
+  value: unknown
+  mergeStrategy?: 'replace' | 'upsert'
+}
+
+export type AccountReadResult = {
+  requiresOpenaiAuth: boolean
+  type: string
+  email: string
+  planType: string
+}
+
+export type ConfigReadSummary = {
+  model: string
+  modelProvider: string
+  approvalPolicy: string
+  sandboxMode: string
+  sandboxNetworkAccess: string
+  webSearch: string
+}
+
+export type ParitySettingsSnapshot = {
+  personalizationTone: string
+  personalizationAvatar: string
+  personalizationMemory: string
+  usageAutoTopUp: string
+  usageMonthlyBudgetUsd: string
+  appearanceTheme: string
+  appearanceDensity: string
+  dataControlsTelemetry: string
+  dataControlsTraining: string
+  computerUseMode: string
+  computerUseVision: string
+  generalNotifications: string
+  generalMenuBar: string
+  localEnvironmentName: string
+  localEnvironmentShell: string
+  pluginsEnabled: string
+  pluginsSource: string
+  connectionsHost: string
+  connectionsStatus: string
+  connectionsAuth: string
+  environmentName: string
+  environmentType: string
+  worktreesAutoCleanup: string
+  worktreesRepository: string
+  gitDefaultBranch: string
+  gitAutoFetch: string
+}
+
+export type ConfigParityBundle = {
+  summary: ConfigReadSummary
+  parity: ParitySettingsSnapshot
+}
+
+export type AccountLoginStartResult = {
+  type: string
+  authUrl: string
+  loginId: string
+}
+
+export type AccountLoginCancelResult = {
+  status: string
+}
+
 type SkillsListResponseEntry = {
   cwd: string
   skills: Array<{
@@ -2190,6 +2271,384 @@ export async function getSkillsList(cwds?: string[]): Promise<SkillInfo[]> {
     return skills
   } catch {
     return []
+  }
+}
+
+function readStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return []
+  return value
+    .map((entry) => (typeof entry === 'string' ? entry.trim() : ''))
+    .filter((entry) => entry.length > 0)
+}
+
+export async function getAppsList(): Promise<AppInfo[]> {
+  try {
+    const result: AppInfo[] = []
+    const seen = new Set<string>()
+    let cursor: string | null = null
+    for (let page = 0; page < 10; page += 1) {
+      const payload = await callRpc<{ data?: unknown; nextCursor?: unknown }>('app/list', cursor ? { cursor } : {})
+      const entries = Array.isArray(payload.data) ? payload.data : []
+      for (const entry of entries) {
+        const record = asRecord(entry)
+        const id = readString(record?.id) ?? ''
+        const name = readString(record?.name) ?? ''
+        if (!id || !name || seen.has(id)) continue
+        seen.add(id)
+        result.push({
+          id,
+          name,
+          description: readString(record?.description) ?? '',
+          distributionChannel: readString(record?.distributionChannel) ?? '',
+          installUrl: readString(record?.installUrl) ?? '',
+          isAccessible: readBoolean(record?.isAccessible) ?? false,
+          isEnabled: readBoolean(record?.isEnabled) ?? true,
+        })
+      }
+      const nextCursor = readString(payload.nextCursor)
+      if (!nextCursor) break
+      cursor = nextCursor
+    }
+    return result
+  } catch {
+    return []
+  }
+}
+
+export async function getExperimentalFeaturesList(): Promise<ExperimentalFeatureInfo[]> {
+  try {
+    const result: ExperimentalFeatureInfo[] = []
+    const seen = new Set<string>()
+    let cursor: string | null = null
+    for (let page = 0; page < 10; page += 1) {
+      const payload = await callRpc<{ data?: unknown; nextCursor?: unknown }>('experimentalFeature/list', cursor ? { cursor } : {})
+      const entries = Array.isArray(payload.data) ? payload.data : []
+      for (const entry of entries) {
+        const record = asRecord(entry)
+        const name = readString(record?.name) ?? ''
+        if (!name || seen.has(name)) continue
+        seen.add(name)
+        result.push({
+          name,
+          displayName: readString(record?.displayName) ?? '',
+          description: readString(record?.description) ?? '',
+          stage: readString(record?.stage) ?? '',
+          enabled: readBoolean(record?.enabled) ?? false,
+          defaultEnabled: readBoolean(record?.defaultEnabled) ?? false,
+        })
+      }
+      const nextCursor = readString(payload.nextCursor)
+      if (!nextCursor) break
+      cursor = nextCursor
+    }
+    return result
+  } catch {
+    return []
+  }
+}
+
+export async function getMcpServerStatusList(): Promise<McpServerStatusInfo[]> {
+  try {
+    const result: McpServerStatusInfo[] = []
+    const seen = new Set<string>()
+    let cursor: string | null = null
+    for (let page = 0; page < 10; page += 1) {
+      const payload = await callRpc<{ data?: unknown; nextCursor?: unknown }>('mcpServerStatus/list', cursor ? { cursor } : {})
+      const entries = Array.isArray(payload.data) ? payload.data : []
+      for (const entry of entries) {
+        const record = asRecord(entry)
+        const name = readString(record?.name) ?? ''
+        if (!name || seen.has(name)) continue
+        seen.add(name)
+        const tools = asRecord(record?.tools)
+        const resources = Array.isArray(record?.resources) ? record.resources : []
+        const resourceTemplates = Array.isArray(record?.resourceTemplates) ? record.resourceTemplates : []
+        result.push({
+          name,
+          authStatus: readString(record?.authStatus) ?? 'unknown',
+          toolCount: tools ? Object.keys(tools).length : 0,
+          resourceCount: resources.length,
+          resourceTemplateCount: resourceTemplates.length,
+        })
+      }
+      const nextCursor = readString(payload.nextCursor)
+      if (!nextCursor) break
+      cursor = nextCursor
+    }
+    return result
+  } catch {
+    return []
+  }
+}
+
+export async function reloadMcpServers(): Promise<void> {
+  await callRpc('config/mcpServer/reload', {})
+}
+
+export async function getConfigRequirements(): Promise<ConfigRequirementsInfo | null> {
+  try {
+    const payload = await callRpc<{ requirements?: unknown }>('configRequirements/read', {})
+    const record = asRecord(payload.requirements)
+    if (!record) return null
+    const network = asRecord(record.network)
+    return {
+      allowedApprovalPolicies: readStringArray(record.allowedApprovalPolicies),
+      allowedSandboxModes: readStringArray(record.allowedSandboxModes),
+      allowedWebSearchModes: readStringArray(record.allowedWebSearchModes),
+      networkEnabled: network ? (readBoolean(network.enabled) ?? null) : null,
+      enforceResidency: readString(record.enforceResidency),
+    }
+  } catch {
+    return null
+  }
+}
+
+export async function getArchivedThreads(limit = 20): Promise<ArchivedThreadInfo[]> {
+  try {
+    const payload = await callRpc<ThreadListResponse>('thread/list', {
+      archived: true,
+      limit: Math.max(1, Math.min(200, Math.floor(limit))),
+      sortKey: 'updated_at',
+      modelProviders: [],
+    })
+    const groups = normalizeThreadGroupsV2(payload)
+    return groups
+      .flatMap((group) => group.threads)
+      .sort((left, right) => right.updatedAtIso.localeCompare(left.updatedAtIso))
+      .map((thread) => ({
+        id: thread.id,
+        title: thread.title,
+        updatedAtIso: thread.updatedAtIso,
+      }))
+  } catch {
+    return []
+  }
+}
+
+export async function executeCommand(commandLine: string, cwd: string | null = null): Promise<CommandExecResult> {
+  const trimmed = commandLine.trim()
+  if (!trimmed) {
+    return { exitCode: 1, stdout: '', stderr: 'Command is empty' }
+  }
+  const command = trimmed.split(/\s+/u)
+  const payload = await callRpc<{ exitCode: number; stdout: string; stderr: string }>('command/exec', {
+    command,
+    cwd: cwd && cwd.trim().length > 0 ? cwd.trim() : null,
+  })
+  return {
+    exitCode: typeof payload.exitCode === 'number' ? payload.exitCode : 1,
+    stdout: typeof payload.stdout === 'string' ? payload.stdout : '',
+    stderr: typeof payload.stderr === 'string' ? payload.stderr : '',
+  }
+}
+
+export async function uploadFeedback(
+  classification: string,
+  includeLogs: boolean,
+  reason: string | null,
+  threadId: string | null,
+): Promise<FeedbackUploadResult> {
+  const payload = await callRpc<{ threadId?: string }>('feedback/upload', {
+    classification: classification.trim() || 'general',
+    includeLogs,
+    reason: reason && reason.trim().length > 0 ? reason.trim() : null,
+    threadId: threadId && threadId.trim().length > 0 ? threadId.trim() : null,
+  })
+  return {
+    threadId: typeof payload.threadId === 'string' ? payload.threadId : '',
+  }
+}
+
+export async function startMcpOauthLogin(name: string): Promise<McpOauthLoginResult> {
+  const payload = await callRpc<{ authorizationUrl?: string }>('mcpServer/oauth/login', {
+    name: name.trim(),
+    scopes: null,
+    timeoutSecs: null,
+  })
+  return {
+    authorizationUrl: typeof payload.authorizationUrl === 'string' ? payload.authorizationUrl : '',
+  }
+}
+
+export async function writeConfigValue(
+  keyPath: string,
+  value: unknown,
+  mergeStrategy: 'replace' | 'upsert' = 'replace',
+): Promise<ConfigValueWriteResult> {
+  const payload = await callRpc<{ filePath?: string; status?: string; version?: string }>('config/value/write', {
+    keyPath,
+    value,
+    mergeStrategy,
+    filePath: null,
+    expectedVersion: null,
+  })
+  return {
+    filePath: typeof payload.filePath === 'string' ? payload.filePath : '',
+    status: typeof payload.status === 'string' ? payload.status : 'ok',
+    version: typeof payload.version === 'string' ? payload.version : '',
+  }
+}
+
+export async function writeConfigBatch(edits: ConfigBatchWriteEdit[]): Promise<ConfigValueWriteResult> {
+  const normalizedEdits = edits
+    .map((edit) => ({
+      keyPath: edit.keyPath.trim(),
+      value: edit.value,
+      mergeStrategy: edit.mergeStrategy ?? 'replace',
+    }))
+    .filter((edit) => edit.keyPath.length > 0)
+  const payload = await callRpc<{ filePath?: string; status?: string; version?: string }>('config/batchWrite', {
+    edits: normalizedEdits,
+    filePath: null,
+    expectedVersion: null,
+  })
+  return {
+    filePath: typeof payload.filePath === 'string' ? payload.filePath : '',
+    status: typeof payload.status === 'string' ? payload.status : 'ok',
+    version: typeof payload.version === 'string' ? payload.version : '',
+  }
+}
+
+export async function logoutAccount(): Promise<void> {
+  await callRpc('account/logout', {})
+}
+
+export async function readAccount(): Promise<AccountReadResult> {
+  const payload = await callRpc<{ requiresOpenaiAuth?: boolean; account?: unknown }>('account/read', {
+    refreshToken: false,
+  })
+  const account = asRecord(payload.account)
+  return {
+    requiresOpenaiAuth: payload.requiresOpenaiAuth === true,
+    type: readString(account?.type) ?? '',
+    email: readString(account?.email) ?? '',
+    planType: readString(account?.planType) ?? '',
+  }
+}
+
+export async function readConfigSummary(): Promise<ConfigReadSummary> {
+  const payload = await callRpc<{ config?: unknown }>('config/read', { includeUnchanged: false })
+  const config = asRecord(payload.config)
+  const networkAccess = readSandboxWorkspaceNetworkAccess(config)
+  return {
+    model: readString(config?.model) ?? '',
+    modelProvider: readString(config?.model_provider ?? config?.modelProvider) ?? '',
+    approvalPolicy: readString(config?.approval_policy ?? config?.approvalPolicy) ?? '',
+    sandboxMode: readString(config?.sandbox_mode ?? config?.sandboxMode) ?? '',
+    sandboxNetworkAccess: networkAccess === null ? '' : networkAccess ? 'enabled' : 'disabled',
+    webSearch: readString(config?.web_search ?? config?.webSearch) ?? '',
+  }
+}
+
+function readSandboxWorkspaceNetworkAccess(config: Record<string, unknown> | null): boolean | null {
+  const workspaceWrite = asRecord(config?.sandbox_workspace_write ?? config?.sandboxWorkspaceWrite)
+  return readBoolean(workspaceWrite?.network_access ?? workspaceWrite?.networkAccess)
+}
+
+export async function readParitySettingsSnapshot(): Promise<ParitySettingsSnapshot> {
+  const payload = await callRpc<{ config?: unknown }>('config/read', { includeUnchanged: false })
+  const config = asRecord(payload.config)
+  return {
+    personalizationTone: readString(readConfigPathValue(config, 'personalization.tone')) ?? '',
+    personalizationAvatar: readString(readConfigPathValue(config, 'personalization.avatar')) ?? '',
+    personalizationMemory: readString(readConfigPathValue(config, 'personalization.memory')) ?? '',
+    usageAutoTopUp: readString(readConfigPathValue(config, 'usage.auto_top_up')) ?? '',
+    usageMonthlyBudgetUsd: readString(readConfigPathValue(config, 'usage.monthly_budget_usd')) ?? '',
+    appearanceTheme: readString(readConfigPathValue(config, 'appearance.theme')) ?? '',
+    appearanceDensity: readString(readConfigPathValue(config, 'appearance.density')) ?? '',
+    dataControlsTelemetry: readString(readConfigPathValue(config, 'data_controls.telemetry')) ?? '',
+    dataControlsTraining: readString(readConfigPathValue(config, 'data_controls.training')) ?? '',
+    computerUseMode: readString(readConfigPathValue(config, 'computer_use.mode')) ?? '',
+    computerUseVision: readString(readConfigPathValue(config, 'computer_use.vision')) ?? '',
+    generalNotifications: readString(readConfigPathValue(config, 'general_settings.notifications')) ?? '',
+    generalMenuBar: readString(readConfigPathValue(config, 'general_settings.menu_bar')) ?? '',
+    localEnvironmentName: readString(readConfigPathValue(config, 'local_environments.default.name')) ?? '',
+    localEnvironmentShell: readString(readConfigPathValue(config, 'local_environments.default.shell')) ?? '',
+    pluginsEnabled: readString(readConfigPathValue(config, 'plugins_settings.enabled')) ?? '',
+    pluginsSource: readString(readConfigPathValue(config, 'plugins_settings.source')) ?? '',
+    connectionsHost: readString(readConfigPathValue(config, 'connections.host')) ?? '',
+    connectionsStatus: readString(readConfigPathValue(config, 'connections.status')) ?? '',
+    connectionsAuth: readString(readConfigPathValue(config, 'connections.auth')) ?? '',
+    environmentName: readString(readConfigPathValue(config, 'environments.default.name')) ?? '',
+    environmentType: readString(readConfigPathValue(config, 'environments.default.type')) ?? '',
+    worktreesAutoCleanup: readString(readConfigPathValue(config, 'worktrees.auto_cleanup')) ?? '',
+    worktreesRepository: readString(readConfigPathValue(config, 'worktrees.repository')) ?? '',
+    gitDefaultBranch: readString(readConfigPathValue(config, 'git_settings.default_branch')) ?? '',
+    gitAutoFetch: readString(readConfigPathValue(config, 'git_settings.auto_fetch')) ?? '',
+  }
+}
+
+export async function readConfigParityBundle(): Promise<ConfigParityBundle> {
+  const payload = await callRpc<{ config?: unknown }>('config/read', { includeUnchanged: false })
+  const config = asRecord(payload.config)
+  const networkAccess = readSandboxWorkspaceNetworkAccess(config)
+  return {
+    summary: {
+      model: readString(config?.model) ?? '',
+      modelProvider: readString(config?.model_provider ?? config?.modelProvider) ?? '',
+      approvalPolicy: readString(config?.approval_policy ?? config?.approvalPolicy) ?? '',
+      sandboxMode: readString(config?.sandbox_mode ?? config?.sandboxMode) ?? '',
+      sandboxNetworkAccess: networkAccess === null ? '' : networkAccess ? 'enabled' : 'disabled',
+      webSearch: readString(config?.web_search ?? config?.webSearch) ?? '',
+    },
+    parity: {
+      personalizationTone: readString(readConfigPathValue(config, 'personalization.tone')) ?? '',
+      personalizationAvatar: readString(readConfigPathValue(config, 'personalization.avatar')) ?? '',
+      personalizationMemory: readString(readConfigPathValue(config, 'personalization.memory')) ?? '',
+      usageAutoTopUp: readString(readConfigPathValue(config, 'usage.auto_top_up')) ?? '',
+      usageMonthlyBudgetUsd: readString(readConfigPathValue(config, 'usage.monthly_budget_usd')) ?? '',
+      appearanceTheme: readString(readConfigPathValue(config, 'appearance.theme')) ?? '',
+      appearanceDensity: readString(readConfigPathValue(config, 'appearance.density')) ?? '',
+      dataControlsTelemetry: readString(readConfigPathValue(config, 'data_controls.telemetry')) ?? '',
+      dataControlsTraining: readString(readConfigPathValue(config, 'data_controls.training')) ?? '',
+      computerUseMode: readString(readConfigPathValue(config, 'computer_use.mode')) ?? '',
+      computerUseVision: readString(readConfigPathValue(config, 'computer_use.vision')) ?? '',
+      generalNotifications: readString(readConfigPathValue(config, 'general_settings.notifications')) ?? '',
+      generalMenuBar: readString(readConfigPathValue(config, 'general_settings.menu_bar')) ?? '',
+      localEnvironmentName: readString(readConfigPathValue(config, 'local_environments.default.name')) ?? '',
+      localEnvironmentShell: readString(readConfigPathValue(config, 'local_environments.default.shell')) ?? '',
+      pluginsEnabled: readString(readConfigPathValue(config, 'plugins_settings.enabled')) ?? '',
+      pluginsSource: readString(readConfigPathValue(config, 'plugins_settings.source')) ?? '',
+      connectionsHost: readString(readConfigPathValue(config, 'connections.host')) ?? '',
+      connectionsStatus: readString(readConfigPathValue(config, 'connections.status')) ?? '',
+      connectionsAuth: readString(readConfigPathValue(config, 'connections.auth')) ?? '',
+      environmentName: readString(readConfigPathValue(config, 'environments.default.name')) ?? '',
+      environmentType: readString(readConfigPathValue(config, 'environments.default.type')) ?? '',
+      worktreesAutoCleanup: readString(readConfigPathValue(config, 'worktrees.auto_cleanup')) ?? '',
+      worktreesRepository: readString(readConfigPathValue(config, 'worktrees.repository')) ?? '',
+      gitDefaultBranch: readString(readConfigPathValue(config, 'git_settings.default_branch')) ?? '',
+      gitAutoFetch: readString(readConfigPathValue(config, 'git_settings.auto_fetch')) ?? '',
+    },
+  }
+}
+
+export async function startAccountLogin(): Promise<AccountLoginStartResult> {
+  const payload = await callRpc<{ type?: string; authUrl?: string; loginId?: string }>('account/login/start', {
+    type: 'chatgpt',
+  })
+  return {
+    type: typeof payload.type === 'string' ? payload.type : '',
+    authUrl: typeof payload.authUrl === 'string' ? payload.authUrl : '',
+    loginId: typeof payload.loginId === 'string' ? payload.loginId : '',
+  }
+}
+
+export async function startApiKeyLogin(apiKey: string): Promise<AccountLoginStartResult> {
+  const payload = await callRpc<{ type?: string; authUrl?: string; loginId?: string }>('account/login/start', {
+    type: 'apiKey',
+    apiKey: apiKey.trim(),
+  })
+  return {
+    type: typeof payload.type === 'string' ? payload.type : '',
+    authUrl: typeof payload.authUrl === 'string' ? payload.authUrl : '',
+    loginId: typeof payload.loginId === 'string' ? payload.loginId : '',
+  }
+}
+
+export async function cancelAccountLogin(loginId: string): Promise<AccountLoginCancelResult> {
+  const payload = await callRpc<{ status?: string }>('account/login/cancel', { loginId: loginId.trim() })
+  return {
+    status: typeof payload.status === 'string' ? payload.status : '',
   }
 }
 

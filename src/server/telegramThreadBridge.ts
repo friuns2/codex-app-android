@@ -105,7 +105,6 @@ export class TelegramThreadBridge {
   private readonly chatIdsByThreadId = new Map<string, Set<number>>()
   private readonly lastForwardedTurnByThreadId = new Map<string, string>()
   private active = false
-  private pollingTask: Promise<void> | null = null
   private nextUpdateOffset = 0
   private lastError = ''
   private readonly onChatSeen?: (chatId: number) => void
@@ -127,7 +126,7 @@ export class TelegramThreadBridge {
     if (!this.token || this.active) return
     this.active = true
     void this.notifyOnlineForKnownChats().catch(() => {})
-    this.pollingTask = this.pollLoop()
+    void this.pollLoop()
     this.appServer.onNotification((notification) => {
       void this.handleNotification(notification).catch(() => {})
     })

@@ -1,24 +1,22 @@
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
 import { createHash, randomBytes } from 'node:crypto'
-import { mkdtemp, readFile, readdir, rename, rm, mkdir, stat, cp, lstat, readlink, symlink } from 'node:fs/promises'
+import { mkdtemp, readFile, rm, mkdir, stat } from 'node:fs/promises'
 import { createReadStream, readFileSync } from 'node:fs'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { request as httpRequest } from 'node:http'
 import { request as httpsRequest } from 'node:https'
 import { homedir } from 'node:os'
 import { tmpdir } from 'node:os'
-import { basename, dirname, isAbsolute, join, resolve } from 'node:path'
+import { basename, isAbsolute, join, resolve } from 'node:path'
 import { createInterface } from 'node:readline'
 import { writeFile } from 'node:fs/promises'
 import { handleAccountRoutes } from './accountRoutes.js'
-import { buildAppServerArgs } from './appServerRuntimeConfig.js'
 import { handleReviewRoutes } from './reviewGit.js'
 import { handleSkillsRoutes, initializeSkillsSyncOnStartup } from './skillsRoutes.js'
 import { TelegramThreadBridge } from './telegramThreadBridge.js'
 import {
   getRandomFreeKey,
   getFreeKeyCount,
-  FREE_MODE_PROVIDER_ID,
   FREE_MODE_DEFAULT_MODEL,
   getFreeModels,
   FREE_MODE_STATE_FILE,
@@ -1539,10 +1537,6 @@ function getCodexHomeDir(): string {
   return codexHome && codexHome.length > 0 ? codexHome : join(homedir(), '.codex')
 }
 
-function getSkillsInstallDir(): string {
-  return join(getCodexHomeDir(), 'skills')
-}
-
 async function runCommand(command: string, args: string[], options: { cwd?: string } = {}): Promise<void> {
   await new Promise<void>((resolve, reject) => {
     const proc = spawn(command, args, {
@@ -1637,31 +1631,6 @@ function extractBranchLockedWorktreePath(error: unknown, branchName: string): st
   const match = pattern.exec(message)
   return match?.[1]?.trim() ?? ''
 }
-
-async function runCommandWithOutput(command: string, args: string[], options: { cwd?: string } = {}): Promise<string> {
-  return await new Promise<string>((resolve, reject) => {
-    const proc = spawn(command, args, {
-      cwd: options.cwd,
-      env: process.env,
-      stdio: ['ignore', 'pipe', 'pipe'],
-    })
-    let stdout = ''
-    let stderr = ''
-    proc.stdout.on('data', (chunk: Buffer) => { stdout += chunk.toString() })
-    proc.stderr.on('data', (chunk: Buffer) => { stderr += chunk.toString() })
-    proc.on('error', reject)
-    proc.on('close', (code) => {
-      if (code === 0) {
-        resolve(stdout.trim())
-        return
-      }
-      const details = [stderr.trim(), stdout.trim()].filter(Boolean).join('\n')
-      const suffix = details.length > 0 ? `: ${details}` : ''
-      reject(new Error(`Command failed (${command} ${args.join(' ')})${suffix}`))
-    })
-  })
-}
-
 
 function normalizeStringArray(value: unknown): string[] {
   if (!Array.isArray(value)) return []
@@ -2262,7 +2231,6 @@ class AppServerProcess {
   private readonly pending = new Map<number, { resolve: (value: unknown) => void; reject: (reason?: unknown) => void }>()
   private readonly notificationListeners = new Set<(value: { method: string; params: unknown }) => void>()
   private readonly pendingServerRequests = new Map<number, PendingServerRequest>()
-  private readonly appServerArgs = buildAppServerArgs()
   private readonly streamEventsByThreadId = new Map<string, StreamEventFrame[]>()
   private readonly lastThreadReadSnapshotByThreadId = new Map<string, unknown>()
   private readonly capturedItemsByThreadId = new Map<string, Map<string, CapturedItem>>()
@@ -3042,7 +3010,7 @@ export function createCodexBridgeMiddleware(): CodexBridgeMiddleware {
       if (!shouldLog) return
       didLog = true
       const rpcPart = rpcMethod ? `, rpcMethod=${rpcMethod}` : ''
-      console.info(`[codex-api-perf] ${requestMethod} ${requestPath} -> ${res.statusCode} (${durationMs}ms, bodyMB=${bodyMbValue.toFixed(4)}${rpcPart})`)
+      console.info(`[codex-api-perf] ${requestMethod} ${requestPath} -> ${res.statusCode} (${durationMs}ms, bodyMB=${bodyMbValue.toFixed(1)}${rpcPart})`)
     }
     res.once('finish', logApiRequestDuration)
     res.once('close', logApiRequestDuration)

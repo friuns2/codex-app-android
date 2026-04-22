@@ -33,7 +33,6 @@ function toRawPayload(value: unknown): string {
 
 const FILE_ATTACHMENT_LINE = /^##\s+(.+?):\s+(.+?)\s*$/
 const FILES_MENTIONED_MARKER = /^#\s*files mentioned by the user\s*:?\s*$/i
-const ASSISTANT_FILE_CHANGE_HEADING = /^(?:#{1,6}\s*)?(?:本次修改文件(?:和操作)?(?:如下)?|修改文件和操作)\s*[:：]?\s*$/u
 
 function extractFileAttachments(value: string): UiFileAttachment[] {
   const markerIdx = value.split('\n').findIndex((line) => FILES_MENTIONED_MARKER.test(line.trim()))
@@ -152,114 +151,6 @@ function parsePlanText(value: string): UiPlanData | null {
     explanation: explanationLines.join('\n').trim() || undefined,
     steps,
   }
-}
-
-function inferAssistantFileChangeOperation(detailLines: string[]): UiFileChange['operation'] {
-  const detailText = detailLines.join(' ').toLowerCase()
-  if (
-    detailText.includes('重命名') ||
-    detailText.includes('移动') ||
-    detailText.includes('rename') ||
-    detailText.includes('renamed') ||
-    detailText.includes('move') ||
-    detailText.includes('moved')
-  ) {
-    return 'update'
-  }
-  if (
-    detailText.includes('删除') ||
-    detailText.includes('移除') ||
-    detailText.includes('delete') ||
-    detailText.includes('deleted') ||
-    detailText.includes('remove') ||
-    detailText.includes('removed')
-  ) {
-    return 'delete'
-  }
-  if (
-    detailText.includes('新增') ||
-    detailText.includes('添加') ||
-    detailText.includes('增加') ||
-    detailText.includes('add') ||
-    detailText.includes('added') ||
-    detailText.includes('create') ||
-    detailText.includes('created')
-  ) {
-    return 'add'
-  }
-  return 'update'
-}
-
-function extractAssistantFilePath(value: string): string {
-  const backtickMatch = value.match(/`([^`]+)`/u)
-  if (backtickMatch?.[1]) {
-    return backtickMatch[1].trim()
-  }
-  return value.replace(/^[-*]\s+/u, '').trim()
-}
-
-function looksLikeAssistantFilePath(value: string): boolean {
-  return /[\\/]/u.test(value) || /[A-Za-z0-9_.-]+\.[A-Za-z0-9_.-]+$/u.test(value)
-}
-
-function extractAssistantFileChanges(value: string): UiFileChange[] {
-  const lines = value.replace(/\r\n/g, '\n').split('\n')
-  const headingIndex = lines.findIndex((line) => ASSISTANT_FILE_CHANGE_HEADING.test(line.trim()))
-  if (headingIndex < 0) return []
-
-  const collected: Array<{ path: string; details: string[] }> = []
-  let current: { path: string; details: string[] } | null = null
-
-  for (let index = headingIndex + 1; index < lines.length; index += 1) {
-    const line = lines[index]
-    const trimmed = line.trim()
-    if (!trimmed) {
-      if (current) {
-        collected.push(current)
-        current = null
-      }
-      break
-    }
-
-    const bulletMatch = line.match(/^(\s*)[-*]\s+(.+)$/u)
-    if (!bulletMatch) {
-      if (current) {
-        collected.push(current)
-        current = null
-      }
-      break
-    }
-
-    const indent = bulletMatch[1]?.length ?? 0
-    const bulletText = bulletMatch[2]?.trim() ?? ''
-    if (indent <= 1) {
-      if (current) {
-        collected.push(current)
-      }
-      const path = extractAssistantFilePath(bulletText)
-      current = looksLikeAssistantFilePath(path)
-        ? { path, details: [] }
-        : null
-      continue
-    }
-
-    if (current && bulletText) {
-      current.details.push(bulletText)
-    }
-  }
-
-  if (current) {
-    collected.push(current)
-  }
-
-  return collected.map((entry) => ({
-    path: entry.path,
-    operation: inferAssistantFileChangeOperation(entry.details),
-    movedToPath: null,
-    diff: '',
-    addedLineCount: 0,
-    removedLineCount: 0,
-  }))
 }
 
 function countContentLines(value: string): number {
