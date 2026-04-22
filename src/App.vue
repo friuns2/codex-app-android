@@ -54,6 +54,16 @@
             {{ $t('home.skillsHub') }}
           </button>
 
+          <button
+            v-if="!isSidebarCollapsed"
+            class="sidebar-skills-link"
+            :class="{ 'is-active': isFilesRoute }"
+            type="button"
+            @click="router.push({ name: 'files' }); isMobile && setSidebarCollapsed(true)"
+          >
+            {{ $t('fileManager.title') }}
+          </button>
+
           <SidebarThreadTree :groups="projectGroups" :project-display-name-by-id="projectDisplayNameById"
             v-if="!isSidebarCollapsed"
             :selected-thread-id="selectedThreadId" :is-loading="isLoadingThreads"
@@ -484,6 +494,11 @@
           <template v-if="isSkillsRoute">
             <SkillsHub @skills-changed="onSkillsChanged" />
           </template>
+          <template v-else-if="isFilesRoute">
+            <div class="content-grid">
+              <FileManager :cwd="defaultWorkspacePath" />
+            </div>
+          </template>
           <template v-else-if="isHomeRoute">
             <div class="content-grid content-grid-home">
               <div class="new-thread-empty">
@@ -734,6 +749,8 @@
               />
 
               <template v-else>
+                <div class="content-thread-with-panel">
+                <div class="content-thread-main">
                 <div class="content-thread">
                   <ThreadConversation ref="threadConversationRef" :messages="filteredMessages" :is-loading="isLoadingMessages"
                     :active-thread-id="composerThreadContextId" :cwd="composerCwd" :scroll-state="selectedThreadScrollState"
@@ -782,7 +799,15 @@
                     @submit="onSubmitThreadMessage" @update:selected-model="onSelectModel"
                     @update:selected-reasoning-effort="onSelectReasoningEffort"
                     @update:selected-speed-mode="onSelectSpeedMode"
-                    @interrupt="onInterruptTurn" />
+                    @interrupt="onInterruptTurn"
+                    @toggle-file-manager="isFileManagerPanelOpen = !isFileManagerPanelOpen" />
+                </div>
+                </div>
+                <FileManagerPanel
+                  :visible="isFileManagerPanelOpen && !!composerCwd"
+                  :cwd="composerCwd || '/'"
+                  @close="isFileManagerPanelOpen = false"
+                />
                 </div>
               </template>
             </div>
@@ -844,6 +869,8 @@ const ThreadConversation = defineAsyncComponent(() => import('./components/conte
 const ReviewPane = defineAsyncComponent(() => import('./components/content/ReviewPane.vue'))
 const SkillsHub = defineAsyncComponent(() => import('./components/content/SkillsHub.vue'))
 const ConfigEditorModal = defineAsyncComponent(() => import('./components/content/ConfigEditorModal.vue'))
+const FileManager = defineAsyncComponent(() => import('./components/content/FileManager.vue'))
+const FileManagerPanel = defineAsyncComponent(() => import('./components/content/FileManagerPanel.vue'))
 
 const SIDEBAR_COLLAPSED_STORAGE_KEY = 'codex-web-local.sidebar-collapsed.v1'
 const ACCOUNTS_SECTION_COLLAPSED_STORAGE_KEY = 'codex-web-local.accounts-section-collapsed.v1'
@@ -1133,6 +1160,7 @@ const openRouterWireApi = ref<'responses' | 'chat'>('responses')
 const opencodeZenKey = ref('')
 const isTelegramConfigOpen = ref(false)
 const isConfigEditorOpen = ref(false)
+const isFileManagerPanelOpen = ref(false)
 const telegramBotTokenDraft = ref('')
 const telegramAllowedUserIdsDraft = ref('')
 const telegramConfigError = ref('')
@@ -1174,8 +1202,10 @@ const routeThreadId = computed(() => {
 
 const isHomeRoute = computed(() => route.name === 'home')
 const isSkillsRoute = computed(() => route.name === 'skills')
+const isFilesRoute = computed(() => route.name === 'files')
 const contentTitle = computed(() => {
   if (isSkillsRoute.value) return t('common.skills')
+  if (isFilesRoute.value) return t('fileManager.title')
   if (isHomeRoute.value) return t('home.newThread')
   return selectedThread.value?.title ?? t('home.newThread')
 })
@@ -1211,12 +1241,15 @@ const selectedThreadPendingRequest = computed<UiServerRequest | null>(() => {
   const rows = selectedThreadServerRequests.value
   return rows.length > 0 ? rows[rows.length - 1] : null
 })
+const defaultWorkspacePath = computed(() => {
+  return workspaceRootOptionsState.value.order[0]?.trim() || homeDirectory.value.trim() || '/'
+})
 const composerCwd = computed(() => {
   if (isHomeRoute.value) return newThreadCwd.value.trim()
   return selectedThread.value?.cwd?.trim() ?? ''
 })
 const isSelectedThreadInProgress = computed(() => !isHomeRoute.value && selectedThread.value?.inProgress === true)
-const showThreadContextBadge = computed(() => !isHomeRoute.value && !isSkillsRoute.value && selectedThreadId.value.trim().length > 0)
+const showThreadContextBadge = computed(() => !isHomeRoute.value && !isSkillsRoute.value && !isFilesRoute.value && selectedThreadId.value.trim().length > 0)
 const isAccountSwitchBlocked = computed(() =>
   isSendingMessage.value ||
   isInterruptingTurn.value ||
@@ -2592,7 +2625,7 @@ function onRollback(payload: { turnId: string }): void {
 
 
 function onExportChat(): void {
-  if (isHomeRoute.value || isSkillsRoute.value || typeof document === 'undefined') return
+  if (isHomeRoute.value || isSkillsRoute.value || isFilesRoute.value || typeof document === 'undefined') return
   if (!selectedThread.value || filteredMessages.value.length === 0) return
   const markdown = buildThreadMarkdown()
   const fileName = buildExportFileName()
@@ -3098,7 +3131,7 @@ watch(
   async (threadId) => {
     if (!hasInitialized.value) return
     if (isRouteSyncInProgress.value) return
-    if (isHomeRoute.value || isSkillsRoute.value) return
+    if (isHomeRoute.value || isSkillsRoute.value || isFilesRoute.value) return
 
     if (!threadId) {
       if (route.name !== 'home') {
@@ -3390,6 +3423,14 @@ async function loadWorktreeBranches(sourceCwd: string): Promise<void> {
 
 .content-grid-home {
   @apply overflow-y-auto;
+}
+
+.content-thread-with-panel {
+  @apply flex-1 min-h-0 flex flex-row;
+}
+
+.content-thread-main {
+  @apply flex-1 min-h-0 min-w-0 flex flex-col;
 }
 
 .content-thread {

@@ -457,6 +457,31 @@ const zh = {
     configSaved: '配置保存成功',
     configSaveError: '保存配置失败',
   },
+
+  fileManager: {
+    title: '文件',
+    goUp: '返回上级目录',
+    newItem: '新建文件或文件夹',
+    upload: '上传',
+    uploadFiles: '上传文件',
+    uploadFolder: '上传文件夹',
+    newFile: '新建文件',
+    newFolder: '新建文件夹',
+    fileNamePlaceholder: '文件名...',
+    folderNamePlaceholder: '文件夹名...',
+    emptyFolder: '空文件夹',
+    download: '下载',
+    loadError: '加载目录失败。',
+    createError: '创建失败。',
+    renameError: '重命名失败。',
+    deleteError: '删除失败。',
+    uploadError: '上传失败。',
+    outsideWorkspace: '路径超出了允许的工作区范围。',
+    invalidPath: '路径无效。',
+    notADirectory: '路径不是一个目录。',
+    notAFile: '路径不是一个文件。',
+    notFound: '文件或文件夹未找到。',
+  },
 }
 
 export default zh

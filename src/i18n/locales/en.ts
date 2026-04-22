@@ -458,6 +458,31 @@ const en = {
     configSaved: 'Config saved successfully',
     configSaveError: 'Failed to save config',
   },
+
+  fileManager: {
+    title: 'Files',
+    goUp: 'Go up one level',
+    newItem: 'New file or folder',
+    upload: 'Upload',
+    uploadFiles: 'Upload files',
+    uploadFolder: 'Upload folder',
+    newFile: 'New file',
+    newFolder: 'New folder',
+    fileNamePlaceholder: 'File name...',
+    folderNamePlaceholder: 'Folder name...',
+    emptyFolder: 'Empty folder',
+    download: 'Download',
+    loadError: 'Failed to load directory.',
+    createError: 'Failed to create item.',
+    renameError: 'Failed to rename.',
+    deleteError: 'Failed to delete.',
+    uploadError: 'Upload failed.',
+    outsideWorkspace: 'Path is outside the allowed workspace.',
+    invalidPath: 'Invalid path.',
+    notADirectory: 'Path is not a directory.',
+    notAFile: 'Path is not a file.',
+    notFound: 'File or folder not found.',
+  },
 }
 
 export default en

@@ -13,6 +13,7 @@ import { writeFile } from 'node:fs/promises'
 import { handleAccountRoutes } from './accountRoutes.js'
 import { buildAppServerArgs } from './appServerRuntimeConfig.js'
 import { handleConfigRoutes } from './configRoutes.js'
+import { handleFileRoutes } from './fileRoutes.js'
 import { handleReviewRoutes } from './reviewGit.js'
 import { handleSkillsRoutes, initializeSkillsSyncOnStartup } from './skillsRoutes.js'
 import { TelegramThreadBridge } from './telegramThreadBridge.js'
@@ -3521,6 +3522,10 @@ export function createCodexBridgeMiddleware(): CodexBridgeMiddleware {
       }
 
       if (await handleConfigRoutes(req, res, url, { readJsonBody })) {
+        return
+      }
+
+      if (await handleFileRoutes(req, res, url, { readJsonBody })) {
         return
       }
 

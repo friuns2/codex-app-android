@@ -296,6 +296,17 @@
           </span>
 
           <button
+            class="thread-composer-files-btn"
+            type="button"
+            :aria-label="$t('fileManager.title')"
+            :title="$t('fileManager.title')"
+            :disabled="isInteractionDisabled"
+            @click="emit('toggle-file-manager')"
+          >
+            <IconTablerFolderOpen class="thread-composer-files-icon" />
+          </button>
+
+          <button
             v-if="isDictationSupported"
             class="thread-composer-mic"
             :class="{
@@ -395,6 +406,7 @@ import IconTablerArrowUp from '../icons/IconTablerArrowUp.vue'
 import IconTablerBolt from '../icons/IconTablerBolt.vue'
 import IconTablerFilePencil from '../icons/IconTablerFilePencil.vue'
 import IconTablerFolder from '../icons/IconTablerFolder.vue'
+import IconTablerFolderOpen from '../icons/IconTablerFolderOpen.vue'
 import IconTablerMicrophone from '../icons/IconTablerMicrophone.vue'
 import IconTablerPlayerStopFilled from '../icons/IconTablerPlayerStopFilled.vue'
 import ComposerDropdown from './ComposerDropdown.vue'
@@ -459,6 +471,7 @@ const emit = defineEmits<{
   'update:selected-model': [modelId: string]
   'update:selected-reasoning-effort': [effort: ReasoningEffort | '']
   'update:selected-speed-mode': [mode: SpeedMode]
+  'toggle-file-manager': []
 }>()
 
 type SelectedImage = {
@@ -2076,6 +2089,14 @@ watch(
 
 .thread-composer-actions--recording {
   @apply ml-0 flex-1;
+}
+
+.thread-composer-files-btn {
+  @apply inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-0 bg-zinc-100 text-zinc-600 transition hover:bg-zinc-200 hover:text-zinc-900 disabled:cursor-not-allowed disabled:text-zinc-400;
+}
+
+.thread-composer-files-icon {
+  @apply h-4.5 w-4.5;
 }
 
 .thread-composer-mic {

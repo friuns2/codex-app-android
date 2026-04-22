@@ -1401,3 +1401,81 @@
 :root.dark .mcp-dropdown-option {
   @apply text-zinc-200 hover:bg-zinc-700;
 }
+
+/* File manager dark mode */
+:root.dark .fm-toolbar {
+  @apply border-zinc-700;
+}
+
+:root.dark .fm-toolbar-btn {
+  @apply border-zinc-600 bg-zinc-800 text-zinc-300 hover:bg-zinc-700;
+}
+
+:root.dark .fm-breadcrumb-btn {
+  @apply text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200;
+}
+
+:root.dark .fm-breadcrumb-sep {
+  @apply text-zinc-600;
+}
+
+:root.dark .fm-new-menu {
+  @apply border-zinc-700;
+}
+
+:root.dark .fm-new-menu-item {
+  @apply border-zinc-600 bg-zinc-800 text-zinc-300 hover:bg-zinc-700;
+}
+
+:root.dark .fm-create-row {
+  @apply border-zinc-700;
+}
+
+:root.dark .fm-create-input {
+  @apply border-zinc-600 bg-zinc-800 text-zinc-200;
+}
+
+:root.dark .fm-entry {
+  @apply hover:bg-zinc-800;
+}
+
+:root.dark .fm-entry.is-selected {
+  @apply bg-zinc-800;
+}
+
+:root.dark .fm-entry-name {
+  @apply text-zinc-200;
+}
+
+:root.dark .fm-entry-rename-input {
+  @apply border-zinc-600 bg-zinc-800 text-zinc-200;
+}
+
+:root.dark .fm-context-menu {
+  @apply border-zinc-700 bg-zinc-800;
+}
+
+:root.dark .fm-context-item {
+  @apply text-zinc-200 hover:bg-zinc-700;
+}
+
+:root.dark .fm-context-item-danger {
+  @apply text-rose-400 hover:bg-rose-900/30;
+}
+
+/* File manager panel dark mode */
+:root.dark .fmp-root {
+  @apply border-zinc-700 bg-zinc-900;
+}
+
+:root.dark .fmp-header {
+  @apply border-zinc-700;
+}
+
+:root.dark .fmp-title {
+  @apply text-zinc-100;
+}
+
+:root.dark .fmp-close {
+  @apply border-zinc-600 bg-zinc-800 text-zinc-400 hover:bg-zinc-700;
+}
