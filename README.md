@@ -158,9 +158,17 @@ To find your Telegram user ID:
 
 Bot commands:
 
+- `/start` show quick help and thread picker
+- `/threads` list recent threads and pick one
 - `/newthread` create and map a new Codex thread for this Telegram chat
 - `/thread <threadId>` map current Telegram chat to an existing thread
-- Any other text message is forwarded to the mapped thread
+- `/current` show currently connected thread for this chat
+- `/history` show recent history for current thread
+- `/status` show bridge/mapping status
+- `/whoami` show your Telegram user/chat IDs and authorization state
+- `/help` show command reference
+
+Outgoing assistant messages are sent with Telegram `parse_mode=HTML` for formatting, with automatic plain-text fallback if HTML delivery fails.
 
 ---
 
