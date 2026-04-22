@@ -200,6 +200,10 @@
                 <span class="sidebar-settings-label">{{ $t('settings.chatWidth') }}</span>
                 <span class="sidebar-settings-value">{{ chatWidthLabel }}</span>
               </button>
+              <button class="sidebar-settings-row" type="button" :title="conversationStyleTooltip" @click="cycleConversationStyle">
+                <span class="sidebar-settings-label">{{ $t('settings.conversationStyle') }}</span>
+                <span class="sidebar-settings-value">{{ conversationStyleLabel }}</span>
+              </button>
               <button class="sidebar-settings-row" type="button" :title="SETTINGS_HELP.dictationClickToToggle" @click="toggleDictationClickToToggle">
                 <span class="sidebar-settings-label">{{ $t('settings.clickToggleDictation') }}</span>
                 <span class="sidebar-settings-toggle" :class="{ 'is-on': dictationClickToToggle }" />
@@ -768,6 +772,7 @@
                     :active-thread-id="composerThreadContextId" :cwd="composerCwd" :scroll-state="selectedThreadScrollState"
                     :live-overlay="liveOverlay"
                     :pending-requests="selectedThreadServerRequests"
+                    :developer-mode="conversationStyle === 'developer'"
                     @update-scroll-state="onUpdateThreadScrollState"
                     @fork-thread="onForkThreadFromMessage"
                     @rollback="onRollback"
@@ -1158,11 +1163,14 @@ const DICTATION_LANGUAGE_KEY = 'codex-web-local.dictation-language.v1'
 
 const GITHUB_TRENDING_PROJECTS_KEY = 'codex-web-local.github-trending-projects.v1'
 const CHAT_WIDTH_KEY = 'codex-web-local.chat-width.v1'
+const CONVERSATION_STYLE_KEY = 'codex-web-local.conversation-style.v1'
 const MOBILE_RESUME_RELOAD_MIN_HIDDEN_MS = 400
 const sendWithEnter = ref(loadBoolPref(SEND_WITH_ENTER_KEY, true))
 const inProgressSendMode = ref<'steer' | 'queue'>(loadInProgressSendModePref())
 const darkMode = ref<'system' | 'light' | 'dark'>(loadDarkModePref())
 const chatWidth = ref<ChatWidthMode>(loadChatWidthPref())
+type ConversationStyle = 'clean' | 'developer'
+const conversationStyle = ref<ConversationStyle>(loadConversationStylePref())
 const dictationClickToToggle = ref(loadBoolPref(DICTATION_CLICK_TO_TOGGLE_KEY, false))
 const dictationAutoSend = ref(loadBoolPref(DICTATION_AUTO_SEND_KEY, true))
 const dictationLanguage = ref(loadDictationLanguagePref())
@@ -2807,6 +2815,25 @@ function cycleChatWidth(): void {
   chatWidth.value = order[(idx + 1) % order.length]
   window.localStorage.setItem(CHAT_WIDTH_KEY, chatWidth.value)
 }
+
+function loadConversationStylePref(): ConversationStyle {
+  if (typeof window === 'undefined') return 'clean'
+  const v = window.localStorage.getItem(CONVERSATION_STYLE_KEY)
+  return v === 'developer' ? 'developer' : 'clean'
+}
+
+function cycleConversationStyle(): void {
+  conversationStyle.value = conversationStyle.value === 'clean' ? 'developer' : 'clean'
+  window.localStorage.setItem(CONVERSATION_STYLE_KEY, conversationStyle.value)
+}
+
+const conversationStyleLabel = computed(() =>
+  conversationStyle.value === 'clean' ? t('settings.conversationStyleClean') : t('settings.conversationStyleDev'),
+)
+
+const conversationStyleTooltip = computed(() =>
+  conversationStyle.value === 'clean' ? t('settings.conversationStyleCleanDesc') : t('settings.conversationStyleDevDesc'),
+)
 
 function toggleDictationClickToToggle(): void {
   dictationClickToToggle.value = !dictationClickToToggle.value

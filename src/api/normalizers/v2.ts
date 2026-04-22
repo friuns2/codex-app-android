@@ -444,8 +444,38 @@ function toUiMessages(item: ThreadItem): UiMessage[] {
     }
   }
 
+  if (item.type === 'mcpToolCall') {
+    const raw = item as Record<string, unknown>
+    const server = typeof raw.server === 'string' ? raw.server : ''
+    const tool = typeof raw.tool === 'string' ? raw.tool : ''
+    const status = normalizeCommandStatus(raw.status)
+    const args = raw.arguments != null ? JSON.stringify(raw.arguments, null, 2) : ''
+    const result = raw.result != null ? (typeof raw.result === 'string' ? raw.result : JSON.stringify(raw.result, null, 2)) : ''
+    const error = typeof raw.error === 'string' ? raw.error : ''
+    const durationMs = typeof raw.durationMs === 'number' ? raw.durationMs : null
+    return [
+      {
+        id: item.id,
+        role: 'system' as const,
+        text: `${server}/${tool}`,
+        messageType: 'mcpToolCall',
+        mcpToolCall: { server, tool, status, arguments: args, result, error, durationMs },
+      },
+    ]
+  }
+
   if (item.type === 'reasoning') {
-    return []
+    const raw = item as Record<string, unknown>
+    const summary = Array.isArray(raw.summary) ? (raw.summary as string[]).join('\n') : (typeof raw.text === 'string' ? raw.text as string : '')
+    if (!summary) return []
+    return [
+      {
+        id: item.id,
+        role: 'assistant' as const,
+        text: summary,
+        messageType: 'reasoning',
+      },
+    ]
   }
 
 

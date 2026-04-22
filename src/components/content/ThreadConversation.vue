@@ -22,15 +22,45 @@
       </li>
       <template v-for="message in visibleMessages" :key="message.id">
       <li
-        v-if="!hiddenGroupedCommandIds.has(message.id) && !hiddenFileChangeMessageIds.has(message.id)"
+        v-if="isMessageVisible(message)"
         class="conversation-item"
         :data-role="message.role"
         :data-message-type="message.messageType || ''"
       >
-        <div v-if="isCommandMessage(message)" class="message-row" data-role="system">
+        <!-- Reasoning/thinking block (dev mode only) -->
+        <div v-if="message.messageType === 'reasoning'" class="message-row" data-role="system">
+          <div class="message-stack" data-role="system">
+            <button type="button" class="cmd-row cmd-compact cmd-status-ok" :class="{ 'cmd-expanded': expandedReasoningIds.has(message.id) }" @click="toggleReasoningExpand(message)">
+              <span class="cmd-chevron" :class="{ 'cmd-chevron-open': expandedReasoningIds.has(message.id) }">▶</span>
+              <code class="cmd-label">{{ $t('composer.thinking') }}</code>
+              <span class="cmd-status">{{ $t('conversation.cmdDone') }}</span>
+            </button>
+            <div class="cmd-output-wrap" :class="{ 'cmd-output-visible': expandedReasoningIds.has(message.id) }">
+              <div class="cmd-output-inner">
+                <pre class="cmd-output" v-text="message.text"></pre>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- MCP tool call block (dev mode only) -->
+        <div v-else-if="message.messageType === 'mcpToolCall' && message.mcpToolCall" class="message-row" data-role="system">
+          <div class="message-stack" data-role="system">
+            <button type="button" class="cmd-row cmd-compact" :class="[mcpToolCallStatusClass(message), { 'cmd-expanded': expandedMcpIds.has(message.id) }]" @click="toggleMcpExpand(message)">
+              <span class="cmd-chevron" :class="{ 'cmd-chevron-open': expandedMcpIds.has(message.id) }">▶</span>
+              <code class="cmd-label">{{ message.mcpToolCall.server }}/{{ message.mcpToolCall.tool }}</code>
+              <span class="cmd-status">{{ mcpToolCallStatusLabel(message) }}</span>
+            </button>
+            <div class="cmd-output-wrap" :class="{ 'cmd-output-visible': expandedMcpIds.has(message.id) }">
+              <div class="cmd-output-inner">
+                <pre class="cmd-output" v-text="mcpToolCallOutput(message)"></pre>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div v-else-if="isCommandMessage(message)" class="message-row" data-role="system">
           <div class="message-stack" data-role="system">
             <button
-              v-if="getGroupedCommandsForLatest(message).length > 0"
+              v-if="!developerMode && getGroupedCommandsForLatest(message).length > 0"
               type="button"
               class="cmd-row cmd-row-group cmd-compact"
               :class="[commandStatusClass(message), { 'cmd-expanded': isCommandGroupExpanded(message) }]"
@@ -41,7 +71,7 @@
               <span class="cmd-status">{{ commandGroupSummaryStatus(message) }}</span>
             </button>
             <div
-              v-if="getGroupedCommandsForLatest(message).length > 0"
+              v-if="!developerMode && getGroupedCommandsForLatest(message).length > 0"
               class="cmd-group-wrap"
               :class="{ 'cmd-group-visible': isCommandGroupExpanded(message) }"
             >
@@ -231,7 +261,7 @@
               </div>
 
               <article v-if="message.text.length > 0" class="message-card" :data-role="message.role">
-                <div v-if="message.messageType === 'worked'" class="worked-separator-wrap" aria-live="polite">
+                <div v-if="message.messageType === 'worked' && !developerMode" class="worked-separator-wrap" aria-live="polite">
                   <button type="button" class="worked-separator" @click="toggleWorkedExpand(message)">
                     <span class="worked-separator-line" aria-hidden="true" />
                     <span class="worked-chevron" :class="{ 'worked-chevron-open': isWorkedExpanded(message) }">▶</span>
@@ -857,6 +887,8 @@ const expandedCommandIds = ref<Set<string>>(new Set())
 const collapsedAutoCommandIds = ref<Set<string>>(new Set())
 const expandedCommandGroupIds = ref<Set<string>>(new Set())
 const expandedWorkedIds = ref<Set<string>>(new Set())
+const expandedReasoningIds = ref<Set<string>>(new Set())
+const expandedMcpIds = ref<Set<string>>(new Set())
 const expandedFileChangeSummaryIds = ref<Set<string>>(new Set())
 const activeDiffViewerSummary = ref<TurnFileChangeSummary | null>(null)
 const activeDiffViewerChangeKey = ref('')
@@ -914,6 +946,19 @@ function readPlanData(message: UiMessage): { explanation: string; steps: UiPlanS
     }
   }
   return parsePlanFromMessageText(message.text)
+}
+
+function isMessageVisible(message: UiMessage): boolean {
+  if (props.developerMode) {
+    // Dev mode: show everything except the "worked" summary bar
+    return message.messageType !== 'worked'
+  }
+  // Clean mode: hide reasoning, mcpToolCall, grouped commands, and grouped file changes
+  if (message.messageType === 'reasoning') return false
+  if (message.messageType === 'mcpToolCall') return false
+  if (hiddenGroupedCommandIds.value.has(message.id)) return false
+  if (hiddenFileChangeMessageIds.value.has(message.id)) return false
+  return true
 }
 
 function isCommandMessage(message: UiMessage): boolean {
@@ -1085,6 +1130,48 @@ function commandGroupSummaryStatus(message: UiMessage): string {
   return commandStatusLabel(message)
 }
 
+function toggleMcpExpand(message: UiMessage): void {
+  const next = new Set(expandedMcpIds.value)
+  if (next.has(message.id)) next.delete(message.id)
+  else next.add(message.id)
+  expandedMcpIds.value = next
+}
+
+function mcpToolCallStatusClass(message: UiMessage): string {
+  const s = message.mcpToolCall?.status
+  if (s === 'completed') return 'cmd-completed'
+  if (s === 'failed') return 'cmd-failed'
+  if (s === 'inProgress') return 'cmd-running'
+  return 'cmd-completed'
+}
+
+function mcpToolCallStatusLabel(message: UiMessage): string {
+  const s = message.mcpToolCall?.status
+  const duration = message.mcpToolCall?.durationMs
+  const durationStr = duration != null ? ` (${(duration / 1000).toFixed(1)}s)` : ''
+  if (s === 'completed') return t('conversation.cmdDone') + durationStr
+  if (s === 'failed') return t('conversation.cmdFailed')
+  if (s === 'inProgress') return t('conversation.cmdRunning')
+  return t('conversation.cmdDone') + durationStr
+}
+
+function mcpToolCallOutput(message: UiMessage): string {
+  const mcp = message.mcpToolCall
+  if (!mcp) return ''
+  const parts: string[] = []
+  if (mcp.arguments) parts.push(mcp.arguments)
+  if (mcp.result) parts.push(mcp.result)
+  if (mcp.error) parts.push(`Error: ${mcp.error}`)
+  return parts.join('\n\n') || t('conversation.noOutput')
+}
+
+function toggleReasoningExpand(message: UiMessage): void {
+  const next = new Set(expandedReasoningIds.value)
+  if (next.has(message.id)) next.delete(message.id)
+  else next.add(message.id)
+  expandedReasoningIds.value = next
+}
+
 function toggleWorkedExpand(message: UiMessage): void {
   const next = new Set(expandedWorkedIds.value)
   if (next.has(message.id)) next.delete(message.id)
@@ -1187,6 +1274,7 @@ const props = defineProps<{
   activeThreadId: string
   cwd: string
   scrollState: ThreadScrollState | null
+  developerMode?: boolean
 }>()
 
 const emit = defineEmits<{

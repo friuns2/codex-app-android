@@ -99,6 +99,16 @@ export type CommandExecutionData = {
   exitCode: number | null
 }
 
+export type McpToolCallData = {
+  server: string
+  tool: string
+  status: CommandExecutionData['status']
+  arguments: string
+  result: string
+  error: string
+  durationMs: number | null
+}
+
 export type UiFileAttachment = { label: string; path: string }
 export type UiFileChangeOperation = 'add' | 'delete' | 'update'
 export type UiFileChangeStatus = 'inProgress' | 'completed' | 'failed' | 'declined'
@@ -213,6 +223,7 @@ export type UiMessage = {
   rawPayload?: string
   isUnhandled?: boolean
   commandExecution?: CommandExecutionData
+  mcpToolCall?: McpToolCallData
   plan?: UiPlanData
   turnId?: string
   turnIndex?: number
