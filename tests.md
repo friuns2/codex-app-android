@@ -2871,3 +2871,43 @@ Codex app-server generated image items render as assistant image previews.
 
 #### Rollback/Cleanup
 - Delete any temporary generated image files if they were created only for this test
+
+---
+
+### Codex.app-style integrated terminal
+
+#### Feature/Change Name
+Each local/worktree thread has an integrated xterm terminal that can be toggled from the header, uses the thread working directory, preserves recent output, and exposes a terminal snapshot endpoint.
+
+#### Prerequisites/Setup
+1. Dev server running at `http://127.0.0.1:4173`
+2. An existing local or worktree thread with a valid working directory
+3. Browser focused on that thread
+
+#### Steps
+1. Click the terminal button in the top-right thread header
+2. Confirm the bottom terminal drawer opens
+3. Press `Cmd+J` on macOS or `Ctrl+J` on other platforms
+4. Confirm the terminal drawer toggles closed/open
+5. Run `pwd`
+6. Confirm the printed path matches the thread/project working directory
+7. Run `echo terminal-ok`
+8. Confirm `terminal-ok` appears in the xterm output
+9. Fetch `/codex-api/thread-terminal-snapshot?threadId=<thread-id>`
+10. Confirm the JSON `session.buffer` contains `terminal-ok`
+11. Refresh the page and reopen the same thread
+12. Toggle the terminal open again
+13. Resize the browser window
+14. Click `Close`
+
+#### Expected Results
+- The terminal button shows a pressed state when the drawer is open
+- The terminal is scoped to the selected thread working directory
+- Recent output is restored after hiding/reopening or refreshing the thread
+- The terminal resizes without clipping the prompt
+- The snapshot endpoint returns `{ session: { cwd, shell, buffer, truncated } }` while a session exists
+- `Close` terminates the PTY and hides the drawer
+
+#### Rollback/Cleanup
+- Close the terminal session with the `Close` button
+- Stop any processes started inside the terminal before leaving the thread

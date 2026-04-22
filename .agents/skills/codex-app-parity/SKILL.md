@@ -78,6 +78,101 @@ if idx >= 0:
 3. Trace the component to find **hooks/composables**, **API calls**, and **event handlers**.
 4. Check the **main process** bundle for any server-side proxying or Electron IPC handling.
 
+## Mandatory CDP Frontend Inspection
+
+For every feature UI or user-visible fix, inspect the live Codex.app frontend over Chrome DevTools Protocol before implementing. Bundle search is still useful, but it is not enough by itself when a visual/interaction surface exists.
+
+### Required CDP Evidence
+
+- Connect to Codex.app over CDP.
+- Navigate or interact until the relevant feature UI, closest equivalent UI, or broken/fixed state is visible.
+- Capture a screenshot under `output/playwright/` with a task-specific filename.
+- Record in the final response:
+  - CDP endpoint/port
+  - Codex.app target URL/title
+  - screenshot absolute path
+  - what was visually confirmed
+
+If the exact UI cannot be reached, capture the closest relevant Codex.app surface and state the gap.
+
+## Mandatory Comparison and Fix Iteration
+
+For every feature UI or user-visible fix, compare Codex.app against the web UI **before and after implementation**.
+
+Required artifacts:
+
+- `codex-reference`: Codex.app CDP screenshot of the target feature UI or closest equivalent.
+- `web-before`: current web UI screenshot before code changes, showing the existing gap or missing behavior.
+- `web-after`: web UI screenshot after implementation, showing the proposed parity result.
+
+Required comparison notes:
+
+- Before coding, write a short parity gap list from `codex-reference` vs `web-before`.
+- After coding, compare `web-after` against `codex-reference`.
+- Classify every notable mismatch as:
+  - `fixed`: matched or acceptably aligned
+  - `intentional deviation`: documented reason
+  - `needs follow-up`: not fixed in this task
+- If `web-after` reveals a fixable mismatch in layout, copy, visibility, interaction, or state handling, do another implementation iteration and capture a new `web-after` screenshot.
+- Do not report completion until the iteration has either resolved the mismatch or documented why it remains.
+
+Use task-specific screenshot names under `output/playwright/`, for example:
+
+- `output/playwright/<task>-codex-reference.png`
+- `output/playwright/<task>-web-before.png`
+- `output/playwright/<task>-web-after.png`
+
+### Reliable CDP Launch Pattern
+
+Prefer running a separate Codex.app debug instance so the user's normal Codex session is not interrupted and the CDP target can stay alive after tests.
+
+Use a fresh app instance with its own profile directory:
+
+```bash
+CDP_PORT=3434
+while lsof -i :"$CDP_PORT" >/dev/null 2>&1; do
+  CDP_PORT=$((CDP_PORT + 1))
+done
+
+CDP_PROFILE_DIR="/tmp/codex-cdp-$CDP_PORT"
+mkdir -p "$CDP_PROFILE_DIR"
+
+open -na "Codex" --args \
+  --remote-debugging-port="$CDP_PORT" \
+  --user-data-dir="$CDP_PROFILE_DIR"
+
+until curl -fsS "http://127.0.0.1:$CDP_PORT/json/list" >/tmp/codex-cdp-list.json; do
+  sleep 1
+done
+```
+
+Fallback only when a separate instance cannot be used: restart all Codex.app processes and launch the binary with `nohup`.
+
+```bash
+pkill -TERM -f "/Applications/Codex.app" 2>/dev/null || true
+sleep 2
+if pgrep -f "/Applications/Codex.app" >/dev/null 2>&1; then
+  pkill -KILL -f "/Applications/Codex.app" 2>/dev/null || true
+  sleep 1
+fi
+
+nohup "/Applications/Codex.app/Contents/MacOS/Codex" \
+  --remote-debugging-port="$CDP_PORT" \
+  >/tmp/codex-cdp.log 2>&1 &
+```
+
+Pick the page target from `/json/list` where `type == "page"` and `url` starts with `app://-/index.html`. For Playwright screenshots, prefer `chromium.connectOverCDP("http://127.0.0.1:$CDP_PORT")`, select that page, wait briefly for React/app-server hydration, and save the screenshot.
+
+Important caveats:
+
+- `open -na "Codex"` is required for a true separate instance; `open -a "Codex"` reuses an existing app process and often does not enable CDP flags.
+- Always pass an isolated `--user-data-dir` for the debug instance to avoid profile lock contention and cross-session side effects.
+- If launched via raw binary, use `nohup` or a long-lived shell; short one-shot launches can drop the CDP listener when the shell exits.
+- Do not call `browser.close()` when the Codex.app session should remain open.
+- In Playwright builds where `browser.disconnect()` is unavailable for CDP sessions, connect, inspect/capture, and exit the test process without `close()`; this preserves the running Codex.app instance.
+- Existing helper processes can keep stale non-CDP state alive; killing all `/Applications/Codex.app` processes is more reliable than only `pkill -x Codex`.
+- CDP inspection can expose local thread titles and workspace names. Avoid pasting sensitive screenshot contents into public artifacts.
+
 ### Architecture Notes
 
 - **Renderer → Main Process**: The renderer uses a `Uu` HTTP client class that sends `fetch-request` IPC messages to the main process. The main process class `tle` handles these, adds auth tokens, and uses `electron.net.fetch` to make actual HTTP calls.
@@ -95,6 +190,8 @@ if idx >= 0:
 - Locate the implementation in `app.asar` (extract and search built assets as needed).
 - Find relevant strings/keys/functions/components for the feature (status labels, event names, item types, summaries, collapse/expand behavior, etc.).
 - Capture the closest equivalent pattern if exact parity is not present.
+- Connect to the live Codex.app frontend over CDP and capture a screenshot of the target UI or closest equivalent before coding.
+- Capture the current web UI before screenshot and list concrete gaps versus Codex.app.
 
 3. Build a parity checklist from Codex.app:
 - Data model shape (fields used by UI).
@@ -113,12 +210,16 @@ if idx >= 0:
 - Confirm each checklist item.
 - Run local build/tests.
 - Re-check UI behavior against Codex.app reference.
+- Compare the implemented web UI screenshot against the Codex.app CDP reference screenshot.
+- Iterate on fixable mismatches, then recapture the web UI after screenshot.
 
 ## Response Requirements (When delivering feature changes)
 
 For feature tasks, include:
 
 - `Codex.app analysis`: what was inspected (files/areas/patterns).
+- `Codex.app CDP evidence`: target URL/title, screenshot path, and visual behavior confirmed.
+- `Before/after comparison`: screenshot paths, gap list, and fix iteration result.
 - `Parity result`: matched items and any explicit deviations.
 - `Fallback note` only if Codex.app could not be inspected or had no equivalent.
 
@@ -139,7 +240,9 @@ If Codex.app cannot be inspected (missing app, extraction/search failure) or has
 ## Completion Verification Requirement
 
 - After completing a task that changes behavior or UI, always run a Playwright verification in **headless** mode.
-- Always capture a screenshot of the changed result and display that screenshot in chat when reporting completion.
+- Always capture a screenshot of the changed web result and display that screenshot in chat when reporting completion.
+- Also keep the Codex.app CDP reference screenshot path in the completion report for user-visible feature/fix work.
+- Include web-before and web-after screenshot paths, plus a short comparison result.
 
 ## Self-Improvement Protocol
 
@@ -516,3 +619,20 @@ After each feature implementation session that uses this skill:
   - `<instructions>`
 - Local automation storage uses `$CODEX_HOME/automations/<id>/automation.toml`; heartbeat records include `kind = "heartbeat"` and `target_thread_id`.
 
+## Findings: Integrated Terminal (2026-04-22)
+
+- Codex.app `26.417.41555` ships `node-pty@1.1.0` in `/tmp/codex-app-extracted/package.json`.
+- Renderer bundle terminal UI strings:
+  - `threadPage.toggleTerminal` -> `Toggle terminal`
+  - `terminal.bottomPanel.new` -> `New terminal`
+  - `terminal.bottomPanel.close` -> `Close`
+  - `codex.command.toggleTerminal` -> `Toggle terminal`
+- Shortcut mapping in packaged build includes `toggleTerminal: CmdOrCtrl+J`.
+- Main process terminal manager in `/tmp/codex-app-extracted/.vite/build/main-CUDSf52Z.js`:
+  - creates local terminal sessions with `node-pty.spawn`
+  - maps sessions by window/conversation id
+  - keeps a rolling terminal buffer capped at `16 * 1024` bytes
+  - uses `TERM=xterm-256color`
+  - exposes a conversation snapshot shape `{ cwd, shell, buffer, truncated }`
+  - emits renderer messages including `terminal-data`, `terminal-init-log`, `terminal-attached`, `terminal-exit`, and `terminal-error`
+- Web parity implementation should use `/codex-api/ws` and HTTP endpoints instead of Electron IPC, but preserve the same event names and snapshot shape where practical.

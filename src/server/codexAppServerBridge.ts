@@ -31,6 +31,7 @@ import {
 import { handleOpenRouterProxyRequest } from './openRouterProxy.js'
 import { handleZenProxyRequest } from './zenProxy.js'
 import { handleCustomEndpointProxyRequest } from './customEndpointProxy.js'
+import { ThreadTerminalManager } from './terminalManager.js'
 import { getSpawnInvocation } from '../utils/commandInvocation.js'
 import {
   resolveCodexCommand,
@@ -3078,6 +3079,7 @@ type CodexBridgeMiddleware = ((req: IncomingMessage, res: ServerResponse, next: 
 type SharedBridgeState = {
   version: string
   appServer: AppServerProcess
+  terminalManager: ThreadTerminalManager
   methodCatalog: MethodCatalog
   telegramBridge: TelegramThreadBridge
 }
@@ -3092,16 +3094,19 @@ function getSharedBridgeState(): SharedBridgeState {
 
   const existing = globalScope[SHARED_BRIDGE_KEY]
   if (existing) {
-    if (existing.version === SHARED_BRIDGE_VERSION) {
+    if (existing.version === SHARED_BRIDGE_VERSION && existing.terminalManager) {
       return existing
     }
     existing.appServer.dispose()
+    existing.terminalManager?.dispose()
   }
 
   const appServer = new AppServerProcess()
+  const terminalManager = new ThreadTerminalManager()
   const created: SharedBridgeState = {
     version: SHARED_BRIDGE_VERSION,
     appServer,
+    terminalManager,
     methodCatalog: new MethodCatalog(),
     telegramBridge: new TelegramThreadBridge(appServer, {
       onChatSeen: (chatId) => {
@@ -3190,7 +3195,7 @@ async function buildThreadSearchIndex(appServer: AppServerProcess): Promise<Thre
 }
 
 export function createCodexBridgeMiddleware(): CodexBridgeMiddleware {
-  const { appServer, methodCatalog, telegramBridge } = getSharedBridgeState()
+  const { appServer, terminalManager, methodCatalog, telegramBridge } = getSharedBridgeState()
   let threadSearchIndex: ThreadSearchIndex | null = null
   let threadSearchIndexPromise: Promise<ThreadSearchIndex> | null = null
 
@@ -3526,6 +3531,73 @@ export function createCodexBridgeMiddleware(): CodexBridgeMiddleware {
       }
 
       if (await handleFileRoutes(req, res, url, { readJsonBody })) {
+        return
+      }
+
+      if (req.method === 'POST' && url.pathname === '/codex-api/thread-terminal/attach') {
+        const body = asRecord(await readJsonBody(req))
+        const threadId = readNonEmptyString(body?.threadId)
+        const cwd = readNonEmptyString(body?.cwd)
+        if (!threadId || !cwd) {
+          setJson(res, 400, { error: 'Missing threadId or cwd' })
+          return
+        }
+        const session = terminalManager.attach({
+          threadId,
+          cwd,
+          sessionId: readNonEmptyString(body?.sessionId) || undefined,
+          cols: typeof body?.cols === 'number' ? body.cols : undefined,
+          rows: typeof body?.rows === 'number' ? body.rows : undefined,
+          newSession: body?.newSession === true,
+        })
+        setJson(res, 200, { session })
+        return
+      }
+
+      if (req.method === 'POST' && url.pathname === '/codex-api/thread-terminal/input') {
+        const body = asRecord(await readJsonBody(req))
+        const sessionId = readNonEmptyString(body?.sessionId)
+        const data = typeof body?.data === 'string' ? body.data : ''
+        if (!sessionId) {
+          setJson(res, 400, { error: 'Missing sessionId' })
+          return
+        }
+        terminalManager.write(sessionId, data)
+        setJson(res, 200, { ok: true })
+        return
+      }
+
+      if (req.method === 'POST' && url.pathname === '/codex-api/thread-terminal/resize') {
+        const body = asRecord(await readJsonBody(req))
+        const sessionId = readNonEmptyString(body?.sessionId)
+        if (!sessionId) {
+          setJson(res, 400, { error: 'Missing sessionId' })
+          return
+        }
+        terminalManager.resize(sessionId, body?.cols, body?.rows)
+        setJson(res, 200, { ok: true })
+        return
+      }
+
+      if (req.method === 'POST' && url.pathname === '/codex-api/thread-terminal/close') {
+        const body = asRecord(await readJsonBody(req))
+        const sessionId = readNonEmptyString(body?.sessionId)
+        if (!sessionId) {
+          setJson(res, 400, { error: 'Missing sessionId' })
+          return
+        }
+        terminalManager.close(sessionId)
+        setJson(res, 200, { ok: true })
+        return
+      }
+
+      if (req.method === 'GET' && url.pathname === '/codex-api/thread-terminal-snapshot') {
+        const threadId = url.searchParams.get('threadId')?.trim() ?? ''
+        if (!threadId) {
+          setJson(res, 400, { error: 'Missing threadId' })
+          return
+        }
+        setJson(res, 200, { session: terminalManager.getSnapshotForThread(threadId) })
         return
       }
 
@@ -4499,17 +4571,28 @@ export function createCodexBridgeMiddleware(): CodexBridgeMiddleware {
   middleware.dispose = () => {
     threadSearchIndex = null
     telegramBridge.stop()
+    terminalManager.dispose()
     appServer.dispose()
   }
   middleware.subscribeNotifications = (
     listener: (value: { method: string; params: unknown; atIso: string }) => void,
   ) => {
-    return appServer.onNotification((notification: { method: string; params: unknown }) => {
+    const unsubscribeAppServer = appServer.onNotification((notification: { method: string; params: unknown }) => {
       listener({
         ...notification,
         atIso: new Date().toISOString(),
       })
     })
+    const unsubscribeTerminal = terminalManager.subscribe((notification) => {
+      listener({
+        ...notification,
+        atIso: new Date().toISOString(),
+      })
+    })
+    return () => {
+      unsubscribeAppServer()
+      unsubscribeTerminal()
+    }
   }
 
   return middleware

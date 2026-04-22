@@ -476,6 +476,18 @@
             />
           </template>
           <template #actions>
+            <button
+              v-if="route.name === 'thread' && selectedThreadId"
+              class="content-header-terminal-toggle"
+              type="button"
+              :aria-pressed="selectedThreadTerminalOpen"
+              :title="`Toggle terminal (${terminalShortcutLabel})`"
+              aria-label="Toggle terminal"
+              @click="toggleSelectedThreadTerminal"
+            >
+              <IconTablerTerminal class="content-header-terminal-toggle-icon" />
+              <span class="content-header-terminal-shortcut">{{ terminalShortcutLabel }}</span>
+            </button>
             <ComposerDropdown
               v-if="route.name === 'thread' && selectedThreadId"
               class="content-header-branch-dropdown"
@@ -776,6 +788,13 @@
                     :has-queue-above="selectedThreadQueuedMessages.length > 0"
                     @respond-server-request="onRespondServerRequest"
                   />
+                  <ThreadTerminalPanel
+                    v-if="selectedThreadTerminalOpen && selectedThreadId && composerCwd"
+                    class="content-thread-terminal-panel"
+                    :thread-id="selectedThreadId"
+                    :cwd="composerCwd"
+                    @hide="setThreadTerminalOpen(selectedThreadId, false)"
+                  />
                   <ThreadComposer v-else ref="threadComposerRef" :active-thread-id="composerThreadContextId"
                     :cwd="composerCwd"
                     :collaboration-modes="availableCollaborationModes"
@@ -835,6 +854,7 @@ import ComposerRuntimeDropdown from './components/content/ComposerRuntimeDropdow
 import SidebarThreadControls from './components/sidebar/SidebarThreadControls.vue'
 import IconTablerSearch from './components/icons/IconTablerSearch.vue'
 import IconTablerSettings from './components/icons/IconTablerSettings.vue'
+import IconTablerTerminal from './components/icons/IconTablerTerminal.vue'
 import IconTablerX from './components/icons/IconTablerX.vue'
 import { useDesktopState } from './composables/useDesktopState'
 import { useMobile } from './composables/useMobile'
@@ -866,6 +886,7 @@ import { getFreeModeStatus, setFreeMode, setFreeModeCustomKey, setCustomProvider
 import { getPathLeafName, getPathParent, normalizePathForUi } from './pathUtils.js'
 
 const ThreadConversation = defineAsyncComponent(() => import('./components/content/ThreadConversation.vue'))
+const ThreadTerminalPanel = defineAsyncComponent(() => import('./components/content/ThreadTerminalPanel.vue'))
 const ReviewPane = defineAsyncComponent(() => import('./components/content/ReviewPane.vue'))
 const SkillsHub = defineAsyncComponent(() => import('./components/content/SkillsHub.vue'))
 const ConfigEditorModal = defineAsyncComponent(() => import('./components/content/ConfigEditorModal.vue'))
@@ -1024,6 +1045,7 @@ const {
   selectedThread,
   selectedThreadTokenUsage,
   selectedThreadScrollState,
+  selectedThreadTerminalOpen,
   selectedThreadServerRequests,
   selectedLiveOverlay,
   codexQuota,
@@ -1048,6 +1070,8 @@ const {
   selectThread,
   ensureThreadMessagesLoaded,
   setThreadScrollState,
+  setThreadTerminalOpen,
+  toggleSelectedThreadTerminal,
   archiveThreadById,
   forkThreadById,
   renameThreadById,
@@ -1444,6 +1468,12 @@ const chatWidthLabel = computed(() => {
   if (mode === 'standard') return t('settings.standard')
   if (mode === 'wide') return t('settings.wide')
   return t('settings.extraWide')
+})
+const terminalShortcutLabel = computed(() => {
+  if (typeof navigator !== 'undefined' && /mac|iphone|ipad|ipod/i.test(navigator.platform)) {
+    return '⌘J'
+  }
+  return 'Ctrl+J'
 })
 const contentStyle = computed(() => {
   const preset = CHAT_WIDTH_PRESETS[chatWidth.value]
@@ -2015,9 +2045,16 @@ function onWindowKeyDown(event: KeyboardEvent): void {
   }
   if (!event.ctrlKey && !event.metaKey) return
   if (event.shiftKey || event.altKey) return
-  if (event.key.toLowerCase() !== 'b') return
-  event.preventDefault()
-  setSidebarCollapsed(!isSidebarCollapsed.value)
+  const key = event.key.toLowerCase()
+  if (key === 'b') {
+    event.preventDefault()
+    setSidebarCollapsed(!isSidebarCollapsed.value)
+    return
+  }
+  if (key === 'j' && route.name === 'thread' && selectedThreadId.value) {
+    event.preventDefault()
+    toggleSelectedThreadTerminal()
+  }
 }
 
 function onDocumentPointerDown(event: PointerEvent): void {
@@ -3438,7 +3475,27 @@ async function loadWorktreeBranches(sourceCwd: string): Promise<void> {
 }
 
 .composer-with-queue {
-  @apply w-full shrink-0 px-2 sm:px-6;
+  @apply w-full shrink-0 px-2 sm:px-6 flex flex-col gap-2;
+}
+
+.content-thread-terminal-panel {
+  @apply w-full;
+}
+
+.content-header-terminal-toggle {
+  @apply flex h-8 items-center gap-1.5 rounded-full border border-zinc-200 bg-white px-2.5 text-xs text-zinc-700 transition hover:bg-zinc-50;
+}
+
+.content-header-terminal-toggle[aria-pressed='true'] {
+  @apply border-zinc-300 bg-zinc-100 text-zinc-950;
+}
+
+.content-header-terminal-toggle-icon {
+  @apply h-4 w-4;
+}
+
+.content-header-terminal-shortcut {
+  @apply hidden text-[11px] text-zinc-500 sm:inline;
 }
 
 .content-header-branch-dropdown :deep(.composer-dropdown-trigger) {
