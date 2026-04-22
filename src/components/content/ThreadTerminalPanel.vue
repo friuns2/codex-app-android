@@ -30,6 +30,15 @@
         <button class="thread-terminal-action" type="button" title="New terminal" @click="onNewTerminal">
           New terminal
         </button>
+        <button
+          class="thread-terminal-action"
+          type="button"
+          :title="isQuickCommandEditorOpen ? 'Close quick command editor' : 'Manage quick commands'"
+          :aria-pressed="isQuickCommandEditorOpen"
+          @click="isQuickCommandEditorOpen = !isQuickCommandEditorOpen"
+        >
+          Commands
+        </button>
         <button class="thread-terminal-action" type="button" title="Hide terminal" @click="$emit('hide')">
           Hide
         </button>
@@ -38,6 +47,34 @@
         </button>
       </div>
     </header>
+    <div v-if="isQuickCommandEditorOpen" class="thread-terminal-command-editor">
+      <form class="thread-terminal-command-form" @submit.prevent="onSaveCustomCommand">
+        <input
+          v-model="customCommandDraft"
+          class="thread-terminal-command-input"
+          type="text"
+          placeholder="Command, e.g. pnpm lint"
+          aria-label="Custom quick command"
+        />
+        <button class="thread-terminal-command-save" type="submit" :disabled="!canSaveCustomCommand">
+          Add
+        </button>
+      </form>
+      <div v-if="customQuickCommands.length > 0" class="thread-terminal-custom-commands">
+        <span class="thread-terminal-custom-label">Custom</span>
+        <button
+          v-for="command in customQuickCommands"
+          :key="command.value"
+          class="thread-terminal-custom-command"
+          type="button"
+          :title="`Delete ${command.label}`"
+          @click="onDeleteCustomCommand(command.value)"
+        >
+          <span class="thread-terminal-custom-command-text">{{ command.label }}</span>
+          <span class="thread-terminal-custom-command-delete">Delete</span>
+        </button>
+      </div>
+    </div>
     <p v-if="errorMessage" class="thread-terminal-error">{{ errorMessage }}</p>
     <div ref="terminalHostRef" class="thread-terminal-host" />
   </section>
@@ -83,14 +120,27 @@ type TerminalTab = {
   status: 'connecting' | 'attached' | 'exited' | 'error'
 }
 
-const quickCommands = [
+type QuickCommand = {
+  label: string
+  value: string
+  custom?: boolean
+}
+
+const QUICK_COMMAND_STORAGE_KEY = 'codex-web-local.terminal-quick-commands.v1'
+const BUILT_IN_QUICK_COMMANDS: QuickCommand[] = [
   { label: 'npm run dev', value: 'npm run dev' },
   { label: 'pnpm run dev', value: 'pnpm run dev' },
   { label: 'pnpm run test:unit', value: 'pnpm run test:unit' },
   { label: 'pnpm run build', value: 'pnpm run build' },
 ]
 
+const customQuickCommands = ref<QuickCommand[]>(loadCustomQuickCommands())
+const customCommandDraft = ref('')
+const isQuickCommandEditorOpen = ref(false)
+
 const activeTab = computed(() => tabs.value.find((tab) => tab.id === activeSessionId.value) ?? null)
+const quickCommands = computed<QuickCommand[]>(() => [...BUILT_IN_QUICK_COMMANDS, ...customQuickCommands.value])
+const canSaveCustomCommand = computed(() => normalizeQuickCommandValue(customCommandDraft.value).length > 0)
 
 onMounted(() => {
   createTerminal()
@@ -250,6 +300,30 @@ function onQuickCommandSelect(event: Event): void {
   })
 }
 
+function onSaveCustomCommand(): void {
+  const value = normalizeQuickCommandValue(customCommandDraft.value)
+  if (!value) return
+  const nextCommand: QuickCommand = {
+    label: value,
+    value,
+    custom: true,
+  }
+  const next = [
+    ...customQuickCommands.value.filter((command) => command.value !== value),
+    nextCommand,
+  ]
+  customQuickCommands.value = next
+  saveCustomQuickCommands(next)
+  customCommandDraft.value = ''
+}
+
+function onDeleteCustomCommand(commandValue: string): void {
+  const next = customQuickCommands.value.filter((command) => command.value !== commandValue)
+  if (next.length === customQuickCommands.value.length) return
+  customQuickCommands.value = next
+  saveCustomQuickCommands(next)
+}
+
 function onCloseTerminal(): void {
   const currentSessionId = activeSessionId.value
   if (!currentSessionId) {
@@ -331,6 +405,40 @@ function terminalTabTitle(tab: TerminalTab, index: number): string {
   return tabs.value.length > 1 ? `${shell} ${index + 1}` : shell
 }
 
+function normalizeQuickCommandValue(value: string): string {
+  return value.trim().replace(/\s+/g, ' ')
+}
+
+function loadCustomQuickCommands(): QuickCommand[] {
+  if (typeof window === 'undefined') return []
+  try {
+    const raw = window.localStorage.getItem(QUICK_COMMAND_STORAGE_KEY)
+    if (!raw) return []
+    const parsed = JSON.parse(raw) as unknown
+    if (!Array.isArray(parsed)) return []
+    const seen = new Set(BUILT_IN_QUICK_COMMANDS.map((command) => command.value))
+    const commands: QuickCommand[] = []
+    for (const row of parsed) {
+      const record = asRecord(row)
+      const value = normalizeQuickCommandValue(readString(record?.value))
+      if (!value || seen.has(value)) continue
+      seen.add(value)
+      commands.push({ label: readString(record?.label) || value, value, custom: true })
+    }
+    return commands
+  } catch {
+    return []
+  }
+}
+
+function saveCustomQuickCommands(commands: QuickCommand[]): void {
+  if (typeof window === 'undefined') return
+  window.localStorage.setItem(
+    QUICK_COMMAND_STORAGE_KEY,
+    JSON.stringify(commands.map((command) => ({ label: command.label, value: command.value }))),
+  )
+}
+
 function asRecord(value: unknown): Record<string, unknown> | null {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
     ? value as Record<string, unknown>
@@ -353,6 +461,42 @@ function readString(value: unknown): string {
 
 .thread-terminal-header {
   @apply flex h-9 items-center justify-between border-b border-zinc-800 bg-zinc-950 px-2;
+}
+
+.thread-terminal-command-editor {
+  @apply border-b border-zinc-800 bg-zinc-950 px-2 py-2;
+}
+
+.thread-terminal-command-form {
+  @apply flex min-w-0 items-center gap-2;
+}
+
+.thread-terminal-command-input {
+  @apply min-w-0 flex-1 rounded-md border border-zinc-800 bg-black px-2 py-1.5 text-xs text-zinc-100 placeholder-zinc-500 outline-none transition focus:border-zinc-600;
+}
+
+.thread-terminal-command-save {
+  @apply shrink-0 rounded-md border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-xs text-zinc-200 transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50;
+}
+
+.thread-terminal-custom-commands {
+  @apply mt-2 flex min-w-0 flex-wrap items-center gap-1.5;
+}
+
+.thread-terminal-custom-label {
+  @apply text-[11px] uppercase tracking-wide text-zinc-500;
+}
+
+.thread-terminal-custom-command {
+  @apply inline-flex min-w-0 max-w-full items-center gap-1 rounded-md border border-zinc-800 bg-zinc-900 px-2 py-1 text-xs text-zinc-300 transition hover:border-rose-900 hover:text-rose-200;
+}
+
+.thread-terminal-custom-command-text {
+  @apply max-w-56 truncate;
+}
+
+.thread-terminal-custom-command-delete {
+  @apply text-[11px] text-zinc-500;
 }
 
 .thread-terminal-tabs {
@@ -407,6 +551,14 @@ function readString(value: unknown): string {
   @apply h-[calc(100%-4.625rem)];
 }
 
+.thread-terminal-panel:has(.thread-terminal-command-editor) .thread-terminal-host {
+  @apply h-[calc(100%-7.625rem)];
+}
+
+.thread-terminal-panel.is-error:has(.thread-terminal-command-editor) .thread-terminal-host {
+  @apply h-[calc(100%-10rem)];
+}
+
 .thread-terminal-host :deep(.xterm) {
   @apply h-full;
 }
@@ -423,6 +575,22 @@ function readString(value: unknown): string {
 
   .thread-terminal-header {
     @apply px-1.5;
+  }
+
+  .thread-terminal-command-editor {
+    @apply px-1.5 py-1.5;
+  }
+
+  .thread-terminal-command-form {
+    @apply gap-1.5;
+  }
+
+  .thread-terminal-command-input {
+    @apply px-1.5 text-[11px];
+  }
+
+  .thread-terminal-command-save {
+    @apply px-1.5 text-[11px];
   }
 
   .thread-terminal-action {

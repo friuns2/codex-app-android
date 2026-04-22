@@ -2895,16 +2895,18 @@ Each local/worktree thread has an integrated xterm terminal that can be toggled 
 8. Confirm `terminal-ok` appears in the xterm output
 9. Choose `npm run dev` from the `Run...` quick-command menu
 10. Confirm the command is submitted to the active terminal
-11. Fetch `/codex-api/thread-terminal-snapshot?threadId=<thread-id>`
-12. Confirm the JSON `session.buffer` contains `terminal-ok`
-13. Refresh the page and reopen the same thread
-14. Toggle the terminal open again
-15. Click `New terminal`
-16. Confirm a second terminal tab appears and becomes active
-17. Click the first terminal tab
-18. Confirm its previous output is restored
-19. Resize the browser window
-20. Click `Close`
+11. Open `Commands`, add a custom quick command, run it from `Run...`, then delete it
+12. Confirm the deleted custom command disappears from the `Run...` menu
+13. Fetch `/codex-api/thread-terminal-snapshot?threadId=<thread-id>`
+14. Confirm the JSON `session.buffer` contains `terminal-ok`
+15. Refresh the page and reopen the same thread
+16. Toggle the terminal open again
+17. Click `New terminal`
+18. Confirm a second terminal tab appears and becomes active
+19. Click the first terminal tab
+20. Confirm its previous output is restored
+21. Resize the browser window
+22. Click `Close`
 
 #### Expected Results
 - The terminal button shows a pressed state when the drawer is open
@@ -2913,6 +2915,7 @@ Each local/worktree thread has an integrated xterm terminal that can be toggled 
 - The terminal resizes without clipping the prompt
 - The snapshot endpoint returns `{ session: { cwd, shell, buffer, truncated } }` while a session exists
 - The quick-command menu sends common project commands such as `npm run dev` into the current PTY
+- Custom quick commands can be created, run from the quick-command menu, and deleted
 - `New terminal` adds another tab without killing the previous PTY
 - `Close` terminates the active PTY and hides the drawer only after the last tab is closed
 

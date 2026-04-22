@@ -17,6 +17,8 @@
 8. Confirm `terminal-ok` appears in the terminal output.
 9. Choose `npm run dev` from the `Run...` quick-command menu.
 10. Confirm the command is submitted to the active terminal.
+11. Open `Commands`, add a custom quick command, run it from `Run...`, then delete it.
+12. Confirm the custom command disappears from the `Run...` menu after deletion.
 
 ### Snapshot API
 1. With the terminal session still running, request:
@@ -45,3 +47,4 @@
 ### Expected Result
 - Terminal behavior matches Codex.app-style integrated terminal basics: per-thread terminal, project-scoped cwd, header toggle, keyboard shortcut, recent output buffer, and readable snapshot endpoint.
 - Quick-command menu submits common project commands to the active terminal without replacing the session.
+- Custom quick commands can be created, persisted in the menu, run, and deleted.
