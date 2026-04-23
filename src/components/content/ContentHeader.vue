@@ -28,7 +28,7 @@ defineProps<{
 }
 
 .content-actions {
-  @apply flex shrink-0 items-center justify-end gap-1;
+  @apply ml-auto flex shrink-0 items-center justify-end gap-1;
 }
 
 .content-leading {
