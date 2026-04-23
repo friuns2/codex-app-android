@@ -8,7 +8,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
     make \
     g++ \
-    ripgrep \
     && rm -rf /var/lib/apt/lists/*
 
 RUN corepack enable
@@ -38,6 +37,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
     make \
     g++ \
+    ripgrep \
     && rm -rf /var/lib/apt/lists/*
 
 RUN corepack enable
