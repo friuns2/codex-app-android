@@ -287,7 +287,9 @@ function normalizeBase64ImageDataUrl(value: string, mimeType: string): string | 
   const inferredMimeType = inferImageMimeTypeFromBase64(compact)
   if (!inferredMimeType) return null
   const normalizedMimeType = mimeType.trim().toLowerCase()
-  const finalMimeType = normalizedMimeType.startsWith('image/') ? normalizedMimeType : inferredMimeType
+  const finalMimeType = normalizedMimeType.startsWith('image/') && normalizedMimeType !== 'image/*'
+    ? normalizedMimeType
+    : inferredMimeType
   return `data:${finalMimeType};base64,${compact}`
 }
 
@@ -381,7 +383,7 @@ async function sanitizeInlineImageString(
     return { value, changed: false }
   }
 
-  const dataUrl = normalizeBase64ImageDataUrl(value, 'image/png')
+  const dataUrl = normalizeBase64ImageDataUrl(value, 'image/*')
   if (!dataUrl) return { value, changed: false }
 
   const localUrl = await persistInlineDataUrlToLocalFile(
@@ -405,10 +407,16 @@ async function sanitizeInlineUserContentBlock(
   if (imageUrl && isInlineDataUrl(imageUrl)) {
     const localUrl = await persistInlineDataUrlToLocalFile(imageUrl, `inline-image-${context.turnId}-${context.itemId}-${String(context.blockIndex)}`)
     if (localUrl) {
+      const nextRecord = { ...record }
+      if (typeof record.url === 'string') {
+        nextRecord.url = toLocalImageProxyUrl(localUrl)
+      }
+      if (typeof record.image_url === 'string') {
+        nextRecord.image_url = toLocalImageProxyUrl(localUrl)
+      }
       return {
-        ...record,
+        ...nextRecord,
         type: 'image',
-        url: toLocalImageProxyUrl(localUrl),
       }
     }
     const target = toAttachmentLinkTarget(record, `inline-image/${context.turnId}/${context.itemId}/${String(context.blockIndex)}`)
