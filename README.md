@@ -124,6 +124,32 @@ Notes:
 
 ---
 
+## 🐳 Docker Deployment
+
+```bash
+# Copy and configure environment
+cp .env.example .env
+# Edit .env — set OPENAI_API_KEY and SHELL at minimum
+
+# Start with docker-compose
+docker-compose up -d
+
+# Open in browser
+# http://localhost:5900
+```
+
+Key environment variables (see `.env.example` for full list):
+
+| Variable | Description | Default |
+|---|---|---|
+| `OPENAI_API_KEY` | OpenAI API key | *required* |
+| `SHELL` | Terminal shell path | `/bin/zsh` |
+| `CODEXUI_PASSWORD` | Web UI password | random on each start |
+| `CODEX_WORKSPACE` | Default workspace directory | — |
+| `CODEXUI_SANDBOX_MODE` | `read-only` / `workspace-write` / `danger-full-access` | — |
+
+---
+
 ## ✨ Features
 > **The payload.**
 
@@ -136,6 +162,9 @@ Notes:
 - ⚡ No global install required for quick experimentation
 - 🎙️ Built-in hold-to-dictate voice input with transcription to composer draft
 - 🤖 Optional Telegram bot bridge: send messages to bot, forward into mapped thread, send assistant reply back to Telegram
+- 🌐 i18n support with English/Chinese locale switching
+- 📁 Built-in file manager with inline preview (images, PDF, video, audio, markdown, code, Office documents)
+- 🐳 Docker support with multi-arch images publishing
 
 ### Telegram Bot Bridge (Optional)
 
@@ -175,6 +204,8 @@ Outgoing assistant messages are sent with Telegram `parse_mode=HTML` for formatt
 ## 🧩 Recent Product Features (from main commits)
 > **Not just launch. Actual UX upgrades.**
 
+- 📁 File manager with breadcrumbs, context menu, upload/download, and inline preview
+- 🌐 English/Chinese i18n with auto-detection and settings toggle
 - 🗂️ Searchable project picker in new-thread flow
 - ➕ "Create Project" button next to "Select folder" with browser prompt
 - 📌 New projects get pinned to top automatically
@@ -252,7 +283,7 @@ Outgoing assistant messages are sent with Telegram `parse_mode=HTML` for formatt
 | Port already in use | Run on a free port or stop old process |
 | `npx` fails | Update npm/node, then retry |
 | Termux install fails | `pkg update && pkg upgrade` then reinstall `nodejs` |
-| Can’t open from other device | Check firewall, bind address, and LAN routing |
+| Can't open from other device | Check firewall, bind address, and LAN routing |
 
 ---
 
