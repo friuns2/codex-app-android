@@ -203,7 +203,7 @@
               type="button"
               role="switch"
               :aria-checked="selectedSpeedMode === 'fast'"
-              :aria-label="`Fast mode ${selectedSpeedMode === 'fast' ? 'enabled' : 'disabled'}`"
+              :aria-label="`${t('Fast mode')} ${selectedSpeedMode === 'fast' ? t('enabled') : t('disabled')}`"
               :disabled="isSpeedToggleDisabled"
               @click="onToggleSpeedMode"
             >
@@ -225,7 +225,7 @@
               type="button"
               role="switch"
               :aria-checked="isPlanModeSelected"
-              :aria-label="isPlanModeSelected ? 'Disable plan mode' : 'Enable plan mode'"
+              :aria-label="isPlanModeSelected ? t('Disable plan mode') : t('Enable plan mode')"
               :disabled="disabled || !activeThreadId || isTurnInProgress"
               @click="toggleCollaborationMode"
             >
@@ -247,11 +247,11 @@
             :model-value="selectedModel"
             :options="modelOptions"
             :selected-prefix-icon="showFastModeModelIcon ? IconTablerBolt : null"
-            placeholder="Model"
+            :placeholder="t('Model')"
             open-direction="up"
             :disabled="disabled || !activeThreadId || models.length === 0 || isTurnInProgress"
             enable-search
-            search-placeholder="Search models..."
+            :search-placeholder="t('Search models...')"
             @update:model-value="onModelSelect"
           />
 
@@ -275,11 +275,21 @@
             class="thread-composer-control"
             :options="skillDropdownOptions"
             :selected-values="selectedSkillPaths"
-            placeholder="Skills"
-            search-placeholder="Search skills..."
+            :placeholder="t('Skills')"
+            :search-placeholder="t('Search skills...')"
             open-direction="up"
             :disabled="disabled || !activeThreadId || isTurnInProgress"
             @toggle="onSkillDropdownToggle"
+          />
+
+          <ComposerDropdown
+            class="thread-composer-control"
+            :model-value="selectedReasoningEffort"
+            :options="reasoningOptions"
+            :placeholder="$t('composer.thinking')"
+            open-direction="up"
+            :disabled="disabled || !activeThreadId || isTurnInProgress"
+            @update:model-value="onReasoningEffortSelect"
           />
         </template>
 
@@ -401,6 +411,7 @@ import type {
 } from '../../types/codex'
 import { useDictation } from '../../composables/useDictation'
 import { useMobile } from '../../composables/useMobile'
+import { useUiLanguage } from '../../composables/useUiLanguage'
 import { searchComposerFiles, uploadFile, type ComposerFileSuggestion } from '../../api/codexGateway'
 import IconTablerArrowUp from '../icons/IconTablerArrowUp.vue'
 import IconTablerBolt from '../icons/IconTablerBolt.vue'
@@ -473,6 +484,7 @@ const emit = defineEmits<{
   'update:selected-speed-mode': [mode: SpeedMode]
   'toggle-file-manager': []
 }>()
+const { t } = useUiLanguage()
 
 type SelectedImage = {
   id: string
@@ -661,21 +673,21 @@ const attachmentFeedbackText = computed(() => {
     const remaining = Math.max(0, stats.total - completed)
     if (remaining > 0) {
       if (stats.failed > 0) {
-        return `${stats.failed} failed, attaching ${formatAttachmentFileCount(remaining)}...`
+        return `${stats.failed} ${t('failed')}, ${t('attaching')} ${formatAttachmentFileCount(remaining)}...`
       }
-      return remaining === 1 ? 'Attaching file...' : `Attaching ${remaining} files...`
+      return remaining === 1 ? t('Attaching file...') : `${t('Attaching')} ${remaining} ${t('files...')}`
     }
     if (stats.failed > 0) {
       if (stats.succeeded > 0) {
-        return `${stats.succeeded} attached, ${stats.failed} failed.`
+        return `${stats.succeeded} ${t('attached')}, ${stats.failed} ${t('failed')}.`
       }
-      return stats.failed === 1 ? 'Could not attach file.' : `Could not attach ${stats.failed} files.`
+      return stats.failed === 1 ? t('Could not attach file.') : `${t('Could not attach')} ${stats.failed} ${t('files.')}`
     }
   }
   if (pendingAttachmentCount.value <= 0) return ''
   return pendingAttachmentCount.value === 1
-    ? 'Attaching file...'
-    : `Attaching ${pendingAttachmentCount.value} files...`
+    ? t('Attaching file...')
+    : `${t('Attaching')} ${pendingAttachmentCount.value} ${t('files...')}`
 })
 const dictationDurationLabel = computed(() => {
   const totalSeconds = Math.max(0, Math.floor(recordingDurationMs.value / 1000))

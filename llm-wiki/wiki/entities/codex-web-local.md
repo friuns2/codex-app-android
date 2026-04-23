@@ -12,7 +12,10 @@
 - Frequent branch merges into local `main`
 - Strong conflict-resolution policy (intentional per-file merges)
 - Manual regression documentation in `tests.md`
+- Integrated terminal uses a Node PTY bridge plus an xterm frontend for local/worktree threads
 
 ## Source links
 - [Source snapshot](../../raw/projects/codex-web-local.md)
+- [Integrated terminal source](../../raw/features/integrated-terminal.md)
+- [Integrated terminal concept](../concepts/integrated-terminal.md)
 - [Merge-to-main workflow concept](../concepts/merge-to-main-workflow.md)

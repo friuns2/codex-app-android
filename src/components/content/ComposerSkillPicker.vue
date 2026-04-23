@@ -33,6 +33,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
+import { useUiLanguage } from '../../composables/useUiLanguage'
 
 export type SkillOption = {
   name: string
@@ -56,6 +57,7 @@ const rootRef = ref<HTMLElement | null>(null)
 const searchInputRef = ref<HTMLInputElement | null>(null)
 const query = ref('')
 const highlightIndex = ref(0)
+const { t } = useUiLanguage()
 
 const filtered = computed(() => {
   const q = query.value.toLowerCase().trim()

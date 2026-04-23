@@ -14,18 +14,19 @@
             :data-pinned="isPinned(thread.id)"
             :data-menu-open="isThreadMenuOpen(thread.id) ? 'true' : 'false'"
             :force-right-hover="isThreadMenuOpen(thread.id)"
+            @click="onSelect(thread.id)"
             @mouseleave="onThreadRowLeave(thread.id, $event)"
             @contextmenu="onThreadRowContextMenu($event, thread.id)"
           >
             <template #left>
               <span class="thread-left-stack">
                 <span v-if="shouldShowThreadIndicator(thread)" class="thread-status-indicator" :data-state="getThreadState(thread)" />
-                <button class="thread-pin-button" type="button" title="pin" @click="togglePin(thread.id)">
+                <button class="thread-pin-button" type="button" title="pin" @click.stop="togglePin(thread.id)">
                   <IconTablerPin class="thread-icon" />
                 </button>
               </span>
             </template>
-            <button class="thread-main-button" type="button" @click="onSelect(thread.id)">
+            <button class="thread-main-button" type="button" @click.stop="onSelect(thread.id)">
               <span class="thread-row-title-wrap">
                 <span class="thread-row-title-line">
                   <span class="thread-row-title">{{ thread.title }}</span>
@@ -124,6 +125,7 @@
           :data-pinned="isPinned(thread.id)"
           :data-menu-open="isThreadMenuOpen(thread.id) ? 'true' : 'false'"
           :force-right-hover="isThreadMenuOpen(thread.id)"
+          @click="onSelect(thread.id)"
           @mouseleave="onThreadRowLeave(thread.id, $event)"
           @contextmenu="onThreadRowContextMenu($event, thread.id)"
         >
@@ -134,12 +136,12 @@
                 class="thread-status-indicator"
                 :data-state="getThreadState(thread)"
               />
-              <button class="thread-pin-button" type="button" title="pin" @click="togglePin(thread.id)">
+              <button class="thread-pin-button" type="button" title="pin" @click.stop="togglePin(thread.id)">
                 <IconTablerPin class="thread-icon" />
               </button>
             </span>
           </template>
-          <button class="thread-main-button" type="button" @click="onSelect(thread.id)">
+          <button class="thread-main-button" type="button" @click.stop="onSelect(thread.id)">
             <span class="thread-row-title-wrap">
               <span class="thread-row-title-line">
                 <span class="thread-row-title">{{ thread.title }}</span>
@@ -288,6 +290,7 @@
                 :data-pinned="isPinned(thread.id)"
                 :data-menu-open="isThreadMenuOpen(thread.id) ? 'true' : 'false'"
                 :force-right-hover="isThreadMenuOpen(thread.id)"
+                @click="onSelect(thread.id)"
                 @mouseleave="onThreadRowLeave(thread.id, $event)"
                 @contextmenu="onThreadRowContextMenu($event, thread.id)"
               >
@@ -298,12 +301,12 @@
                       class="thread-status-indicator"
                       :data-state="getThreadState(thread)"
                     />
-                    <button class="thread-pin-button" type="button" title="pin" @click="togglePin(thread.id)">
+                    <button class="thread-pin-button" type="button" title="pin" @click.stop="togglePin(thread.id)">
                       <IconTablerPin class="thread-icon" />
                     </button>
                   </span>
                 </template>
-                <button class="thread-main-button" type="button" @click="onSelect(thread.id)">
+                <button class="thread-main-button" type="button" @click.stop="onSelect(thread.id)">
                   <span class="thread-row-title-wrap">
                     <span class="thread-row-title-line">
                       <span class="thread-row-title">{{ thread.title }}</span>
@@ -515,6 +518,7 @@ import IconTablerFolder from '../icons/IconTablerFolder.vue'
 import IconTablerFolderOpen from '../icons/IconTablerFolderOpen.vue'
 import IconTablerGitFork from '../icons/IconTablerGitFork.vue'
 import IconTablerPin from '../icons/IconTablerPin.vue'
+import { useUiLanguage } from '../../composables/useUiLanguage'
 import SidebarMenuRow from './SidebarMenuRow.vue'
 
 const { t } = useI18n()
@@ -527,6 +531,8 @@ const props = defineProps<{
   searchQuery: string
   searchMatchedThreadIds: string[] | null
 }>()
+
+const { t } = useUiLanguage()
 
 const emit = defineEmits<{
   select: [threadId: string]

@@ -109,6 +109,7 @@
       @install="handleInstall"
       @uninstall="handleUninstall"
       @toggle-enabled="handleToggleEnabled"
+      @try="handleTrySkill"
     />
   </div>
 </template>
@@ -121,6 +122,7 @@ import IconTablerChevronRight from '../icons/IconTablerChevronRight.vue'
 import SkillCard from './SkillCard.vue'
 import SkillDetailModal, { type HubSkill } from './SkillDetailModal.vue'
 import { useGithubSkillsSync } from '../../composables/useGithubSkillsSync'
+import { useUiLanguage } from '../../composables/useUiLanguage'
 
 const EMPTY_SKILL: HubSkill = { name: '', owner: '', description: '', url: '', installed: false }
 const SKILLS_HUB_CACHE_KEY = 'codex-web-local.skills-hub.cache.v1'
@@ -143,9 +145,11 @@ const actionSkillKey = ref('')
 const isInstallActionInFlight = ref(false)
 const isUninstallActionInFlight = ref(false)
 let toastTimer: ReturnType<typeof setTimeout> | null = null
+const { t } = useUiLanguage()
 
 const emit = defineEmits<{
   'skills-changed': []
+  'try-item': [payload: { kind: 'skill'; name: string; displayName: string; skillPath?: string }]
 }>()
 
 const { t } = useI18n()
@@ -342,6 +346,17 @@ async function handleToggleEnabled(skill: HubSkill, enabled: boolean): Promise<v
   } catch (e) {
     showToast(e instanceof Error ? e.message : 'Failed to update skill', 'error')
   }
+}
+
+function handleTrySkill(skill: HubSkill): void {
+  if (!skill.installed || skill.enabled === false) return
+  emit('try-item', {
+    kind: 'skill',
+    name: skill.name,
+    displayName: skill.displayName || skill.name,
+    skillPath: skill.path,
+  })
+  isDetailOpen.value = false
 }
 
 const {

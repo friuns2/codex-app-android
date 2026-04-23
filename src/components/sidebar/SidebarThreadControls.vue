@@ -27,6 +27,7 @@
 </template>
 
 <script setup lang="ts">
+import { useUiLanguage } from '../../composables/useUiLanguage'
 import IconTablerFilePencil from '../icons/IconTablerFilePencil.vue'
 import IconTablerLayoutSidebar from '../icons/IconTablerLayoutSidebar.vue'
 import IconTablerLayoutSidebarFilled from '../icons/IconTablerLayoutSidebarFilled.vue'
@@ -40,6 +41,8 @@ defineEmits<{
   'toggle-sidebar': []
   'start-new-thread': []
 }>()
+
+const { t } = useUiLanguage()
 </script>
 
 <style scoped>

@@ -23,6 +23,8 @@
 </template>
 
 <script setup lang="ts">
+import { useUiLanguage } from '../../composables/useUiLanguage'
+
 type QueuedMessageRow = {
   id: string
   text: string
@@ -41,6 +43,8 @@ defineEmits<{
   delete: [messageId: string]
 }>()
 
+const { t } = useUiLanguage()
+
 function getMessagePreview(message: QueuedMessageRow): string {
   const text = message.text.trim()
   if (text) return text
@@ -50,11 +54,11 @@ function getMessagePreview(message: QueuedMessageRow): string {
   const fileCount = message.fileAttachments?.length ?? 0
   const skillCount = message.skills?.length ?? 0
 
-  if (imageCount > 0) parts.push(`${imageCount} image${imageCount === 1 ? '' : 's'}`)
-  if (fileCount > 0) parts.push(`${fileCount} file${fileCount === 1 ? '' : 's'}`)
-  if (skillCount > 0) parts.push(`${skillCount} skill${skillCount === 1 ? '' : 's'}`)
+  if (imageCount > 0) parts.push(`${imageCount} ${t(imageCount === 1 ? 'image' : 'images')}`)
+  if (fileCount > 0) parts.push(`${fileCount} ${t(fileCount === 1 ? 'file' : 'files')}`)
+  if (skillCount > 0) parts.push(`${skillCount} ${t(skillCount === 1 ? 'skill' : 'skills')}`)
 
-  return parts.join(', ') || '(empty queued message)'
+  return parts.join(', ') || t('(empty queued message)')
 }
 </script>
 

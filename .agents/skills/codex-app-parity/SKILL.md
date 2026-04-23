@@ -146,6 +146,7 @@ until curl -fsS "http://127.0.0.1:$CDP_PORT/json/list" >/tmp/codex-cdp-list.json
 done
 ```
 
+If Codex.app is already running without CDP, `open -a "Codex" --args --remote-debugging-port=3434` usually does **not** enable CDP because Electron reuses the existing app instance. Restart Codex.app with the port enabled.
 Fallback only when a separate instance cannot be used: restart all Codex.app processes and launch the binary with `nohup`.
 
 ```bash
@@ -636,3 +637,37 @@ After each feature implementation session that uses this skill:
   - exposes a conversation snapshot shape `{ cwd, shell, buffer, truncated }`
   - emits renderer messages including `terminal-data`, `terminal-init-log`, `terminal-attached`, `terminal-exit`, and `terminal-error`
 - Web parity implementation should use `/codex-api/ws` and HTTP endpoints instead of Electron IPC, but preserve the same event names and snapshot shape where practical.
+- Web implementation lessons from screenshot review and edge-case tests:
+  - Keep the terminal panel outside the pending-request/composer `v-if` / `v-else` pair; otherwise the composer can disappear when the terminal is open.
+  - Collapse the mobile sidebar immediately on first render for direct thread routes; otherwise the drawer can cover terminal screenshots.
+  - Normalize PTY locale (`en_US.UTF-8` on macOS) and remove `TERMINFO` / `TERMINFO_DIRS` to avoid visible shell startup warnings.
+  - Restore executable permissions on `node-pty` `spawn-helper` at runtime when pnpm ignores native package build scripts.
+  - Unit-test terminal manager behavior through dependency injection instead of spawning real shells for every edge case.
+  - Edge cases worth preserving in tests: missing thread id rejection, cwd fallback, dimension clamping, 16 KiB buffer truncation, reattach init-log emission, shell-quoted cwd sync, new-session tab creation without killing previous PTYs, and close/exit snapshot cleanup.
+## Findings: Plugins Directory API Surface (2026-04-22)
+
+- Codex.app plugin directory UI lives in extracted renderer chunks named like:
+  - `plugins-page-*.js`
+  - `plugins-cards-grid-*.js`
+  - `plugins-settings-*.js`
+- Desktop copy and tab structure use a full “Skills & Apps” surface with Plugins, Apps, MCPs, and Skills tabs; plugin copy includes “Plugins make Codex work your way.”
+- Live `codex app-server generate-json-schema` exposes slash-style methods for this surface:
+  - `plugin/list`, `plugin/read`, `plugin/install`, `plugin/uninstall`
+  - `app/list`
+  - `mcpServerStatus/list`
+  - `config/mcpServer/reload`
+- Plugin list responses are grouped by marketplace; each plugin summary carries `id`, `name`, `installed`, `enabled`, `installPolicy`, `authPolicy`, `source`, and an optional `interface`.
+- Plugin detail responses include `summary`, `apps`, `skills`, and `mcpServers`. Install responses include `authPolicy` and `appsNeedingAuth`.
+- For web parity, feature-detect these methods through `/codex-api/meta/methods` and degrade gracefully when older Codex CLI versions do not expose them.
+
+## Findings: Plugin MCP Authentication (2026-04-23)
+
+- Codex.app MCP settings renders an `Authenticate` action when an MCP server `authStatus` is `notLoggedIn`.
+- The renderer starts login through app-server method `mcpServer/oauth/login` with `{ name }`; the response is `{ authorizationUrl }`.
+- Codex.app opens the returned URL in the browser via its `open-in-browser` bridge.
+- `mcpServer/oauth/login/completed` notifications carry `{ name, success, error? }`; after success, invalidate/refetch MCP status.
+- For plugin detail parity, bundled `mcpServers` from `plugin/read` should be cross-referenced with `mcpServerStatus/list` and display auth state:
+  - `oAuth` -> logged in
+  - `bearerToken` -> bearer token
+  - `notLoggedIn` -> login required + authenticate action
+  - `unsupported` -> auth unsupported

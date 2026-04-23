@@ -86,6 +86,7 @@ const searchRef = ref<HTMLInputElement | null>(null)
 const isOpen = ref(false)
 const searchQuery = ref('')
 const highlightIdx = ref(0)
+const { t } = useUiLanguage()
 
 const openDirection = computed(() => props.openDirection ?? 'down')
 const selected = computed(() => new Set(props.selectedValues))

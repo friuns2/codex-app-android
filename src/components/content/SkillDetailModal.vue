@@ -19,7 +19,7 @@
               <span class="sdm-owner">{{ skill.owner }}</span>
             </div>
           </div>
-          <button class="sdm-close" type="button" aria-label="Close" @click="$emit('close')">
+          <button class="sdm-close" type="button" :aria-label="t('Close')" @click="$emit('close')">
             <IconTablerX class="sdm-close-icon" />
           </button>
         </div>
@@ -65,6 +65,16 @@
             </button>
 
             <button
+              v-if="skill.installed && effectiveEnabled"
+              class="sdm-btn sdm-btn-primary"
+              type="button"
+              :disabled="isActing"
+              @click="onTry"
+            >
+              Try it!
+            </button>
+
+            <button
               v-if="skill.installed && skillDirPath"
               class="sdm-btn sdm-btn-secondary"
               type="button"
@@ -81,6 +91,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { useUiLanguage } from '../../composables/useUiLanguage'
 import IconTablerX from '../icons/IconTablerX.vue'
 
 export type HubSkill = {
@@ -108,12 +119,14 @@ const emit = defineEmits<{
   install: [skill: HubSkill]
   uninstall: [skill: HubSkill]
   'toggle-enabled': [skill: HubSkill, enabled: boolean]
+  try: [skill: HubSkill]
 }>()
 
 const localEnabled = ref<boolean | null>(null)
 const localDescription = ref('')
 const readmeContent = ref('')
 const isLoadingReadme = ref(false)
+const { t } = useUiLanguage()
 
 const effectiveEnabled = computed(() => localEnabled.value ?? props.skill.enabled ?? true)
 const isActing = computed(() => (props.isInstalling === true) || (props.isUninstalling === true))
@@ -190,6 +203,10 @@ function onToggleEnabled(): void {
   const next = !effectiveEnabled.value
   localEnabled.value = next
   emit('toggle-enabled', props.skill, next)
+}
+
+function onTry(): void {
+  emit('try', props.skill)
 }
 
 function onBrowseFiles(): void {

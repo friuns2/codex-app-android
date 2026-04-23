@@ -30,6 +30,7 @@ defineProps<{
 const emit = defineEmits<{
   'update:modelValue': [value: RuntimeMode]
 }>()
+const { t } = useUiLanguage()
 
 import { useI18n } from 'vue-i18n'
 

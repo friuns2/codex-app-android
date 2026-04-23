@@ -236,13 +236,13 @@
               </div>
               <div v-if="selectedProvider === 'openrouter'" class="sidebar-settings-row sidebar-settings-row--input">
                 <div class="sidebar-settings-provider-info">
-                  <span class="sidebar-settings-label">OpenRouter API key</span>
+                  <span class="sidebar-settings-label">{{ t('OpenRouter API key') }}</span>
                   <a
                     class="sidebar-settings-provider-link"
                     href="https://openrouter.ai/keys"
                     target="_blank"
                     rel="noopener noreferrer"
-                  >Get API key</a>
+                  >{{ t('Get API key') }}</a>
                 </div>
                 <div class="sidebar-settings-key-group">
                   <template v-if="freeModeHasCustomKey && !freeModeCustomKey">
@@ -251,7 +251,7 @@
                       class="sidebar-settings-key-clear"
                       type="button"
                       :disabled="freeModeCustomKeySaving"
-                      title="Remove custom key, use community keys"
+                      :title="t('Remove custom key, use community keys')"
                       @click="clearFreeModeCustomKey"
                     >&#x2715;</button>
                   </template>
@@ -260,7 +260,7 @@
                       v-model="freeModeCustomKey"
                       class="sidebar-settings-key-input"
                       type="password"
-                      placeholder="sk-or-v1-... (optional, uses free keys if empty)"
+                      :placeholder="t('sk-or-v1-... (optional, uses free keys if empty)')"
                       @keydown.enter="saveFreeModeCustomKey"
                     />
                     <button
@@ -268,12 +268,12 @@
                       type="button"
                       :disabled="freeModeCustomKeySaving || !freeModeCustomKey.trim()"
                       @click="saveFreeModeCustomKey"
-                    >{{ freeModeCustomKeySaving ? '...' : 'Set' }}</button>
+                    >{{ freeModeCustomKeySaving ? '...' : t('Set') }}</button>
                   </template>
                 </div>
                 <div class="sidebar-settings-row sidebar-settings-row--select" style="margin-top: 4px; padding: 0">
-                  <span class="sidebar-settings-label">API format</span>
-                  <div class="sidebar-settings-segmented" role="group" aria-label="OpenRouter API format">
+                  <span class="sidebar-settings-label">{{ t('API format') }}</span>
+                  <div class="sidebar-settings-segmented" role="group" :aria-label="t('OpenRouter API format')">
                     <button
                       type="button"
                       class="sidebar-settings-segmented-option"
@@ -297,20 +297,20 @@
               </div>
               <div v-if="selectedProvider === 'opencode-zen'" class="sidebar-settings-row sidebar-settings-row--input">
                 <div class="sidebar-settings-provider-info">
-                  <span class="sidebar-settings-label">OpenCode Zen API key</span>
+                  <span class="sidebar-settings-label">{{ t('OpenCode Zen API key') }}</span>
                   <a
                     class="sidebar-settings-provider-link"
                     href="https://opencode.ai/auth"
                     target="_blank"
                     rel="noopener noreferrer"
-                  >Get API key</a>
+                  >{{ t('Get API key') }}</a>
                 </div>
                 <div class="sidebar-settings-key-group">
                   <input
                     v-model="opencodeZenKey"
                     class="sidebar-settings-key-input"
                     type="password"
-                    placeholder="sk-..."
+                    :placeholder="t('sk-...')"
                     @keydown.enter="saveOpencodeZen"
                   />
                   <button
@@ -318,27 +318,27 @@
                     type="button"
                     :disabled="freeModeCustomKeySaving || !opencodeZenKey.trim()"
                     @click="saveOpencodeZen"
-                  >{{ freeModeCustomKeySaving ? '...' : 'Save' }}</button>
+                  >{{ freeModeCustomKeySaving ? '...' : t('Save') }}</button>
                 </div>
               </div>
               <div v-if="selectedProvider === 'custom'" class="sidebar-settings-row sidebar-settings-row--input">
-                <span class="sidebar-settings-label">Custom endpoint URL</span>
+                <span class="sidebar-settings-label">{{ t('Custom endpoint URL') }}</span>
                 <div class="sidebar-settings-key-group">
                   <input
                     v-model="customEndpointUrl"
                     class="sidebar-settings-key-input"
                     type="url"
-                    placeholder="https://api.example.com/v1"
+                    :placeholder="t('https://api.example.com/v1')"
                     @keydown.enter="saveCustomEndpoint"
                   />
                 </div>
-                <span class="sidebar-settings-label" style="margin-top: 4px">API key</span>
+                <span class="sidebar-settings-label" style="margin-top: 4px">{{ t('API key') }}</span>
                 <div class="sidebar-settings-key-group">
                   <input
                     v-model="customEndpointKey"
                     class="sidebar-settings-key-input"
                     type="password"
-                    placeholder="Bearer token (optional)"
+                    :placeholder="t('Bearer token (optional)')"
                     @keydown.enter="saveCustomEndpoint"
                   />
                   <button
@@ -346,11 +346,11 @@
                     type="button"
                     :disabled="freeModeCustomKeySaving || !customEndpointUrl.trim()"
                     @click="saveCustomEndpoint"
-                  >{{ freeModeCustomKeySaving ? '...' : 'Save' }}</button>
+                  >{{ freeModeCustomKeySaving ? '...' : t('Save') }}</button>
                 </div>
                 <div class="sidebar-settings-row sidebar-settings-row--select" style="margin-top: 4px; padding: 0">
-                  <span class="sidebar-settings-label">API format</span>
-                  <div class="sidebar-settings-segmented" role="group" aria-label="Custom endpoint API format">
+                  <span class="sidebar-settings-label">{{ t('API format') }}</span>
+                  <div class="sidebar-settings-segmented" role="group" :aria-label="t('Custom endpoint API format')">
                     <button
                       type="button"
                       class="sidebar-settings-segmented-option"
@@ -376,10 +376,10 @@
                   class="sidebar-settings-language-dropdown"
                   :model-value="dictationLanguage"
                   :options="dictationLanguageOptions"
-                  placeholder="Auto-detect"
+                  :placeholder="t('Auto-detect')"
                   open-direction="up"
                   :enable-search="true"
-                  search-placeholder="Search language..."
+                  :search-placeholder="t('Search language...')"
                   @update:model-value="onDictationLanguageChange"
                 />
               </div>
@@ -389,7 +389,7 @@
               </button>
               <div v-if="isTelegramConfigOpen" class="sidebar-settings-telegram-panel">
                 <label class="sidebar-settings-field">
-                  <span class="sidebar-settings-field-label">Bot token</span>
+                  <span class="sidebar-settings-field-label">{{ t('Bot token') }}</span>
                   <input
                     v-model="telegramBotTokenDraft"
                     class="sidebar-settings-input"
@@ -400,7 +400,7 @@
                   >
                 </label>
                 <label class="sidebar-settings-field">
-                  <span class="sidebar-settings-field-label">Allowed Telegram user IDs</span>
+                  <span class="sidebar-settings-field-label">{{ t('Allowed Telegram user IDs') }}</span>
                   <textarea
                     v-model="telegramAllowedUserIdsDraft"
                     class="sidebar-settings-textarea"
@@ -410,7 +410,7 @@
                   />
                 </label>
                 <div class="sidebar-settings-field-help">
-                  Put one Telegram user ID per line or separate them with commas. Use `*` to allow all Telegram users. Unauthorized users will see their own ID in the rejection message so they can copy it here.
+                  {{ t('Put one Telegram user ID per line or separate them with commas. Use `*` to allow all Telegram users. Unauthorized users will see their own ID in the rejection message so they can copy it here.') }}
                 </div>
                 <div v-if="telegramConfigError" class="sidebar-settings-telegram-error">
                   {{ telegramConfigError }}
@@ -422,7 +422,7 @@
                     :disabled="isTelegramSaving"
                     @click="saveTelegramConfig"
                   >
-                    {{ isTelegramSaving ? 'Saving…' : 'Save Telegram config' }}
+                    {{ isTelegramSaving ? t('Saving…') : t('Save Telegram config') }}
                   </button>
                 </div>
               </div>
@@ -445,7 +445,7 @@
               <div class="sidebar-settings-rate-limits">
                 <RateLimitStatus :snapshots="accountRateLimitSnapshots" />
               </div>
-              <div class="sidebar-settings-build-label" aria-label="Worktree name and version">
+              <div class="sidebar-settings-build-label" :aria-label="t('Worktree name and version')">
                 WT {{ worktreeName }} · v{{ appVersion }}
               </div>
             </div>
@@ -468,6 +468,7 @@
 
     <template #content>
       <section class="content-root" :style="contentStyle">
+        <span v-if="isVirtualKeyboardOpen" class="content-keyboard-spacer" aria-hidden="true" />
         <ContentHeader :title="contentTitle">
           <template #leading>
             <SidebarThreadControls
@@ -481,7 +482,7 @@
           </template>
           <template #actions>
             <button
-              v-if="route.name === 'thread' && selectedThreadId"
+              v-if="canShowTerminalToggle"
               class="content-header-terminal-toggle"
               type="button"
               :aria-pressed="selectedThreadTerminalOpen"
@@ -500,7 +501,7 @@
               :options="contentHeaderBranchDropdownOptions"
               :disabled="isLoadingThreadBranches || isSwitchingThreadBranch"
               :enable-search="true"
-              search-placeholder="Search branches..."
+              :search-placeholder="t('Search branches...')"
               @update:model-value="onSelectContentHeaderBranch"
             />
           </template>
@@ -508,7 +509,12 @@
 
         <section class="content-body">
           <template v-if="isSkillsRoute">
-            <SkillsHub @skills-changed="onSkillsChanged" />
+            <DirectoryHub
+              :cwd="directoryCwd"
+              :thread-id="routeThreadId"
+              @skills-changed="onSkillsChanged"
+              @try-item="onTryDirectoryItem"
+            />
           </template>
           <template v-else-if="isFilesRoute">
             <div class="content-grid">
@@ -520,9 +526,9 @@
               <div class="new-thread-empty">
                 <p class="new-thread-hero">{{ $t('home.letsBuild') }}</p>
                 <ComposerDropdown class="new-thread-folder-dropdown" :model-value="newThreadCwd"
-                  :options="newThreadFolderOptions" placeholder="Choose folder"
+                  :options="newThreadFolderOptions" :placeholder="t('Choose folder')"
                   :enable-search="true"
-                  search-placeholder="Quick search project"
+                  :search-placeholder="t('Quick search project')"
                   :disabled="false" @update:model-value="onSelectNewThreadFolder" />
                 <p v-if="newThreadCwd" class="new-thread-folder-selected" :title="newThreadCwd">
                   {{ $t('home.selectedFolder', { path: newThreadCwd }) }}
@@ -537,17 +543,17 @@
                 </div>
                 <Teleport to="body">
                   <div v-if="isExistingFolderPickerOpen" class="new-thread-open-folder-overlay" @click.self="onCloseExistingFolderPanel">
-                    <div class="new-thread-open-folder" role="dialog" aria-modal="true" aria-label="Select folder" @keydown.esc.prevent="onCloseExistingFolderPanel">
+                    <div class="new-thread-open-folder" role="dialog" aria-modal="true" :aria-label="t('Select folder')" @keydown.esc.prevent="onCloseExistingFolderPanel">
                       <div class="new-thread-open-folder-header">
-                        <p class="new-thread-open-folder-title">Select folder</p>
+                        <p class="new-thread-open-folder-title">{{ t('Select folder') }}</p>
                         <button class="new-thread-open-folder-close" type="button" @click="onCloseExistingFolderPanel">
-                          Cancel
+                          {{ t('Cancel') }}
                         </button>
                       </div>
-                      <p class="new-thread-open-folder-label">Current folder</p>
+                      <p class="new-thread-open-folder-label">{{ t('Current folder') }}</p>
                       <div class="new-thread-open-folder-current">
-                        <p class="new-thread-open-folder-path" :title="existingFolderBrowsePath || 'Unavailable'">
-                          {{ existingFolderBrowsePath || 'Unavailable' }}
+                        <p class="new-thread-open-folder-path" :title="existingFolderBrowsePath || t('Unavailable')">
+                          {{ existingFolderBrowsePath || t('Unavailable') }}
                         </p>
                         <button
                           class="new-thread-folder-action new-thread-folder-action-primary"
@@ -555,7 +561,7 @@
                           :disabled="!existingFolderBrowsePath || !!existingFolderError || isExistingFolderLoading || isOpeningExistingFolder"
                           @click="onConfirmExistingFolder()"
                         >
-                          {{ isOpeningExistingFolder ? 'Opening…' : 'Open' }}
+                          {{ isOpeningExistingFolder ? t('Opening…') : t('Open') }}
                         </button>
                       </div>
                       <div class="new-thread-open-folder-actions">
@@ -566,7 +572,7 @@
                             type="checkbox"
                             @change="onToggleHiddenFolders"
                           />
-                          <span>Show hidden folders</span>
+                          <span>{{ t('Show hidden folders') }}</span>
                         </label>
                         <button
                           class="new-thread-folder-action"
@@ -576,7 +582,7 @@
                           :disabled="!existingFolderBrowsePath || isExistingFolderLoading || isOpeningExistingFolder || isCreatingFolder || (!!existingFolderError && !isCreateFolderOpen)"
                           @click="onOpenCreateFolderPanel"
                         >
-                          New folder
+                          {{ t('New folder') }}
                         </button>
                       </div>
                       <div v-if="isCreateFolderOpen" class="new-thread-open-folder-create">
@@ -586,7 +592,7 @@
                             v-model="createFolderDraft"
                             class="new-thread-open-folder-create-input"
                             type="text"
-                            placeholder="Folder name"
+                            :placeholder="t('Folder name')"
                             @keydown.enter.prevent="onCreateFolder"
                             @keydown.esc.prevent="onCloseCreateFolderPanel"
                           />
@@ -606,7 +612,7 @@
                         v-model="existingFolderFilter"
                         class="new-thread-open-folder-filter"
                         type="text"
-                        placeholder="Filter folders..."
+                        :placeholder="t('Filter folders...')"
                         @keydown.esc.prevent="onCloseExistingFolderPanel"
                       />
                       <div v-if="existingFolderError" class="new-thread-open-folder-error-actions">
@@ -617,12 +623,12 @@
                           :disabled="isExistingFolderLoading || isOpeningExistingFolder"
                           @click="onRetryExistingFolderBrowse"
                         >
-                          Retry
+                          {{ t('Retry') }}
                         </button>
                       </div>
-                      <p v-if="isExistingFolderLoading" class="new-thread-open-folder-status">Loading folders…</p>
+                      <p v-if="isExistingFolderLoading" class="new-thread-open-folder-status">{{ t('Loading folders…') }}</p>
                       <p v-else-if="!existingFolderError && existingFolderFilteredEntries.length === 0" class="new-thread-open-folder-status">
-                        {{ existingFolderFilter.trim() ? 'No folders match this filter.' : 'No subfolders found here.' }}
+                        {{ existingFolderFilter.trim() ? t('No folders match this filter.') : t('No subfolders found here.') }}
                       </p>
                       <ul v-else-if="existingFolderFilteredEntries.length > 0" class="new-thread-open-folder-list">
                         <li v-for="entry in existingFolderFilteredEntries" :key="entry.key" class="new-thread-open-folder-item">
@@ -642,7 +648,7 @@
                             :disabled="isExistingFolderLoading || isOpeningExistingFolder"
                             @click="onConfirmExistingFolder(entry.path)"
                           >
-                            Open
+                            {{ t('Open') }}
                           </button>
                         </li>
                       </ul>
@@ -654,24 +660,24 @@
                   v-model="newThreadRuntime"
                 />
                 <div v-if="newThreadRuntime === 'worktree'" class="new-thread-branch-select">
-                  <p class="new-thread-branch-select-label">Base branch</p>
+                  <p class="new-thread-branch-select-label">{{ t('Base branch') }}</p>
                   <ComposerDropdown
                     class="new-thread-branch-dropdown"
                     :model-value="newWorktreeBaseBranch"
                     :options="newWorktreeBranchDropdownOptions"
-                    placeholder="Select branch"
+                    :placeholder="t('Select branch')"
                     :enable-search="true"
-                    search-placeholder="Search branches..."
+                    :search-placeholder="t('Search branches...')"
                     :disabled="isLoadingWorktreeBranches || newWorktreeBranchDropdownOptions.length === 0"
                     @update:model-value="onSelectNewWorktreeBranch"
                   />
                   <p class="new-thread-branch-select-help">
                     {{
                       isLoadingWorktreeBranches
-                        ? 'Loading branches…'
+                        ? t('Loading branches…')
                         : selectedWorktreeBranchLabel
-                          ? `New worktree branch will start from ${selectedWorktreeBranchLabel}.`
-                          : 'No Git branches found for this folder.'
+                          ? t('New worktree branch will start from {branch}.', { branch: selectedWorktreeBranchLabel })
+                          : t('No Git branches found for this folder.')
                     }}
                   </p>
                 </div>
@@ -690,7 +696,7 @@
                 </div>
                 <div v-if="showGithubTrendingProjects" class="new-thread-trending">
                   <div class="new-thread-trending-header">
-                    <p class="new-thread-trending-title">Trending GitHub projects</p>
+                    <p class="new-thread-trending-title">{{ t('Trending GitHub projects') }}</p>
                     <ComposerDropdown
                       class="new-thread-trending-scope-dropdown"
                       :model-value="githubTipsScope"
@@ -698,9 +704,9 @@
                       @update:model-value="onGithubTipsScopeChange"
                     />
                   </div>
-                  <p v-if="isTrendingProjectsLoading" class="new-thread-trending-empty">Loading trending projects...</p>
+                  <p v-if="isTrendingProjectsLoading" class="new-thread-trending-empty">{{ t('Loading trending projects...') }}</p>
                   <p v-else-if="trendingProjects.length === 0" class="new-thread-trending-empty">
-                    Trending repos are unavailable right now.
+                    {{ t('Trending repos are unavailable right now.') }}
                   </p>
                   <div v-else class="new-thread-trending-list">
                     <button
@@ -722,7 +728,7 @@
                       </span>
                       <span class="new-thread-trending-tip-meta">{{ formatTrendingTipMeta(project) }}</span>
                       <span class="new-thread-trending-tip-description">
-                        {{ project.description || 'No description available.' }}
+                        {{ project.description || t('No description available.') }}
                       </span>
                     </button>
                   </div>
@@ -730,6 +736,13 @@
               </div>
 
               <div class="composer-with-queue">
+                <ThreadTerminalPanel
+                  v-if="homeTerminalOpen && composerCwd"
+                  class="content-thread-terminal-panel"
+                  :thread-id="composerThreadContextId"
+                  :cwd="composerCwd"
+                  @hide="homeTerminalOpen = false"
+                />
                 <ThreadComposer ref="homeThreadComposerRef" :active-thread-id="composerThreadContextId"
                   :cwd="composerCwd"
                   :collaboration-modes="availableCollaborationModes"
@@ -786,13 +799,6 @@
                     @steer="steerQueuedMessage"
                     @delete="removeQueuedMessage"
                   />
-                  <ThreadPendingRequestPanel
-                    v-if="selectedThreadPendingRequest"
-                    :request="selectedThreadPendingRequest"
-                    :request-count="selectedThreadServerRequests.length"
-                    :has-queue-above="selectedThreadQueuedMessages.length > 0"
-                    @respond-server-request="onRespondServerRequest"
-                  />
                   <ThreadTerminalPanel
                     v-if="selectedThreadTerminalOpen && selectedThreadId && composerCwd"
                     class="content-thread-terminal-panel"
@@ -800,7 +806,17 @@
                     :cwd="composerCwd"
                     @hide="setThreadTerminalOpen(selectedThreadId, false)"
                   />
-                  <ThreadComposer v-else ref="threadComposerRef" :active-thread-id="composerThreadContextId"
+                  <ThreadPendingRequestPanel
+                    v-if="selectedThreadPendingRequest"
+                    :request="selectedThreadPendingRequest"
+                    :request-count="selectedThreadServerRequests.length"
+                    :has-queue-above="selectedThreadQueuedMessages.length > 0"
+                    @respond-server-request="onRespondServerRequest"
+                  />
+                  <ThreadComposer
+                    v-else
+                    ref="threadComposerRef"
+                    :active-thread-id="composerThreadContextId"
                     :cwd="composerCwd"
                     :collaboration-modes="availableCollaborationModes"
                     :selected-collaboration-mode="selectedCollaborationMode"
@@ -863,6 +879,7 @@ import IconTablerTerminal from './components/icons/IconTablerTerminal.vue'
 import IconTablerX from './components/icons/IconTablerX.vue'
 import { useDesktopState } from './composables/useDesktopState'
 import { useMobile } from './composables/useMobile'
+import { useUiLanguage } from './composables/useUiLanguage'
 import {
   checkoutGitBranch,
   configureTelegramBot,
@@ -897,6 +914,7 @@ const SkillsHub = defineAsyncComponent(() => import('./components/content/Skills
 const ConfigEditorModal = defineAsyncComponent(() => import('./components/content/ConfigEditorModal.vue'))
 const FileManager = defineAsyncComponent(() => import('./components/content/FileManager.vue'))
 const FileManagerPanel = defineAsyncComponent(() => import('./components/content/FileManagerPanel.vue'))
+const DirectoryHub = defineAsyncComponent(() => import('./components/content/DirectoryHub.vue'))
 
 const SIDEBAR_COLLAPSED_STORAGE_KEY = 'codex-web-local.sidebar-collapsed.v1'
 const ACCOUNTS_SECTION_COLLAPSED_STORAGE_KEY = 'codex-web-local.accounts-section-collapsed.v1'
@@ -909,13 +927,19 @@ const SETTINGS_HELP = {
   chatWidth: 'Choose how wide the conversation column and composer can grow on desktop screens.',
   dictationClickToToggle: 'Use click-to-start and click-to-stop dictation instead of hold-to-talk.',
   dictationAutoSend: 'Automatically send transcribed dictation when recording stops.',
-
   githubTrendingProjects: 'Show or hide GitHub trending project cards on the new thread screen.',
   dictationLanguage: 'Choose transcription language or keep auto-detect.',
   language: 'Switch the interface language between English and Chinese.',
 } as const
 
 type ChatWidthMode = 'standard' | 'wide' | 'extra-wide'
+
+type DirectoryTryItemPayload = {
+  kind: 'app' | 'plugin' | 'skill'
+  name: string
+  displayName: string
+  skillPath?: string
+}
 
 type ChatWidthPreset = {
   label: string
@@ -1110,6 +1134,7 @@ const { isMobile } = useMobile()
 const homeThreadComposerRef = ref<ThreadComposerExposed | null>(null)
 const threadComposerRef = ref<ThreadComposerExposed | null>(null)
 const threadConversationRef = ref<{ jumpToLatest: () => void } | null>(null)
+const homeTerminalOpen = ref(false)
 const trendingProjects = ref<GithubTrendingProject[]>([])
 const isTrendingProjectsLoading = ref(false)
 const githubTipsScope = ref<GithubTipsScope>('trending-daily')
@@ -1223,6 +1248,8 @@ const telegramStatus = ref<TelegramStatus>({
 const mobileHiddenAtMs = ref<number | null>(null)
 const mobileResumeReloadTriggered = ref(false)
 const mobileResumeSyncInProgress = ref(false)
+const visualViewportHeight = ref(typeof window !== 'undefined' ? window.visualViewport?.height ?? window.innerHeight : 0)
+const layoutViewportHeight = ref(typeof window !== 'undefined' ? window.innerHeight : 0)
 let accountStatePollTimer: number | null = null
 let isAccountStatePollInFlight = false
 let existingFolderBrowseRequestId = 0
@@ -1280,6 +1307,19 @@ const composerCwd = computed(() => {
   if (isHomeRoute.value) return newThreadCwd.value.trim()
   return selectedThread.value?.cwd?.trim() ?? ''
 })
+const canShowTerminalToggle = computed(() => (
+  (isHomeRoute.value && composerCwd.value.length > 0) ||
+  (route.name === 'thread' && selectedThreadId.value.length > 0)
+))
+const isComposerTerminalOpen = computed(() => (
+  isHomeRoute.value ? homeTerminalOpen.value : selectedThreadTerminalOpen.value
+))
+const isVirtualKeyboardOpen = computed(() => {
+  if (!isMobile.value) return false
+  if (visualViewportHeight.value <= 0 || layoutViewportHeight.value <= 0) return false
+  return layoutViewportHeight.value - visualViewportHeight.value > 120
+})
+const directoryCwd = computed(() => selectedThread.value?.cwd?.trim() ?? newThreadCwd.value.trim())
 const isSelectedThreadInProgress = computed(() => !isHomeRoute.value && selectedThread.value?.inProgress === true)
 const showThreadContextBadge = computed(() => !isHomeRoute.value && !isSkillsRoute.value && !isFilesRoute.value && selectedThreadId.value.trim().length > 0)
 const isAccountSwitchBlocked = computed(() =>
@@ -1464,12 +1504,12 @@ const existingFolderFilteredEntries = computed(() => {
 })
 const darkModeMediaQuery = typeof window !== 'undefined' ? window.matchMedia('(prefers-color-scheme: dark)') : null
 const githubTipsScopeOptions = computed<Array<{ value: GithubTipsScope; label: string }>>(() => [
-  { value: 'search-daily', label: 'Search daily' },
-  { value: 'search-weekly', label: 'Search weekly' },
-  { value: 'search-monthly', label: 'Search monthly' },
-  { value: 'trending-daily', label: 'Trending daily' },
-  { value: 'trending-weekly', label: 'Trending weekly' },
-  { value: 'trending-monthly', label: 'Trending monthly' },
+  { value: 'search-daily', label: t('Search daily') },
+  { value: 'search-weekly', label: t('Search weekly') },
+  { value: 'search-monthly', label: t('Search monthly') },
+  { value: 'trending-daily', label: t('Trending daily') },
+  { value: 'trending-weekly', label: t('Trending weekly') },
+  { value: 'trending-monthly', label: t('Trending monthly') },
 ])
 const chatWidthLabel = computed(() => {
   const mode = chatWidth.value
@@ -1488,16 +1528,17 @@ const contentStyle = computed(() => {
   return {
     '--chat-column-max': preset.columnMax,
     '--chat-card-max': preset.cardMax,
+    '--visual-viewport-height': visualViewportHeight.value > 0 ? `${visualViewportHeight.value}px` : '100dvh',
   }
 })
 const telegramStatusText = computed(() => {
   if (!telegramStatus.value.configured) return t('settings.notConfigured')
   const base = telegramStatus.value.active ? 'Online' : t('settings.configured')
   const allowlist = telegramStatus.value.allowAllUsers
-    ? 'allow all users'
-    : `${telegramStatus.value.allowedUsers} allowed user(s)`
-  const mapped = `${telegramStatus.value.mappedChats} chat(s), ${telegramStatus.value.mappedThreads} thread(s), ${allowlist}`
-  const error = telegramStatus.value.lastError ? `, error: ${telegramStatus.value.lastError}` : ''
+    ? t('allow all users')
+    : `${telegramStatus.value.allowedUsers} ${t('allowed user(s)')}`
+  const mapped = `${telegramStatus.value.mappedChats} ${t('chat(s)')}, ${telegramStatus.value.mappedThreads} ${t('thread(s)')}, ${allowlist}`
+  const error = telegramStatus.value.lastError ? `, ${t('error')}: ${telegramStatus.value.lastError}` : ''
   return `${base}, ${mapped}${error}`
 })
 
@@ -1507,6 +1548,10 @@ onMounted(() => {
   document.addEventListener('visibilitychange', onDocumentVisibilityChange)
   window.addEventListener('pageshow', onWindowPageShow)
   window.addEventListener('focus', onWindowFocus)
+  window.addEventListener('resize', updateVisualViewportState)
+  window.visualViewport?.addEventListener('resize', updateVisualViewportState)
+  window.visualViewport?.addEventListener('scroll', updateVisualViewportState)
+  updateVisualViewportState()
   applyDarkMode()
   darkModeMediaQuery?.addEventListener('change', applyDarkMode)
   void initialize()
@@ -1527,6 +1572,9 @@ onUnmounted(() => {
   document.removeEventListener('visibilitychange', onDocumentVisibilityChange)
   window.removeEventListener('pageshow', onWindowPageShow)
   window.removeEventListener('focus', onWindowFocus)
+  window.removeEventListener('resize', updateVisualViewportState)
+  window.visualViewport?.removeEventListener('resize', updateVisualViewportState)
+  window.visualViewport?.removeEventListener('scroll', updateVisualViewportState)
   darkModeMediaQuery?.removeEventListener('change', applyDarkMode)
   if (accountStatePollTimer !== null) {
     window.clearInterval(accountStatePollTimer)
@@ -1538,6 +1586,12 @@ onUnmounted(() => {
   }
   stopPolling()
 })
+
+function updateVisualViewportState(): void {
+  if (typeof window === 'undefined') return
+  layoutViewportHeight.value = window.innerHeight
+  visualViewportHeight.value = window.visualViewport?.height ?? window.innerHeight
+}
 
 watch(sidebarSearchQuery, (value) => {
   const query = value.trim()
@@ -1631,11 +1685,11 @@ async function saveTelegramConfig(): Promise<void> {
   const botToken = telegramBotTokenDraft.value.trim()
   const allowedUserIds = parseTelegramAllowedUserIdsInput(telegramAllowedUserIdsDraft.value)
   if (!botToken) {
-    telegramConfigError.value = 'Telegram bot token is required.'
+    telegramConfigError.value = t('Telegram bot token is required.')
     return
   }
   if (allowedUserIds.length === 0) {
-    telegramConfigError.value = 'At least one allowed Telegram user ID or * is required.'
+    telegramConfigError.value = t('At least one allowed Telegram user ID or * is required.')
     return
   }
 
@@ -1648,9 +1702,9 @@ async function saveTelegramConfig(): Promise<void> {
       refreshTelegramConfig(),
       refreshTelegramStatus(),
     ])
-    window.alert('Telegram bot configured. Only allowlisted Telegram users can use the bridge.')
+    window.alert(t('Telegram bot configured. Only allowlisted Telegram users can use the bridge.'))
   } catch (error) {
-    telegramConfigError.value = error instanceof Error ? error.message : 'Failed to connect Telegram bot'
+    telegramConfigError.value = error instanceof Error ? error.message : t('Failed to connect Telegram bot')
     void refreshTelegramStatus()
   } finally {
     isTelegramSaving.value = false
@@ -1700,7 +1754,7 @@ function shortAccountId(accountId: string): string {
 }
 
 function formatAccountMeta(account: UiAccountEntry): string {
-  const segments = [account.planType || 'unknown']
+  const segments = [account.planType || t('unknown')]
   if (account.authMode) {
     segments.unshift(account.authMode)
   }
@@ -1782,7 +1836,7 @@ function formatResetDateCompact(resetsAt: number | null): string {
 
 function formatAccountQuota(account: UiAccountEntry): string {
   if (isAccountUnavailable(account)) {
-    return account.quotaError || '402 Payment Required'
+    return account.quotaError || t('402 Payment Required')
   }
   const quota = account.quotaSnapshot
   const window = pickWeeklyQuotaWindow(account)
@@ -1792,34 +1846,34 @@ function formatAccountQuota(account: UiAccountEntry): string {
     const remainingPercent = Math.max(0, Math.min(100, 100 - Math.round(displayWindow.usedPercent)))
     const refreshDate = formatResetDateCompact(displayWindow.resetsAt)
     return refreshDate
-      ? `${remainingPercent}% weekly remaining · ${refreshDate}`
-      : `${remainingPercent}% weekly remaining`
+      ? `${remainingPercent}% ${t('weekly remaining')} · ${refreshDate}`
+      : `${remainingPercent}% ${t('weekly remaining')}`
   }
   if (quota?.credits?.unlimited) {
-    return 'Unlimited credits'
+    return t('Unlimited credits')
   }
   if (quota?.credits?.hasCredits && quota.credits.balance) {
-    return `${quota.credits.balance} credits`
+    return `${quota.credits.balance} ${t('credits')}`
   }
   if (account.quotaStatus === 'loading') {
-    return 'Loading quota…'
+    return t('Loading quota…')
   }
   if (account.quotaStatus === 'error') {
-    return account.quotaError || 'Quota unavailable'
+    return account.quotaError || t('Quota unavailable')
   }
   if (account.quotaStatus === 'ready' || account.quotaStatus === 'idle') {
-    return 'Quota unavailable'
+    return t('Quota unavailable')
   }
-  return 'Fetching account details…'
+  return t('Fetching account details…')
 }
 
 function buildAccountTitle(account: UiAccountEntry): string {
   return [
-    account.email || 'Account',
+    account.email || t('Account'),
     formatAccountMeta(account),
-    isAccountUnavailable(account) ? 'Unavailable account' : null,
+    isAccountUnavailable(account) ? t('Unavailable account') : null,
     formatAccountQuota(account),
-    `Workspace ${account.accountId}`,
+    `${t('Workspace')} ${account.accountId}`,
   ].filter(Boolean).join('\n')
 }
 
@@ -1835,7 +1889,7 @@ async function loadAccountsState(options: { silent?: boolean } = {}): Promise<vo
     }
   } catch (error) {
     if (options.silent === true) return
-    accountActionError.value = error instanceof Error ? error.message : 'Failed to load accounts'
+    accountActionError.value = error instanceof Error ? error.message : t('Failed to load accounts')
   }
 }
 
@@ -1854,7 +1908,7 @@ async function onRefreshAccounts(): Promise<void> {
       includeSelectedThreadMessages: true,
     })
   } catch (error) {
-    accountActionError.value = error instanceof Error ? error.message : 'Failed to refresh accounts'
+    accountActionError.value = error instanceof Error ? error.message : t('Failed to refresh accounts')
   } finally {
     isRefreshingAccounts.value = false
   }
@@ -1863,7 +1917,7 @@ async function onRefreshAccounts(): Promise<void> {
 async function onSwitchAccount(accountId: string): Promise<void> {
   if (isSwitchingAccounts.value || isRefreshingAccounts.value) return
   if (isAccountSwitchBlocked.value) {
-    accountActionError.value = 'Finish the current turn and pending requests before switching accounts.'
+    accountActionError.value = t('Finish the current turn and pending requests before switching accounts.')
     return
   }
   accountActionError.value = ''
@@ -1884,7 +1938,7 @@ async function onSwitchAccount(accountId: string): Promise<void> {
     })
     void loadAccountsState({ silent: true })
   } catch (error) {
-    accountActionError.value = error instanceof Error ? error.message : 'Failed to switch account'
+    accountActionError.value = error instanceof Error ? error.message : t('Failed to switch account')
   } finally {
     isSwitchingAccounts.value = false
   }
@@ -1899,7 +1953,7 @@ async function onRemoveAccount(accountId: string): Promise<void> {
     return
   }
   if (targetAccount.isActive && isAccountSwitchBlocked.value) {
-    accountActionError.value = 'Finish the current turn and pending requests before removing the active account.'
+    accountActionError.value = t('Finish the current turn and pending requests before removing the active account.')
     return
   }
 
@@ -1919,7 +1973,7 @@ async function onRemoveAccount(accountId: string): Promise<void> {
     }
     void loadAccountsState({ silent: true })
   } catch (error) {
-    accountActionError.value = error instanceof Error ? error.message : 'Failed to remove account'
+    accountActionError.value = error instanceof Error ? error.message : t('Failed to remove account')
   } finally {
     removingAccountId.value = ''
   }
@@ -2061,8 +2115,22 @@ function onWindowKeyDown(event: KeyboardEvent): void {
   }
   if (key === 'j' && route.name === 'thread' && selectedThreadId.value) {
     event.preventDefault()
-    toggleSelectedThreadTerminal()
+    toggleComposerTerminal()
+    return
   }
+  if (key === 'j' && isHomeRoute.value && composerCwd.value) {
+    event.preventDefault()
+    toggleComposerTerminal()
+  }
+}
+
+function toggleComposerTerminal(): void {
+  if (isHomeRoute.value) {
+    if (!composerCwd.value) return
+    homeTerminalOpen.value = !homeTerminalOpen.value
+    return
+  }
+  toggleSelectedThreadTerminal()
 }
 
 function onDocumentPointerDown(event: PointerEvent): void {
@@ -3027,7 +3095,7 @@ function loadDictationLanguagePref(): string {
 }
 
 function buildDictationLanguageOptions(): Array<{ value: string; label: string }> {
-  const options: Array<{ value: string; label: string }> = [{ value: 'auto', label: 'Auto-detect' }]
+  const options: Array<{ value: string; label: string }> = [{ value: 'auto', label: t('Auto-detect') }]
   const seen = new Set<string>(['auto'])
   function formatLanguageLabel(value: string): string {
     const languageName = WHISPER_LANGUAGES[value] || value
@@ -3336,7 +3404,7 @@ watch(isMobile, (mobile) => {
   if (mobile && !isSidebarCollapsed.value) {
     setSidebarCollapsed(true)
   }
-})
+}, { immediate: true })
 
 async function submitFirstMessageForNewThread(
   text: string,
@@ -3350,8 +3418,8 @@ async function submitFirstMessageForNewThread(
     if (newThreadRuntime.value === 'worktree') {
       worktreeInitStatus.value = {
         phase: 'running',
-        title: 'Creating worktree',
-        message: 'Creating a worktree and running setup.',
+        title: t('Creating worktree'),
+        message: t('Creating a worktree and running setup.'),
       }
       try {
         const created = await createWorktree(newThreadCwd.value, newWorktreeBaseBranch.value)
@@ -3361,8 +3429,8 @@ async function submitFirstMessageForNewThread(
       } catch {
         worktreeInitStatus.value = {
           phase: 'error',
-          title: 'Worktree setup failed',
-          message: 'Unable to create worktree. Try again or switch to Local project.',
+          title: t('Worktree setup failed'),
+          message: t('Unable to create worktree. Try again or switch to Local project.'),
         }
         return
       }
@@ -3373,6 +3441,28 @@ async function submitFirstMessageForNewThread(
     scheduleMobileConversationJumpToLatest()
   } catch {
     // Error is already reflected in state.
+  }
+}
+
+function buildDirectoryTryPrompt(payload: DirectoryTryItemPayload): string {
+  const label = payload.displayName.trim() || payload.name.trim()
+  const itemType = payload.kind === 'skill' ? 'skill' : payload.kind === 'plugin' ? 'plugin' : 'app'
+  return `Test ${label} ${itemType}. Give me a list of what it can do and one useful example.`
+}
+
+async function onTryDirectoryItem(payload: DirectoryTryItemPayload): Promise<void> {
+  const text = buildDirectoryTryPrompt(payload)
+  const skills = payload.kind === 'skill' && payload.skillPath
+    ? [{ name: payload.name, path: payload.skillPath }]
+    : []
+  try {
+    const targetCwd = directoryCwd.value.trim() || composerCwd.value.trim()
+    const threadId = await sendMessageToNewThread(text, targetCwd, [], skills, [])
+    if (!threadId) return
+    await router.replace({ name: 'thread', params: { threadId } })
+    scheduleMobileConversationJumpToLatest()
+  } catch {
+    // Error is already reflected in shared thread state.
   }
 }
 

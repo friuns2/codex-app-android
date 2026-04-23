@@ -406,6 +406,7 @@ import {
   type RpcNotification,
 } from '../../api/codexGateway'
 import { useMobile } from '../../composables/useMobile'
+import { useUiLanguage } from '../../composables/useUiLanguage'
 import type {
   UiReviewAction,
   UiReviewFinding,

@@ -40,6 +40,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useUiLanguage } from '../../composables/useUiLanguage'
 import IconTablerFolder from '../icons/IconTablerFolder.vue'
 
 const props = defineProps<{
@@ -58,6 +59,7 @@ const props = defineProps<{
 }>()
 
 defineEmits<{ select: [skill: unknown] }>()
+const { t } = useUiLanguage()
 
 const skillDirPath = computed(() => {
   const p = props.skill.path

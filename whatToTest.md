@@ -15,6 +15,17 @@
 6. Confirm the printed path matches the thread/project working directory.
 7. Type `echo terminal-ok` and press Enter.
 8. Confirm `terminal-ok` appears in the terminal output.
+9. Choose `npm run dev` from the `Run...` quick-command menu.
+10. Confirm the command is submitted to the active terminal.
+11. Choose `Add command...` from the `Run...` menu.
+12. Enter a custom command in the prompt and confirm it runs immediately.
+
+### New Chat Flow
+1. Open the new-chat screen.
+2. Choose or confirm a working folder.
+3. Click the terminal button in the top-right header.
+4. Confirm the terminal opens below the new-chat composer before a thread exists.
+5. Run `pwd` and confirm it matches the selected folder.
 
 ### Snapshot API
 1. With the terminal session still running, request:
@@ -27,10 +38,14 @@
 2. Confirm recent output is restored.
 3. Refresh the browser and reopen the same thread.
 4. Confirm the terminal can reattach and continue accepting input.
-5. Click `New terminal`.
-6. Confirm the active terminal session is replaced.
-7. Click `Close`.
-8. Confirm the PTY exits and the drawer hides.
+5. Use the `Run...` menu several times.
+6. Confirm only the five most-used/recent commands are shown before `Add command...`.
+7. Click `New`.
+8. Confirm a second terminal tab appears and becomes active.
+9. Click the first terminal tab.
+10. Confirm its previous output is restored.
+11. Click `Close`.
+12. Confirm the active PTY exits and the drawer hides only when the last tab is closed.
 
 ### Layout
 1. Resize the desktop browser window.
@@ -40,3 +55,5 @@
 
 ### Expected Result
 - Terminal behavior matches Codex.app-style integrated terminal basics: per-thread terminal, project-scoped cwd, header toggle, keyboard shortcut, recent output buffer, and readable snapshot endpoint.
+- Quick-command menu submits common project commands to the active terminal without replacing the session.
+- Custom quick commands are added via the `Run...` menu prompt and sorted by most-used/recent history.

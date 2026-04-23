@@ -15,7 +15,7 @@
         </p>
 
         <section class="thread-pending-request-approval">
-          <div class="thread-pending-request-options" role="radiogroup" aria-label="Approval choices">
+          <div class="thread-pending-request-options" role="radiogroup" :aria-label="t('Approval choices')">
             <button
               v-for="(option, index) in approvalOptions"
               :key="option.id"
@@ -250,6 +250,7 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { UiServerRequest, UiServerRequestReply } from '../../types/codex'
+import { useUiLanguage } from '../../composables/useUiLanguage'
 
 type ApprovalDecision = 'accept' | 'acceptForSession' | 'decline' | 'cancel'
 
@@ -300,6 +301,7 @@ const toolQuestionAnswers = ref<Record<string, string>>({})
 const toolQuestionOtherAnswers = ref<Record<string, string>>({})
 const mcpElicitationAnswers = ref<Record<string, string | number | boolean | string[] | null>>({})
 const mcpElicitationValidationError = ref('')
+const { t } = useUiLanguage()
 
 function asRecord(value: unknown): Record<string, unknown> | null {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
