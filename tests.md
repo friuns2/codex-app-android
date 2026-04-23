@@ -236,6 +236,7 @@ This file tracks manual regression and feature verification steps.
 
 #### Expected Results
 - The selected thread uses exactly one `thread/resume` and zero `thread/read` calls during initial load.
+- Direct thread route hydration has one owner and does not trigger duplicate selected-thread message loads from route watchers.
 - Thread history loading is not blocked by waiting for `skills/list`, `account/rateLimits/read`, or `collaborationMode/list`.
 - Skills, model metadata, rate limits, and collaboration modes still populate shortly after the thread is visible.
 - The profiler report has no duplicate-load warnings.

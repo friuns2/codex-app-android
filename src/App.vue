@@ -3298,16 +3298,6 @@ watch(
 )
 
 watch(
-  () => [hasInitialized.value, route.name, selectedThreadId.value] as const,
-  ([ready, routeName, threadId]) => {
-    if (!ready) return
-    if (routeName !== 'thread') return
-    if (!threadId) return
-    void ensureThreadMessagesLoaded(threadId, { silent: true })
-  },
-)
-
-watch(
   () => newThreadFolderOptions.value,
   (options) => {
     if (options.length === 0) {
