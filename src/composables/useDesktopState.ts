@@ -4063,12 +4063,14 @@ export function useDesktopState() {
     mode: 'steer' | 'queue' = 'steer',
     fileAttachments: FileAttachment[] = [],
     queueInsertIndex?: number,
+    collaborationModeOverride?: CollaborationModeKind,
   ): Promise<void> {
     if (isUpdatingSpeedMode.value) return
 
     const threadId = selectedThreadId.value
     const nextText = text.trim()
     if (!threadId || (!nextText && imageUrls.length === 0 && fileAttachments.length === 0)) return
+    const collaborationMode = collaborationModeOverride ?? selectedCollaborationMode.value
 
     if (await maybeReplyToPendingUserInputRequest(threadId, nextText, imageUrls, skills, fileAttachments)) {
       return
@@ -4089,7 +4091,7 @@ export function useDesktopState() {
         imageUrls,
         skills,
         fileAttachments,
-        collaborationMode: selectedCollaborationMode.value,
+        collaborationMode,
       })
       queuedMessagesByThreadId.value = {
         ...queuedMessagesByThreadId.value,
@@ -4100,7 +4102,14 @@ export function useDesktopState() {
 
     if (isInProgress) {
       shouldAutoScrollOnNextAgentEvent = true
-      void startTurnForThread(threadId, nextText, imageUrls, skills, fileAttachments).catch((unknownError) => {
+      void startTurnForThread(
+        threadId,
+        nextText,
+        imageUrls,
+        skills,
+        fileAttachments,
+        collaborationMode,
+      ).catch((unknownError) => {
         const errorMessage = unknownError instanceof Error ? unknownError.message : 'Unknown application error'
         setTurnErrorForThread(threadId, errorMessage)
         error.value = errorMessage
@@ -4118,7 +4127,7 @@ export function useDesktopState() {
         details: buildPendingTurnDetails(
           readModelIdForThread(threadId),
           selectedReasoningEffort.value,
-          selectedCollaborationMode.value,
+          collaborationMode,
         ),
       },
     )
@@ -4126,7 +4135,14 @@ export function useDesktopState() {
     setThreadInProgress(threadId, true)
 
     try {
-      await startTurnForThread(threadId, nextText, imageUrls, skills, fileAttachments)
+      await startTurnForThread(
+        threadId,
+        nextText,
+        imageUrls,
+        skills,
+        fileAttachments,
+        collaborationMode,
+      )
     } catch (unknownError) {
       shouldAutoScrollOnNextAgentEvent = false
       setThreadInProgress(threadId, false)
@@ -4234,9 +4250,10 @@ export function useDesktopState() {
     imageUrls: string[] = [],
     skills: Array<{ name: string; path: string }> = [],
     fileAttachments: FileAttachment[] = [],
+    collaborationModeOverride?: CollaborationModeKind,
   ): Promise<void> {
     const reasoningEffort = selectedReasoningEffort.value
-    const collaborationMode = selectedCollaborationMode.value
+    const collaborationMode = collaborationModeOverride ?? selectedCollaborationMode.value
     const normalizedText = nextText.trim()
     const normalizedImageUrls = [...imageUrls]
     if (
@@ -4359,8 +4376,14 @@ export function useDesktopState() {
     setTurnErrorForThread(threadId, null)
     setThreadInProgress(threadId, true)
     try {
-      setSelectedCollaborationMode(next.collaborationMode)
-      await startTurnForThread(threadId, next.text, next.imageUrls, next.skills, next.fileAttachments)
+      await startTurnForThread(
+        threadId,
+        next.text,
+        next.imageUrls,
+        next.skills,
+        next.fileAttachments,
+        next.collaborationMode,
+      )
     } catch {
       setThreadInProgress(threadId, false)
       setTurnActivityForThread(threadId, null)
@@ -4864,8 +4887,15 @@ export function useDesktopState() {
     const msg = queue.find((m) => m.id === messageId)
     if (!msg) return
     removeQueuedMessage(messageId)
-    setSelectedCollaborationMode(msg.collaborationMode)
-    void sendMessageToSelectedThread(msg.text, msg.imageUrls, msg.skills, 'steer', msg.fileAttachments)
+    void sendMessageToSelectedThread(
+      msg.text,
+      msg.imageUrls,
+      msg.skills,
+      'steer',
+      msg.fileAttachments,
+      undefined,
+      msg.collaborationMode,
+    )
   }
 
   function primeSelectedThread(threadId: string): void {
