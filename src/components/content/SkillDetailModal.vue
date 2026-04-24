@@ -68,10 +68,10 @@
               v-if="skill.installed && effectiveEnabled"
               class="sdm-btn sdm-btn-primary"
               type="button"
-              :disabled="isActing"
+              :disabled="isActing || props.isTrying"
               @click="onTry"
             >
-              Try it!
+              {{ props.isTrying ? 'Starting...' : 'Try it!' }}
             </button>
 
             <button
@@ -112,6 +112,7 @@ const props = defineProps<{
   visible: boolean
   isInstalling?: boolean
   isUninstalling?: boolean
+  isTrying?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -206,6 +207,7 @@ function onToggleEnabled(): void {
 }
 
 function onTry(): void {
+  if (props.isTrying) return
   emit('try', props.skill)
 }
 

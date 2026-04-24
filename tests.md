@@ -3209,14 +3209,15 @@ The `#/skills` route shows a full Skills & Apps directory with Plugins, Apps, MC
 8. On `Apps`, verify the default sort control is `Popular`, app icons render, connected apps show `Manage`, and disconnected apps show `Login`
 9. Click a disconnected app `Login` button and verify it opens the app login/manage URL
 10. Click `Try it!` for a connected and enabled app and verify a new thread opens with an auto-submitted prompt asking what the app can do
-11. Open an installed/enabled plugin detail, click `Try it!`, and verify a new thread opens with an auto-submitted plugin test prompt
-12. Open an installed/enabled skill detail, click `Try it!`, and verify a new thread opens with an auto-submitted skill test prompt and the skill attached
-13. Install a plugin whose install response includes `appsNeedingAuth`, and verify the first required app login/manage URL opens automatically
-14. Switch Apps sorting to `A-Z` and verify apps reorder alphabetically; switch to `Date` and verify app-server catalog order is restored; switch back to `Popular` and verify casual-user relevant apps are prioritized and capped to 100 when no search is active
-15. Search Apps and verify matching results are not capped to the Popular top 100 list
-16. Switch to `MCPs` and verify MCP server cards show auth status and tool/resource counts, or the unavailable/empty state appears without breaking the page
-17. Verify MCPs also support `Popular`, `A-Z`, `Date`, and search
-18. Switch to `Skills` and verify existing Skills Hub search, install, uninstall, sync, and enable/disable behavior still works
+11. While the app `Try it!` request is starting, click the button repeatedly and verify only one new thread is created
+12. Open an installed/enabled plugin detail, click `Try it!`, and verify a new thread opens with an auto-submitted plugin test prompt
+13. Open an installed/enabled skill detail, click `Try it!`, and verify a new thread opens with an auto-submitted skill test prompt and the skill attached
+14. Install a plugin whose install response includes `appsNeedingAuth`, and verify the first required app login/manage URL opens automatically
+15. Switch Apps sorting to `A-Z` and verify apps reorder alphabetically; switch to `Date` and verify app-server catalog order is restored; switch back to `Popular` and verify casual-user relevant apps are prioritized and capped to 100 when no search is active
+16. Search Apps and verify matching results are not capped to the Popular top 100 list
+17. Switch to `MCPs` and verify MCP server cards show auth status and tool/resource counts, or the unavailable/empty state appears without breaking the page
+18. Verify MCPs also support `Popular`, `A-Z`, `Date`, and search
+19. Switch to `Skills` and verify existing Skills Hub search, install, uninstall, sync, and enable/disable behavior still works
 
 #### Expected Results
 - The directory tabs render without a full-page error
@@ -3227,6 +3228,7 @@ The `#/skills` route shows a full Skills & Apps directory with Plugins, Apps, MC
 - Disconnected apps are labeled `Login`; connected apps are labeled `Manage`
 - Plugin install opens the first required app login/manage page before falling back to bundled MCP OAuth login
 - Connected and enabled apps, plus installed/enabled plugins/skills, expose `Try it!`, creating a new chat with an auto-submitted test prompt
+- Repeated `Try it!` clicks during startup are ignored until the first request resolves, so duplicate threads are not created
 - Plugins, Apps, and MCPs default to local popularity-style ordering because app-server does not expose numeric popularity fields
 - `Date` uses the app-server/catalog order as the available freshness proxy because app/plugin/MCP APIs do not expose created or published timestamps
 - Popular views show only the top 100 when no search is active; search results can show all matches

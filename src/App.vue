@@ -500,6 +500,7 @@
             <DirectoryHub
               :cwd="directoryCwd"
               :thread-id="routeThreadId"
+              :try-in-flight-key="directoryTryInFlightKey"
               @skills-changed="onSkillsChanged"
               @try-item="onTryDirectoryItem"
             />
@@ -1113,6 +1114,7 @@ const isTrendingProjectsLoading = ref(false)
 const githubTipsScope = ref<GithubTipsScope>('trending-daily')
 const editingQueuedMessageState = ref<{ threadId: string; queueIndex: number } | null>(null)
 const isRouteSyncInProgress = ref(false)
+const directoryTryInFlightKey = ref('')
 let hasPendingRouteSync = false
 const hasInitialized = ref(false)
 const newThreadCwd = ref('')
@@ -3463,7 +3465,13 @@ function buildDirectoryTryPrompt(payload: DirectoryTryItemPayload): string {
   return `Test ${label} ${itemType}. Give me a list of what it can do and one useful example.`
 }
 
+function getDirectoryTryItemKey(payload: DirectoryTryItemPayload): string {
+  return `${payload.kind}:${payload.name}:${payload.skillPath ?? ''}`
+}
+
 async function onTryDirectoryItem(payload: DirectoryTryItemPayload): Promise<void> {
+  if (directoryTryInFlightKey.value) return
+  directoryTryInFlightKey.value = getDirectoryTryItemKey(payload)
   const text = buildDirectoryTryPrompt(payload)
   const skills = payload.kind === 'skill' && payload.skillPath
     ? [{ name: payload.name, path: payload.skillPath }]
@@ -3476,6 +3484,8 @@ async function onTryDirectoryItem(payload: DirectoryTryItemPayload): Promise<voi
     scheduleMobileConversationJumpToLatest()
   } catch {
     // Error is already reflected in shared thread state.
+  } finally {
+    directoryTryInFlightKey.value = ''
   }
 }
 

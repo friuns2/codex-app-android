@@ -105,6 +105,7 @@
       :visible="isDetailOpen"
       :is-installing="isDetailInstalling"
       :is-uninstalling="isDetailUninstalling"
+      :is-trying="props.tryInFlightKey === skillTryKey(detailSkill)"
       @close="isDetailOpen = false"
       @install="handleInstall"
       @uninstall="handleUninstall"
@@ -145,6 +146,10 @@ const isInstallActionInFlight = ref(false)
 const isUninstallActionInFlight = ref(false)
 let toastTimer: ReturnType<typeof setTimeout> | null = null
 const { t } = useUiLanguage()
+
+const props = defineProps<{
+  tryInFlightKey?: string
+}>()
 
 const emit = defineEmits<{
   'skills-changed': []
@@ -348,6 +353,7 @@ async function handleToggleEnabled(skill: HubSkill, enabled: boolean): Promise<v
 
 function handleTrySkill(skill: HubSkill): void {
   if (!skill.installed || skill.enabled === false) return
+  if (props.tryInFlightKey) return
   emit('try-item', {
     kind: 'skill',
     name: skill.name,
@@ -355,6 +361,10 @@ function handleTrySkill(skill: HubSkill): void {
     skillPath: skill.path,
   })
   isDetailOpen.value = false
+}
+
+function skillTryKey(skill: HubSkill): string {
+  return `skill:${skill.name}:${skill.path ?? ''}`
 }
 
 const {

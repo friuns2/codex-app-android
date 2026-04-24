@@ -175,8 +175,14 @@
             <button v-if="app.installUrl" class="directory-action-link" type="button" @click="openExternalUrl(app.installUrl)">
               {{ app.isAccessible ? 'Manage' : 'Login' }}
             </button>
-            <button v-if="app.isAccessible && app.isEnabled" class="directory-action" type="button" @click="tryApp(app)">
-              Try it!
+            <button
+              v-if="app.isAccessible && app.isEnabled"
+              class="directory-action"
+              type="button"
+              :disabled="isTryActionInFlight"
+              @click="tryApp(app)"
+            >
+              {{ props.tryInFlightKey === appTryKey(app) ? 'Starting...' : 'Try it!' }}
             </button>
           </div>
         </article>
@@ -252,6 +258,7 @@
 
     <SkillsHub
       v-else
+      :try-in-flight-key="props.tryInFlightKey"
       @skills-changed="emit('skills-changed')"
       @try-item="(payload) => emit('try-item', payload)"
     />
@@ -369,10 +376,10 @@
               v-if="selectedPlugin && selectedPlugin.installed && selectedPlugin.enabled"
               class="directory-action primary"
               type="button"
-              :disabled="isPluginActionInFlight"
+              :disabled="isPluginActionInFlight || isTryActionInFlight"
               @click="tryPlugin(selectedPlugin)"
             >
-              Try it!
+              {{ props.tryInFlightKey === pluginTryKey(selectedPlugin) ? 'Starting...' : 'Try it!' }}
             </button>
           </div>
         </article>
@@ -455,6 +462,7 @@ const POPULAR_MCP_NAME_BONUSES: Array<[RegExp, number]> = [
 const props = defineProps<{
   cwd?: string
   threadId?: string
+  tryInFlightKey?: string
 }>()
 
 export type DirectoryTryItemPayload = {
@@ -517,6 +525,7 @@ const supportsApps = computed(() => !methodsLoaded.value || methodSet.value.has(
 const supportsMcps = computed(() => !methodsLoaded.value || methodSet.value.has('mcpServerStatus/list'))
 const supportsMcpReload = computed(() => methodSet.value.has('config/mcpServer/reload'))
 const supportsMcpLogin = computed(() => methodSet.value.has('mcpServer/oauth/login'))
+const isTryActionInFlight = computed(() => (props.tryInFlightKey ?? '').length > 0)
 const isActiveLoading = computed(() =>
   activeTab.value === 'plugins' ? isLoadingPlugins.value
     : activeTab.value === 'apps' ? isLoadingApps.value
@@ -721,7 +730,12 @@ function appLogoSrc(app: DirectoryAppInfo): string {
   return localAssetSrc(app.logoUrlDark || app.logoUrl)
 }
 
+function appTryKey(app: DirectoryAppInfo): string {
+  return `app:${app.id}:`
+}
+
 function tryApp(app: DirectoryAppInfo): void {
+  if (isTryActionInFlight.value) return
   emit('try-item', {
     kind: 'app',
     name: app.id,
@@ -729,7 +743,12 @@ function tryApp(app: DirectoryAppInfo): void {
   })
 }
 
+function pluginTryKey(plugin: DirectoryPluginSummary): string {
+  return `plugin:${plugin.name}:`
+}
+
 function tryPlugin(plugin: DirectoryPluginSummary): void {
+  if (isTryActionInFlight.value) return
   emit('try-item', {
     kind: 'plugin',
     name: plugin.name,
