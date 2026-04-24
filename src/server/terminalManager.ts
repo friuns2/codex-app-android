@@ -1,8 +1,9 @@
-import { chmodSync, existsSync } from 'node:fs'
+import { chmodSync, existsSync, lstatSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { randomUUID } from 'node:crypto'
 import { createRequire } from 'node:module'
 import { basename, dirname, join } from 'node:path'
 import { homedir } from 'node:os'
+import { spawnSync } from 'node:child_process'
 import type { IPty, IPtyForkOptions } from 'node-pty-prebuilt-multiarch'
 
 const TERMINAL_BUFFER_LIMIT = 16 * 1024
@@ -331,6 +332,9 @@ function normalizeDimension(value: unknown, fallback: number): number {
 }
 
 function loadTerminalSpawn(): SpawnTerminal {
+  repairNativePtyBuild('node-pty-prebuilt-multiarch')
+  repairNativePtyBuild('node-pty')
+
   if (resolveNodePtyPrebuiltPath()) {
     try {
       const terminal = require('node-pty-prebuilt-multiarch') as { spawn: SpawnTerminal }
@@ -341,6 +345,43 @@ function loadTerminalSpawn(): SpawnTerminal {
   }
   const terminal = require('node-pty') as { spawn: SpawnTerminal }
   return terminal.spawn
+}
+
+function repairNativePtyBuild(packageName: string): void {
+  try {
+    const packageJson = require.resolve(`${packageName}/package.json`)
+    const packageRoot = dirname(packageJson)
+    const buildDir = join(packageRoot, 'build')
+    const makefile = join(buildDir, 'Makefile')
+    const binary = join(buildDir, 'Release', 'pty.node')
+    if (!existsSync(makefile) || !isBrokenSymlink(binary)) return
+
+    const source = readFileSync(makefile, 'utf8')
+    const patched = source.replace(
+      /^cmd_copy = ln -f "\$<" "\$@" 2>\/dev\/null \|\| \(rm -rf "\$@" && cp -af "\$<" "\$@"\)$/m,
+      'cmd_copy = rm -rf "$@" && cp -af "$<" "$@"',
+    )
+    if (patched !== source) {
+      writeFileSync(makefile, patched)
+    }
+    rmSync(binary, { force: true })
+    spawnSync('make', ['BUILDTYPE=Release', '-C', buildDir], { stdio: 'ignore' })
+  } catch {
+    // Native PTY load below will surface the actionable error if repair fails.
+  }
+}
+
+function isBrokenSymlink(path: string): boolean {
+  try {
+    if (!lstatSync(path).isSymbolicLink()) return false
+    try {
+      return !existsSync(realpathSync(path))
+    } catch {
+      return true
+    }
+  } catch {
+    return false
+  }
 }
 
 function resolveNodePtyPrebuiltPath(): string | null {
