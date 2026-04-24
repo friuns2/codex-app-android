@@ -56,26 +56,6 @@ packageJson.scripts = {
   ...(packageJson.scripts || {}),
 };
 delete packageJson.scripts.prepublishOnly;
-
-fs.writeFileSync(packageJsonPath, `${JSON.stringify(packageJson, null, 2)}\n`);
-NODE
-
-(
-  cd "$publish_dir"
-  npm install --ignore-scripts --package-lock=false
-)
-
-mkdir -p "$publish_dir/vendor/node_modules"
-for dep in nan node-addon-api node-pty node-pty-prebuilt-multiarch; do
-  cp -R "$publish_dir/node_modules/$dep" "$publish_dir/vendor/node_modules/$dep"
-done
-
-node - "$publish_dir/package.json" <<'NODE'
-const fs = require('node:fs');
-
-const [packageJsonPath] = process.argv.slice(2);
-const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
-
 for (const dep of ['node-pty', 'node-pty-prebuilt-multiarch']) {
   delete packageJson.dependencies?.[dep];
   delete packageJson.optionalDependencies?.[dep];
@@ -83,7 +63,7 @@ for (const dep of ['node-pty', 'node-pty-prebuilt-multiarch']) {
 }
 delete packageJson.bundleDependencies;
 delete packageJson.bundledDependencies;
-packageJson.files = Array.from(new Set([...(packageJson.files || []), 'vendor/node_modules/']));
+packageJson.files = (packageJson.files || []).filter((entry) => !entry.startsWith('vendor/'));
 
 fs.writeFileSync(packageJsonPath, `${JSON.stringify(packageJson, null, 2)}\n`);
 NODE

@@ -4,7 +4,6 @@ import { createRequire } from 'node:module'
 import { basename, dirname, join } from 'node:path'
 import { homedir } from 'node:os'
 import { spawnSync } from 'node:child_process'
-import { fileURLToPath } from 'node:url'
 import type { IPty, IPtyForkOptions } from 'node-pty-prebuilt-multiarch'
 
 const TERMINAL_BUFFER_LIMIT = 16 * 1024
@@ -46,13 +45,18 @@ type SpawnTerminal = (
 ) => TerminalPty
 
 export type TerminalManagerOptions = {
-  spawn?: SpawnTerminal
+  spawn?: SpawnTerminal | null
   exists?: (path: string) => boolean
   homeDir?: () => string
   cwd?: () => string
   platform?: NodeJS.Platform
   shell?: string
   ensureSpawnHelperExecutable?: () => void
+}
+
+export type TerminalAvailability = {
+  available: boolean
+  reason: string | null
 }
 
 export type TerminalAttachParams = {
@@ -68,7 +72,8 @@ export class ThreadTerminalManager {
   private readonly sessions = new Map<string, TerminalSession>()
   private readonly activeSessionIdByThreadId = new Map<string, string>()
   private readonly listeners = new Set<(notification: TerminalNotification) => void>()
-  private readonly spawn: SpawnTerminal
+  private readonly spawn: SpawnTerminal | null
+  private readonly unavailableReason: string | null
   private readonly exists: (path: string) => boolean
   private readonly homeDir: () => string
   private readonly cwd: () => string
@@ -77,7 +82,9 @@ export class ThreadTerminalManager {
   private readonly ensureSpawnHelperExecutable: () => void
 
   constructor(options: TerminalManagerOptions = {}) {
-    this.spawn = options.spawn ?? loadTerminalSpawn()
+    const terminalSpawn = loadOptionalTerminalSpawn(options.spawn)
+    this.spawn = terminalSpawn.spawn
+    this.unavailableReason = terminalSpawn.reason
     this.exists = options.exists ?? existsSync
     this.homeDir = options.homeDir ?? homedir
     this.cwd = options.cwd ?? process.cwd
@@ -93,7 +100,15 @@ export class ThreadTerminalManager {
     }
   }
 
+  getAvailability(): TerminalAvailability {
+    return {
+      available: this.spawn !== null,
+      reason: this.unavailableReason,
+    }
+  }
+
   attach(params: TerminalAttachParams): TerminalSessionSnapshot {
+    this.requireAvailable()
     const threadId = params.threadId.trim()
     if (!threadId) {
       throw new Error('Missing threadId')
@@ -131,6 +146,7 @@ export class ThreadTerminalManager {
   }
 
   write(sessionId: string, data: string): void {
+    this.requireAvailable()
     const session = this.requireSession(sessionId)
     session.pty.write(data)
   }
@@ -195,6 +211,9 @@ export class ThreadTerminalManager {
     delete env.TERMINFO_DIRS
 
     this.ensureSpawnHelperExecutable()
+    if (!this.spawn) {
+      throw new Error(this.unavailableReason || 'Integrated terminal is unavailable on this host')
+    }
     const pty = this.spawn(shell, [], {
       name: TERMINAL_NAME,
       cols: normalizeDimension(params.cols, DEFAULT_COLS),
@@ -294,6 +313,11 @@ export class ThreadTerminalManager {
     return session
   }
 
+  private requireAvailable(): void {
+    if (this.spawn) return
+    throw new Error(this.unavailableReason || 'Integrated terminal is unavailable on this host')
+  }
+
   private resolveShell(): string {
     if (this.shell) return this.shell
     if (this.platform === 'win32') {
@@ -326,6 +350,24 @@ export class ThreadTerminalManager {
   }
 }
 
+function loadOptionalTerminalSpawn(spawn: SpawnTerminal | null | undefined): { spawn: SpawnTerminal | null, reason: string | null } {
+  if (spawn) {
+    return { spawn, reason: null }
+  }
+  if (spawn === null) {
+    return { spawn: null, reason: 'Integrated terminal is unavailable on this host' }
+  }
+  try {
+    return { spawn: loadTerminalSpawn(), reason: null }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    return {
+      spawn: null,
+      reason: `Integrated terminal is unavailable on this host: ${message}`,
+    }
+  }
+}
+
 function normalizeDimension(value: unknown, fallback: number): number {
   const parsed = typeof value === 'number' ? value : Number(value)
   if (!Number.isFinite(parsed)) return fallback
@@ -338,28 +380,25 @@ function loadTerminalSpawn(): SpawnTerminal {
 
   if (resolveNodePtyPrebuiltPath()) {
     try {
-      const terminal = requirePtyPackage('node-pty-prebuilt-multiarch')
+      const terminal = require('node-pty-prebuilt-multiarch') as { spawn: SpawnTerminal }
       return terminal.spawn
     } catch {
       // Fall back to maintained node-pty when the legacy prebuild exists but cannot load.
     }
   }
-  const terminal = requirePtyPackage('node-pty')
+  const terminal = require('node-pty') as { spawn: SpawnTerminal }
   return terminal.spawn
 }
 
 function repairNativePtyBuild(packageName: string): void {
   try {
-    const packageRoot = resolvePtyPackageRoot(packageName)
-    if (!packageRoot) return
+    const packageJson = require.resolve(`${packageName}/package.json`)
+    const packageRoot = dirname(packageJson)
     const buildDir = join(packageRoot, 'build')
     const makefile = join(buildDir, 'Makefile')
     const binary = join(buildDir, 'Release', 'pty.node')
-    if (!existsSync(binary) && !existsSync(makefile)) {
-      runNodeGypRebuild(packageRoot)
-    }
-    if (existsSync(binary) && !isBrokenSymlink(binary)) return
     if (!existsSync(makefile)) return
+    if (!isBrokenSymlink(binary)) return
 
     const source = readFileSync(makefile, 'utf8')
     const patched = source.replace(
@@ -374,62 +413,6 @@ function repairNativePtyBuild(packageName: string): void {
   } catch {
     // Native PTY load below will surface the actionable error if repair fails.
   }
-}
-
-function requirePtyPackage(packageName: string): { spawn: SpawnTerminal } {
-  const vendorRoot = resolveVendorPtyPackageRoot(packageName)
-  if (vendorRoot) {
-    try {
-      return require(vendorRoot) as { spawn: SpawnTerminal }
-    } catch {
-      // Prefer the regular dependency if the vendored package is present but unusable.
-    }
-  }
-  return require(packageName) as { spawn: SpawnTerminal }
-}
-
-function resolvePtyPackageRoot(packageName: string): string | null {
-  try {
-    return dirname(require.resolve(`${packageName}/package.json`))
-  } catch {
-    return resolveVendorPtyPackageRoot(packageName)
-  }
-}
-
-function resolveVendorPtyPackageRoot(packageName: string): string | null {
-  try {
-    const moduleDir = dirname(fileURLToPath(import.meta.url))
-    const candidate = join(moduleDir, '..', 'vendor', 'node_modules', packageName)
-    return existsSync(join(candidate, 'package.json')) ? candidate : null
-  } catch {
-    return null
-  }
-}
-
-function runNodeGypRebuild(packageRoot: string): void {
-  const nodeGyp = resolveNodeGypCli()
-  if (!nodeGyp) return
-  spawnSync(process.execPath, [nodeGyp, 'rebuild'], {
-    cwd: packageRoot,
-    stdio: 'ignore',
-  })
-}
-
-function resolveNodeGypCli(): string | null {
-  if (process.env.npm_config_node_gyp && existsSync(process.env.npm_config_node_gyp)) {
-    return process.env.npm_config_node_gyp
-  }
-  try {
-    return require.resolve('node-gyp/bin/node-gyp.js')
-  } catch {
-    // npm commonly vendors node-gyp without exposing it as a regular package.
-  }
-  const npmRoot = spawnSync('npm', ['root', '-g'], { encoding: 'utf8' }).stdout.trim()
-  const candidates = [
-    join(npmRoot, 'node-gyp', 'bin', 'node-gyp.js'),
-    join(npmRoot, 'npm', 'node_modules', 'node-gyp', 'bin', 'node-gyp.js'),
-  ]
-  return candidates.find((candidate) => existsSync(candidate)) ?? null
 }
 
 function isBrokenSymlink(path: string): boolean {
@@ -447,8 +430,8 @@ function isBrokenSymlink(path: string): boolean {
 
 function resolveNodePtyPrebuiltPath(): string | null {
   try {
-    const packageRoot = resolvePtyPackageRoot('node-pty-prebuilt-multiarch')
-    if (!packageRoot) return null
+    const packageJson = require.resolve('node-pty-prebuilt-multiarch/package.json')
+    const packageRoot = dirname(packageJson)
     const builtPath = join(packageRoot, 'build', 'Release', 'pty.node')
     if (existsSync(builtPath)) {
       return builtPath
@@ -466,8 +449,8 @@ function resolveNodePtyPrebuiltPath(): string | null {
 function ensureNodePtyPrebuiltExecutable(): void {
   if (process.platform !== 'darwin' && process.platform !== 'linux') return
   try {
-    const packageRoot = resolvePtyPackageRoot('node-pty-prebuilt-multiarch')
-    if (!packageRoot) return
+    const nodePtyEntry = require.resolve('node-pty-prebuilt-multiarch')
+    const packageRoot = join(dirname(nodePtyEntry), '..')
     const helperPath = join(packageRoot, 'prebuilds', `${process.platform}-${process.arch}`, 'spawn-helper')
     if (existsSync(helperPath)) {
       chmodSync(helperPath, 0o755)

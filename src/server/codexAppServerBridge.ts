@@ -3682,6 +3682,11 @@ export function createCodexBridgeMiddleware(): CodexBridgeMiddleware {
         return
       }
 
+      if (req.method === 'GET' && url.pathname === '/codex-api/thread-terminal/status') {
+        setJson(res, 200, terminalManager.getAvailability())
+        return
+      }
+
       if (req.method === 'POST' && url.pathname === '/codex-api/thread-terminal/attach') {
         const body = asRecord(await readJsonBody(req))
         const threadId = readNonEmptyString(body?.threadId)

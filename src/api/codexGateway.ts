@@ -1029,6 +1029,15 @@ export async function attachThreadTerminal(input: ThreadTerminalAttachInput): Pr
   return session
 }
 
+export async function getThreadTerminalStatus(): Promise<{ available: boolean, reason: string | null }> {
+  const payload = await fetchTerminalJson('/codex-api/thread-terminal/status')
+  const record = asRecord(payload)
+  return {
+    available: readBoolean(record?.available) ?? false,
+    reason: readString(record?.reason) || null,
+  }
+}
+
 export async function sendThreadTerminalInput(sessionId: string, data: string): Promise<void> {
   await fetchTerminalJson('/codex-api/thread-terminal/input', {
     method: 'POST',

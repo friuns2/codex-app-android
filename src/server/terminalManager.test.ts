@@ -95,6 +95,19 @@ describe('ThreadTerminalManager edge cases', () => {
     expect(spawnCalls).toHaveLength(0)
   })
 
+  it('reports terminal unavailable instead of failing construction', () => {
+    const manager = new ThreadTerminalManager({
+      spawn: null,
+      shell: '/bin/zsh',
+    })
+
+    expect(manager.getAvailability()).toEqual({
+      available: false,
+      reason: 'Integrated terminal is unavailable on this host',
+    })
+    expect(() => manager.attach({ threadId: 'thread-1', cwd: '/repo' })).toThrow('Integrated terminal is unavailable')
+  })
+
   it('falls back from invalid cwd to home, then process cwd', () => {
     const homeHarness = createHarness({
       exists: (value) => value === '/home/tester',
