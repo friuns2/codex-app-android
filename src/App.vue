@@ -472,99 +472,6 @@
           <template v-else-if="isHomeRoute">
             <div class="content-grid content-grid-home">
               <div class="new-thread-empty">
-                <section class="command-center" aria-label="Visual Command Center">
-                  <div class="command-center-header">
-                    <div>
-                      <p class="command-center-eyebrow">Visual Command Center</p>
-                      <h2 class="command-center-title">One screen for system state</h2>
-                    </div>
-                    <p class="command-center-meta">{{ commandCenterSystemLabel }}</p>
-                  </div>
-
-                  <div class="command-center-grid">
-                    <article class="command-card">
-                      <div class="command-card-header">
-                        <p class="command-card-label">System Status</p>
-                        <span class="command-card-status">{{ commandCenterSystemLabel }}</span>
-                      </div>
-                      <p class="command-card-value">{{ totalThreadCount }} threads across {{ projectGroups.length }} projects</p>
-                      <ul class="command-card-list">
-                        <li>Provider: {{ selectedProvider }}</li>
-                        <li>Skills loaded: {{ installedSkills.length }}</li>
-                        <li>Worktree threads: {{ worktreeThreadCount }}</li>
-                      </ul>
-                    </article>
-
-                    <article class="command-card">
-                      <div class="command-card-header">
-                        <p class="command-card-label">Active Task</p>
-                        <span class="command-card-status">{{ activeTaskLabel }}</span>
-                      </div>
-                      <p class="command-card-value">{{ activeTaskTitle }}</p>
-                      <ul class="command-card-list">
-                        <li>{{ activeTaskPathLabel }}</li>
-                        <li>Pending requests: {{ selectedThreadServerRequests.length }}</li>
-                        <li>Queued follow-ups: {{ selectedThreadQueuedMessages.length }}</li>
-                      </ul>
-                    </article>
-
-                    <article class="command-card">
-                      <div class="command-card-header">
-                        <p class="command-card-label">PR Pipeline</p>
-                        <span class="command-card-status">{{ prPipelineLabel }}</span>
-                      </div>
-                      <p class="command-card-value">{{ currentThreadBranch || 'No branch loaded' }}</p>
-                      <ul class="command-card-list">
-                        <li>Review pane: {{ isReviewPaneOpen ? 'Open' : 'Closed' }}</li>
-                        <li>Thread worktree: {{ selectedThread?.hasWorktree ? 'Active' : 'Not selected' }}</li>
-                        <li>Workspace: {{ worktreeName }}</li>
-                      </ul>
-                    </article>
-
-                    <article class="command-card">
-                      <div class="command-card-header">
-                        <p class="command-card-label">Idea Queue</p>
-                        <span class="command-card-status">{{ ideaQueueLabel }}</span>
-                      </div>
-                      <p class="command-card-value">{{ ideaQueueValue }}</p>
-                      <ul class="command-card-list">
-                        <li>Idea workspaces open: {{ ideaWorkspaceCount }}</li>
-                        <li>Current route: {{ isHomeRoute ? 'Command Center' : String(route.name ?? 'unknown') }}</li>
-                        <li>No idea feed is invented here. This only reflects connected session state.</li>
-                      </ul>
-                    </article>
-
-                    <article class="command-card command-card-control">
-                      <div class="command-card-header">
-                        <p class="command-card-label">Alfred Control</p>
-                        <span class="command-card-status">{{ alfredControlLabel }}</span>
-                      </div>
-                      <p class="command-card-value">{{ telegramStatusText }}</p>
-                      <ul class="command-card-list">
-                        <li>Send mode: {{ inProgressSendMode }}</li>
-                        <li>Enter sends: {{ sendWithEnter ? 'On' : 'Cmd+Enter required' }}</li>
-                        <li>Dictation: {{ dictationAutoSend ? 'Auto-send' : 'Manual send' }}</li>
-                      </ul>
-                      <div class="command-card-actions">
-                        <button class="command-card-action command-card-action-primary" type="button" @click="onStartNewThreadFromToolbar">
-                          New thread
-                        </button>
-                        <button
-                          class="command-card-action"
-                          type="button"
-                          :disabled="!selectedThreadId"
-                          @click="selectedThreadId && onSelectThread(selectedThreadId)"
-                        >
-                          Continue task
-                        </button>
-                        <button class="command-card-action" type="button" @click="router.push({ name: 'skills' })">
-                          Skills hub
-                        </button>
-                      </div>
-                    </article>
-                  </div>
-                </section>
-
                 <p class="new-thread-hero">Let's build</p>
                 <ComposerDropdown class="new-thread-folder-dropdown" :model-value="newThreadCwd"
                   :options="newThreadFolderOptions" placeholder="Choose folder"
@@ -582,6 +489,29 @@
                     Create Project
                   </button>
                 </div>
+                <VisualCommandCenter
+                  :system-status="commandCenterSystemLabel"
+                  :system-summary="systemSummaryText"
+                  :provider-label="selectedProvider"
+                  :installed-skills-count="installedSkills.length"
+                  :active-task-status="activeTaskLabel"
+                  :active-task-title="activeTaskTitle"
+                  :active-task-location="activeTaskPathLabel"
+                  :pending-requests="selectedThreadServerRequests.length"
+                  :queued-messages="selectedThreadQueuedMessages.length"
+                  :review-status="reviewStatusLabel"
+                  :review-branch="reviewStatusValue"
+                  :is-review-open="isReviewPaneOpen"
+                  :alfred-status="alfredControlLabel"
+                  :alfred-summary="telegramStatusText"
+                  :send-mode="inProgressSendMode"
+                  :send-with-enter="sendWithEnter"
+                  :dictation-mode="dictationAutoSend ? 'Auto-send' : 'Manual send'"
+                  :can-continue-task="Boolean(selectedThreadId)"
+                  @new-thread="onStartNewThreadFromToolbar"
+                  @continue-task="selectedThreadId && onSelectThread(selectedThreadId)"
+                  @open-skills="router.push({ name: 'skills' })"
+                />
                 <Teleport to="body">
                   <div v-if="isExistingFolderPickerOpen" class="new-thread-open-folder-overlay" @click.self="onCloseExistingFolderPanel">
                     <div class="new-thread-open-folder" role="dialog" aria-modal="true" aria-label="Select folder" @keydown.esc.prevent="onCloseExistingFolderPanel">
@@ -882,6 +812,7 @@ import ThreadComposer from './components/content/ThreadComposer.vue'
 import ThreadPendingRequestPanel from './components/content/ThreadPendingRequestPanel.vue'
 import QueuedMessages from './components/content/QueuedMessages.vue'
 import RateLimitStatus from './components/content/RateLimitStatus.vue'
+import VisualCommandCenter from './components/content/VisualCommandCenter.vue'
 import ComposerDropdown from './components/content/ComposerDropdown.vue'
 import ComposerRuntimeDropdown from './components/content/ComposerRuntimeDropdown.vue'
 import SidebarThreadControls from './components/sidebar/SidebarThreadControls.vue'
@@ -1266,16 +1197,6 @@ const contentTitle = computed(() => {
 const totalThreadCount = computed(() =>
   projectGroups.value.reduce((sum, group) => sum + group.threads.length, 0),
 )
-const worktreeThreadCount = computed(() =>
-  projectGroups.value.reduce((sum, group) => sum + group.threads.filter((thread) => thread.hasWorktree).length, 0),
-)
-const ideaWorkspaceCount = computed(() =>
-  projectGroups.value.filter((group) => {
-    const projectName = group.projectName.toLowerCase()
-    const cwd = group.threads[0]?.cwd?.trim().toLowerCase() ?? ''
-    return projectName.includes('idea') || cwd.includes('/platform-ai/ideas') || cwd.endsWith('/ideas')
-  }).length,
-)
 function isRateLimitHot(windowState: UiRateLimitWindow | null | undefined): boolean {
   return Boolean(windowState && typeof windowState.usedPercent === 'number' && windowState.usedPercent >= 85)
 }
@@ -1286,6 +1207,7 @@ const commandCenterSystemLabel = computed(() => {
   }
   return 'Ready'
 })
+const systemSummaryText = computed(() => `${totalThreadCount.value} threads across ${projectGroups.value.length} projects`)
 const activeTaskLabel = computed(() => {
   if (!selectedThread.value) return 'Idle'
   if (selectedThread.value.inProgress) return 'Running'
@@ -1298,18 +1220,12 @@ const activeTaskPathLabel = computed(() => {
   const cwd = selectedThread.value?.cwd?.trim() || newThreadCwd.value.trim()
   return cwd || 'No workspace selected'
 })
-const prPipelineLabel = computed(() => {
+const reviewStatusLabel = computed(() => {
   if (isReviewPaneOpen.value) return 'Review open'
   if (currentThreadBranch.value?.trim()) return 'Branch loaded'
-  if (selectedThread.value?.hasWorktree) return 'Worktree active'
   return 'Waiting'
 })
-const ideaQueueLabel = computed(() => (ideaWorkspaceCount.value > 0 ? 'Connected' : 'Not connected'))
-const ideaQueueValue = computed(() =>
-  ideaWorkspaceCount.value > 0
-    ? `${ideaWorkspaceCount.value} idea workspace${ideaWorkspaceCount.value === 1 ? '' : 's'} visible in this session`
-    : 'No structured idea workspace is open in codexUI',
-)
+const reviewStatusValue = computed(() => currentThreadBranch.value?.trim() || 'No review branch selected')
 const alfredControlLabel = computed(() => {
   if (telegramStatus.value.active) return 'Online'
   if (telegramStatus.value.configured) return 'Configured'
@@ -3552,70 +3468,6 @@ async function loadWorktreeBranches(sourceCwd: string): Promise<void> {
 
 .new-thread-empty {
   @apply flex-1 min-h-0 flex flex-col items-center justify-start gap-4 px-3 py-3 sm:px-6 sm:py-4;
-}
-
-.command-center {
-  @apply w-full max-w-6xl rounded-[1.75rem] border border-zinc-200 bg-zinc-50/90 px-3 py-3 sm:px-5 sm:py-5;
-}
-
-.command-center-header {
-  @apply flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between;
-}
-
-.command-center-eyebrow {
-  @apply m-0 text-[11px] font-semibold uppercase tracking-[0.18em] text-zinc-500;
-}
-
-.command-center-title {
-  @apply mt-1 text-lg font-medium tracking-tight text-zinc-950 sm:text-2xl;
-}
-
-.command-center-meta {
-  @apply m-0 inline-flex items-center self-start rounded-full bg-white px-3 py-1 text-xs font-medium text-zinc-600;
-}
-
-.command-center-grid {
-  @apply mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-5;
-}
-
-.command-card {
-  @apply flex min-h-44 flex-col gap-3 rounded-[1.5rem] border border-zinc-200 bg-white p-4 shadow-sm;
-}
-
-.command-card-control {
-  @apply xl:col-span-2;
-}
-
-.command-card-header {
-  @apply flex items-center justify-between gap-3;
-}
-
-.command-card-label {
-  @apply m-0 text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-500;
-}
-
-.command-card-status {
-  @apply inline-flex items-center rounded-full bg-zinc-100 px-2.5 py-1 text-[11px] font-medium text-zinc-700;
-}
-
-.command-card-value {
-  @apply m-0 text-sm font-medium leading-5 text-zinc-950;
-}
-
-.command-card-list {
-  @apply m-0 flex list-none flex-col gap-2 p-0 text-sm leading-5 text-zinc-600;
-}
-
-.command-card-actions {
-  @apply mt-auto flex flex-wrap gap-2 pt-1;
-}
-
-.command-card-action {
-  @apply inline-flex h-9 items-center justify-center rounded-full border border-zinc-200 bg-white px-4 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-default disabled:opacity-60;
-}
-
-.command-card-action-primary {
-  @apply border-zinc-900 bg-zinc-900 text-white hover:bg-zinc-800;
 }
 
 .new-thread-hero {
