@@ -9,7 +9,7 @@
     </div>
 
     <div class="command-center-grid">
-      <article class="command-card">
+      <article class="command-card command-card-system">
         <div class="command-card-header">
           <p class="command-card-label">System Status</p>
           <span class="command-card-status">{{ systemStatus }}</span>
@@ -21,7 +21,7 @@
         </ul>
       </article>
 
-      <article class="command-card">
+      <article class="command-card command-card-task">
         <div class="command-card-header">
           <p class="command-card-label">Active Task</p>
           <span class="command-card-status">{{ activeTaskStatus }}</span>
@@ -34,7 +34,7 @@
         </ul>
       </article>
 
-      <article class="command-card">
+      <article class="command-card command-card-review">
         <div class="command-card-header">
           <p class="command-card-label">Review Status</p>
           <span class="command-card-status">{{ reviewStatus }}</span>
@@ -105,11 +105,11 @@ defineEmits<{
 @reference "tailwindcss";
 
 .command-center {
-  @apply w-full max-w-6xl rounded-[1.5rem] border border-zinc-200 bg-zinc-50/90 px-3 py-3 sm:px-4 sm:py-4;
+  @apply w-full max-w-7xl rounded-[1.5rem] border border-zinc-200 bg-zinc-50/90 px-3 py-3 sm:px-4 sm:py-4 xl:px-6 xl:py-5;
 }
 
 .command-center-header {
-  @apply flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between;
+  @apply flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between xl:gap-6;
 }
 
 .command-center-eyebrow {
@@ -117,27 +117,39 @@ defineEmits<{
 }
 
 .command-center-title {
-  @apply mt-1 text-base font-medium tracking-tight text-zinc-950 sm:text-lg;
+  @apply mt-1 text-base font-medium tracking-tight text-zinc-950 sm:text-lg xl:text-[1.35rem];
 }
 
 .command-center-meta {
-  @apply m-0 inline-flex items-center self-start rounded-full bg-white px-3 py-1 text-xs font-medium text-zinc-600;
+  @apply m-0 inline-flex items-center self-start rounded-full bg-white px-3 py-1 text-xs font-medium text-zinc-600 xl:px-4 xl:py-1.5;
 }
 
 .command-center-grid {
-  @apply mt-3 grid gap-2.5 sm:grid-cols-2 xl:grid-cols-4;
+  @apply mt-3 grid gap-2.5 sm:grid-cols-2 xl:mt-5 xl:grid-cols-12 xl:gap-4;
 }
 
 .command-card {
-  @apply flex min-h-32 flex-col gap-2 rounded-[1.25rem] border border-zinc-200 bg-white p-3 shadow-sm;
+  @apply flex min-h-32 flex-col gap-2 rounded-[1.25rem] border border-zinc-200 bg-white p-3 shadow-sm xl:min-h-[16rem] xl:gap-3 xl:rounded-[1.5rem] xl:p-5;
+}
+
+.command-card-system {
+  @apply xl:col-span-3;
+}
+
+.command-card-task {
+  @apply xl:col-span-4;
+}
+
+.command-card-review {
+  @apply xl:col-span-2;
 }
 
 .command-card-control {
-  @apply sm:col-span-2 xl:col-span-1;
+  @apply sm:col-span-2 xl:col-span-3;
 }
 
 .command-card-header {
-  @apply flex items-center justify-between gap-2;
+  @apply flex items-center justify-between gap-2 xl:gap-3;
 }
 
 .command-card-label {
@@ -145,23 +157,23 @@ defineEmits<{
 }
 
 .command-card-status {
-  @apply inline-flex items-center rounded-full bg-zinc-100 px-2 py-1 text-[11px] font-medium text-zinc-700;
+  @apply inline-flex items-center rounded-full bg-zinc-100 px-2 py-1 text-[11px] font-medium text-zinc-700 xl:px-2.5;
 }
 
 .command-card-value {
-  @apply m-0 text-sm font-medium leading-5 text-zinc-950;
+  @apply m-0 text-sm font-medium leading-5 text-zinc-950 xl:text-base xl:leading-6;
 }
 
 .command-card-list {
-  @apply m-0 flex list-none flex-col gap-1.5 p-0 text-sm leading-5 text-zinc-600;
+  @apply m-0 flex list-none flex-col gap-1.5 p-0 text-sm leading-5 text-zinc-600 xl:gap-2 xl:text-[0.95rem] xl:leading-6;
 }
 
 .command-card-actions {
-  @apply mt-auto flex flex-wrap gap-2 pt-1;
+  @apply mt-auto flex flex-wrap gap-2 pt-1 xl:gap-2.5 xl:pt-3;
 }
 
 .command-card-action {
-  @apply inline-flex h-8.5 items-center justify-center rounded-full border border-zinc-200 bg-white px-3.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-default disabled:opacity-60;
+  @apply inline-flex h-8.5 items-center justify-center rounded-full border border-zinc-200 bg-white px-3.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-default disabled:opacity-60 xl:h-10 xl:px-4;
 }
 
 .command-card-action-primary {
