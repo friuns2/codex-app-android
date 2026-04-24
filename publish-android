@@ -73,4 +73,4 @@ NODE
 )
 
 echo "Publishing $package_name@$next_version"
-(cd "$publish_dir" && pnpm publish --access public --no-git-checks)
+(cd "$publish_dir" && npm publish --access public --ignore-scripts)
