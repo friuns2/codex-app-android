@@ -1967,10 +1967,6 @@ onBeforeUnmount(() => {
   @apply relative z-40;
 }
 
-.thread-row {
-  @apply hover:bg-zinc-200;
-}
-
 .thread-row[data-menu-open='true'] {
   @apply relative z-30;
 }
@@ -2079,10 +2075,6 @@ onBeforeUnmount(() => {
 
 .project-header-row:hover .project-icon-chevron {
   @apply flex opacity-100;
-}
-
-.thread-row[data-active='true'] {
-  @apply bg-zinc-200;
 }
 
 .thread-row:hover .thread-pin-button,

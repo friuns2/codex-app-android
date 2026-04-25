@@ -46,31 +46,40 @@ function onSelect(value: RuntimeMode): void {
 @reference "tailwindcss";
 
 .runtime-toggle {
-  @apply inline-flex items-center gap-1 rounded-full border border-zinc-200 bg-zinc-100 p-1;
+  @apply inline-flex items-center gap-1 rounded-full border p-1;
+  border-color: var(--theme-border);
+  background: color-mix(in srgb, var(--theme-control-bg) 84%, var(--theme-main-bg));
 }
 
 .runtime-toggle-option {
-  @apply inline-flex h-8 items-center gap-1.5 rounded-full border border-transparent bg-transparent px-3 text-sm text-zinc-600 transition;
+  @apply inline-flex h-8 items-center gap-1.5 rounded-full border border-transparent bg-transparent px-3 text-sm transition;
+  color: var(--theme-text-secondary);
 }
 
 .runtime-toggle-option:hover {
-  @apply bg-zinc-200/70 text-zinc-900;
+  background: var(--theme-control-hover-bg);
+  color: var(--theme-text-primary);
 }
 
 .runtime-toggle-option.is-selected {
-  @apply border-zinc-200 bg-white text-zinc-900 shadow-sm;
+  border-color: var(--theme-selection-border);
+  background: var(--theme-selection-bg);
+  color: var(--theme-selection-text);
+  box-shadow: var(--theme-shadow-sm);
 }
 
 .runtime-toggle-option:focus-visible {
-  @apply outline-none ring-2 ring-zinc-300 ring-offset-1 ring-offset-white;
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--theme-selection-border) 82%, transparent);
 }
 
 .runtime-toggle-option-icon {
-  @apply h-3.5 w-3.5 shrink-0 text-zinc-500;
+  @apply h-3.5 w-3.5 shrink-0;
+  color: var(--theme-text-muted);
 }
 
 .runtime-toggle-option.is-selected .runtime-toggle-option-icon {
-  @apply text-zinc-700;
+  color: inherit;
 }
 
 .runtime-toggle-option-label {

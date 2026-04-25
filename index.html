@@ -3,17 +3,61 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
     <meta name="theme-color" content="#020617" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Codex Web" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" type="image/svg+xml" href="/icons/codexui-icon.svg" />
     <link rel="icon" type="image/png" sizes="192x192" href="/icons/pwa-192x192.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
     <title>Codex Web</title>
+    <script>
+      (() => {
+        const appearanceKey = 'codex-web-local.dark-mode.v1'
+        const themeKey = 'codex-web-local.theme-id.v1'
+        const readStorage = (key) => {
+          try {
+            return window.localStorage.getItem(key)
+          } catch {
+            return null
+          }
+        }
+        const storedAppearance = readStorage(appearanceKey)
+        const storedTheme = readStorage(themeKey)
+        const appearance = storedAppearance === 'light' || storedAppearance === 'dark' || storedAppearance === 'system'
+          ? storedAppearance
+          : 'system'
+        const theme = storedTheme === 'graphite' || storedTheme === 'macos' ? storedTheme : 'default'
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+        const themeMetaColors = {
+          default: { light: '#f1f5f9', dark: '#18181b' },
+          graphite: { light: '#eef2f7', dark: '#111827' },
+          macos: { light: '#f5f5f7', dark: '#1c1c1e' },
+        }
+        const effectiveAppearance = appearance === 'system'
+          ? (prefersDark ? 'dark' : 'light')
+          : appearance
+        const themeColor = themeMetaColors[theme]?.[effectiveAppearance] ?? themeMetaColors.default.light
+
+        document.documentElement.dataset.theme = theme
+        document.documentElement.dataset.appearance = effectiveAppearance
+        document.documentElement.classList.toggle('dark', effectiveAppearance === 'dark')
+
+        const themeColorMeta = document.querySelector('meta[name="theme-color"]')
+        if (themeColorMeta) {
+          themeColorMeta.setAttribute('content', themeColor)
+        }
+
+        const statusBarMeta = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]')
+        if (statusBarMeta) {
+          statusBarMeta.setAttribute('content', effectiveAppearance === 'dark' ? 'black-translucent' : 'default')
+        }
+      })()
+    </script>
   </head>
-  <body class="bg-slate-950">
+  <body>
     <div id="app"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>

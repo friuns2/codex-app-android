@@ -59,4 +59,14 @@ const { t } = useUiLanguage()
 .sidebar-thread-controls-icon {
   @apply w-4 h-4;
 }
+
+.sidebar-thread-controls-button {
+  color: var(--theme-text-secondary);
+}
+
+.sidebar-thread-controls-button:hover {
+  border-color: var(--theme-border);
+  background: var(--theme-control-hover-bg);
+  color: var(--theme-text-primary);
+}
 </style>

@@ -166,4 +166,30 @@ function onResizeHandleMouseDown(event: MouseEvent): void {
 .drawer-leave-to .mobile-drawer {
   transform: translateX(-100%);
 }
+
+.desktop-layout {
+  background: var(--theme-shell-bg);
+  color: var(--theme-text-primary);
+}
+
+.desktop-sidebar,
+.mobile-drawer {
+  background: var(--theme-sidebar-bg);
+}
+
+.desktop-main {
+  background: var(--theme-main-bg);
+}
+
+.desktop-resize-handle {
+  background: var(--theme-border-strong);
+}
+
+.desktop-resize-handle:hover {
+  background: var(--theme-control-active-bg);
+}
+
+.mobile-drawer-backdrop {
+  background: var(--theme-overlay);
+}
 </style>

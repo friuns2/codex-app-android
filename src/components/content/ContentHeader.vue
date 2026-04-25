@@ -21,11 +21,13 @@ defineProps<{
 @reference "tailwindcss";
 
 .content-header {
-  @apply relative z-10 w-full min-w-0 min-h-12 sm:min-h-14 flex items-center gap-2 sm:gap-3 px-2 sm:px-3 pt-3 sm:pt-4 pb-2 bg-white;
+  @apply relative z-10 w-full min-w-0 min-h-12 sm:min-h-14 flex items-center gap-2 sm:gap-3 px-2 sm:px-3 pt-3 sm:pt-4 pb-2;
+  background: var(--theme-main-bg);
 }
 
 .content-title {
-  @apply m-0 min-w-0 max-w-[min(72ch,100%)] flex-1 truncate text-sm font-medium leading-6 text-slate-900 max-sm:text-xs;
+  @apply m-0 min-w-0 max-w-[min(72ch,100%)] flex-1 truncate text-sm font-medium leading-6 max-sm:text-xs;
+  color: var(--theme-text-primary);
 }
 
 .content-title.is-accent {

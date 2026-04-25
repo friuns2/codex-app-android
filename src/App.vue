@@ -191,6 +191,10 @@
                   <option v-for="option in uiLanguageOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
                 </select>
               </div>
+              <button class="sidebar-settings-row" type="button" :title="SETTINGS_HELP.theme" @click="cycleTheme">
+                <span class="sidebar-settings-label">{{ t('Theme') }}</span>
+                <span class="sidebar-settings-value">{{ currentThemeLabel }}</span>
+              </button>
               <button class="sidebar-settings-row" type="button" :title="SETTINGS_HELP.chatWidth" @click="cycleChatWidth">
                 <span class="sidebar-settings-label">{{ t('Chat width') }}</span>
                 <span class="sidebar-settings-value">{{ chatWidthLabel }}</span>
@@ -204,7 +208,7 @@
                 <span class="sidebar-settings-toggle" :class="{ 'is-on': dictationAutoSend }" />
               </button>
 
-              <div class="sidebar-settings-row sidebar-settings-row--select" :title="t('Choose the API provider for the Codex backend')">
+              <div class="sidebar-settings-row sidebar-settings-row--select sidebar-settings-row--provider" :title="t('Choose the API provider for the Codex backend')">
                 <span class="sidebar-settings-label">{{ t('Provider') }}</span>
                 <select
                   class="sidebar-settings-provider-select"
@@ -357,7 +361,7 @@
                   </div>
                 </div>
               </div>
-              <div class="sidebar-settings-row sidebar-settings-row--select" :title="SETTINGS_HELP.dictationLanguage">
+              <div class="sidebar-settings-row sidebar-settings-row--select sidebar-settings-row--language" :title="SETTINGS_HELP.dictationLanguage">
                 <span class="sidebar-settings-label">{{ t('Dictation language') }}</span>
                 <ComposerDropdown
                   class="sidebar-settings-language-dropdown"
@@ -888,6 +892,8 @@ import type { ComposerDraftPayload, ThreadComposerExposed } from './components/c
 import type { LocalDirectoryEntry, TelegramStatus, WorktreeBranchOption } from './api/codexGateway'
 import { getFreeModeStatus, setFreeMode, setFreeModeCustomKey, setCustomProvider } from './api/codexGateway'
 import { getPathLeafName, getPathParent, normalizePathForUi } from './pathUtils.js'
+import { cycleAppearanceMode, getEffectiveTheme, getStoredAppearanceMode, type AppearanceMode } from './theme'
+import { BUILT_IN_THEMES, cycleThemeId, DEFAULT_THEME_ID, getStoredThemeId, getThemeMetaColor, normalizeMetaThemeColor, type ThemeId } from './theme/themes'
 
 const ThreadConversation = defineAsyncComponent(() => import('./components/content/ThreadConversation.vue'))
 const ThreadTerminalPanel = defineAsyncComponent(() => import('./components/content/ThreadTerminalPanel.vue'))
@@ -903,6 +909,7 @@ const SETTINGS_HELP = {
   sendWithEnter: t('When enabled, press Enter to send. When disabled, use Command+Enter to send.'),
   inProgressSendMode: t('If a turn is still running, choose whether a new prompt should steer the current turn or be queued.'),
   appearance: t('Switch between system theme, light mode, and dark mode.'),
+  theme: t('Switch between built-in color themes.'),
   chatWidth: t('Choose how wide the conversation column and composer can grow on desktop screens.'),
   dictationClickToToggle: t('Use click-to-start and click-to-stop dictation instead of hold-to-talk.'),
   dictationAutoSend: t('Automatically send transcribed dictation when recording stops.'),
@@ -1163,6 +1170,7 @@ const accountActionError = ref('')
 const SEND_WITH_ENTER_KEY = 'codex-web-local.send-with-enter.v1'
 const IN_PROGRESS_SEND_MODE_KEY = 'codex-web-local.in-progress-send-mode.v1'
 const DARK_MODE_KEY = 'codex-web-local.dark-mode.v1'
+const THEME_ID_KEY = 'codex-web-local.theme-id.v1'
 const DICTATION_CLICK_TO_TOGGLE_KEY = 'codex-web-local.dictation-click-to-toggle.v1'
 const DICTATION_AUTO_SEND_KEY = 'codex-web-local.dictation-auto-send.v1'
 const DICTATION_LANGUAGE_KEY = 'codex-web-local.dictation-language.v1'
@@ -1171,7 +1179,8 @@ const CHAT_WIDTH_KEY = 'codex-web-local.chat-width.v1'
 const MOBILE_RESUME_RELOAD_MIN_HIDDEN_MS = 400
 const sendWithEnter = ref(loadBoolPref(SEND_WITH_ENTER_KEY, true))
 const inProgressSendMode = ref<'steer' | 'queue'>(loadInProgressSendModePref())
-const darkMode = ref<'system' | 'light' | 'dark'>(loadDarkModePref())
+const darkMode = ref<AppearanceMode>(loadDarkModePref())
+const themeId = ref<ThemeId>(loadThemeIdPref())
 const chatWidth = ref<ChatWidthMode>(loadChatWidthPref())
 const dictationClickToToggle = ref(loadBoolPref(DICTATION_CLICK_TO_TOGGLE_KEY, false))
 const dictationAutoSend = ref(loadBoolPref(DICTATION_AUTO_SEND_KEY, true))
@@ -1504,6 +1513,9 @@ const terminalShortcutLabel = computed(() => {
   }
   return 'Ctrl+J'
 })
+const currentThemeLabel = computed(() => {
+  return BUILT_IN_THEMES.find((theme) => theme.id === themeId.value)?.label ?? 'Default'
+})
 const contentStyle = computed(() => {
   const preset = CHAT_WIDTH_PRESETS[chatWidth.value]
   const keyboardInset = Math.max(
@@ -1539,8 +1551,8 @@ onMounted(() => {
   window.visualViewport?.addEventListener('resize', updateVisualViewportState)
   window.visualViewport?.addEventListener('scroll', updateVisualViewportState)
   updateVisualViewportState()
-  applyDarkMode()
-  darkModeMediaQuery?.addEventListener('change', applyDarkMode)
+  applyThemeState()
+  darkModeMediaQuery?.addEventListener('change', applyThemeState)
   void initialize()
   void loadHomeDirectory()
   void loadFirstLaunchPluginsCardPreference()
@@ -1561,7 +1573,7 @@ onUnmounted(() => {
   window.removeEventListener('resize', updateVisualViewportState)
   window.visualViewport?.removeEventListener('resize', updateVisualViewportState)
   window.visualViewport?.removeEventListener('scroll', updateVisualViewportState)
-  darkModeMediaQuery?.removeEventListener('change', applyDarkMode)
+  darkModeMediaQuery?.removeEventListener('change', applyThemeState)
   if (accountStatePollTimer !== null) {
     window.clearInterval(accountStatePollTimer)
     accountStatePollTimer = null
@@ -2889,11 +2901,14 @@ function loadBoolPref(key: string, fallback: boolean): boolean {
   return v === '1'
 }
 
-function loadDarkModePref(): 'system' | 'light' | 'dark' {
+function loadDarkModePref(): AppearanceMode {
   if (typeof window === 'undefined') return 'system'
-  const v = window.localStorage.getItem(DARK_MODE_KEY)
-  if (v === 'light' || v === 'dark') return v
-  return 'system'
+  return getStoredAppearanceMode(window.localStorage.getItem(DARK_MODE_KEY))
+}
+
+function loadThemeIdPref(): ThemeId {
+  if (typeof window === 'undefined') return DEFAULT_THEME_ID
+  return getStoredThemeId(window.localStorage.getItem(THEME_ID_KEY))
 }
 
 function loadInProgressSendModePref(): 'steer' | 'queue' {
@@ -2919,11 +2934,15 @@ function cycleInProgressSendMode(): void {
 }
 
 function cycleDarkMode(): void {
-  const order: Array<'system' | 'light' | 'dark'> = ['system', 'light', 'dark']
-  const idx = order.indexOf(darkMode.value)
-  darkMode.value = order[(idx + 1) % order.length]
+  darkMode.value = cycleAppearanceMode(darkMode.value)
   window.localStorage.setItem(DARK_MODE_KEY, darkMode.value)
-  applyDarkMode()
+  applyThemeState()
+}
+
+function cycleTheme(): void {
+  themeId.value = cycleThemeId(themeId.value)
+  window.localStorage.setItem(THEME_ID_KEY, themeId.value)
+  applyThemeState()
 }
 
 function cycleChatWidth(): void {
@@ -3167,16 +3186,31 @@ function normalizeToWhisperLanguage(raw: string): string {
   return ''
 }
 
-function applyDarkMode(): void {
-  const root = document.documentElement
-  if (darkMode.value === 'dark') {
-    root.classList.add('dark')
-  } else if (darkMode.value === 'light') {
-    root.classList.remove('dark')
-  } else {
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-    root.classList.toggle('dark', prefersDark)
+function syncBrowserThemeMetadata(root: HTMLElement, theme: ThemeId, effectiveAppearance: 'light' | 'dark'): void {
+  const fallbackThemeColor = getThemeMetaColor(theme, effectiveAppearance)
+  const themeColor = normalizeMetaThemeColor(
+    window.getComputedStyle(root).getPropertyValue('--theme-body-background'),
+    fallbackThemeColor
+  )
+  const themeColorMeta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')
+  if (themeColorMeta) {
+    themeColorMeta.setAttribute('content', themeColor)
   }
+
+  const statusBarMeta = document.querySelector<HTMLMetaElement>('meta[name="apple-mobile-web-app-status-bar-style"]')
+  if (statusBarMeta) {
+    statusBarMeta.setAttribute('content', effectiveAppearance === 'dark' ? 'black-translucent' : 'default')
+  }
+}
+
+function applyThemeState(): void {
+  const root = document.documentElement
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+  const effectiveAppearance = getEffectiveTheme(darkMode.value, prefersDark)
+  root.dataset.theme = themeId.value
+  root.dataset.appearance = effectiveAppearance
+  root.classList.toggle('dark', effectiveAppearance === 'dark')
+  syncBrowserThemeMetadata(root, themeId.value, effectiveAppearance)
 }
 
 function loadSidebarCollapsed(): boolean {
@@ -3523,7 +3557,9 @@ async function loadWorktreeBranches(sourceCwd: string): Promise<void> {
 }
 
 .content-root {
-  @apply h-full min-h-0 min-w-0 w-full flex flex-col overflow-y-hidden overflow-x-hidden bg-white;
+  @apply h-full min-h-0 min-w-0 w-full flex flex-col overflow-y-hidden overflow-x-hidden;
+  background: var(--theme-main-bg);
+  color: var(--theme-text-primary);
 }
 
 .content-root.is-virtual-keyboard-open {
@@ -3537,11 +3573,20 @@ async function loadWorktreeBranches(sourceCwd: string): Promise<void> {
 }
 
 .sidebar-search-toggle {
-  @apply h-6.75 w-6.75 rounded-md border border-transparent bg-transparent text-zinc-600 flex items-center justify-center transition hover:border-zinc-200 hover:bg-zinc-50;
+  @apply h-6.75 w-6.75 rounded-md border border-transparent bg-transparent flex items-center justify-center transition;
+  color: var(--theme-text-secondary);
+}
+
+.sidebar-search-toggle:hover {
+  border-color: var(--theme-border);
+  background: var(--theme-control-hover-bg);
+  color: var(--theme-text-primary);
 }
 
 .sidebar-search-toggle[aria-pressed='true'] {
-  @apply border-zinc-300 bg-zinc-100 text-zinc-700;
+  border-color: var(--theme-selection-border);
+  background: var(--theme-selection-bg);
+  color: var(--theme-selection-text);
 }
 
 .sidebar-search-toggle-icon {
@@ -3549,19 +3594,32 @@ async function loadWorktreeBranches(sourceCwd: string): Promise<void> {
 }
 
 .sidebar-search-bar {
-  @apply flex items-center gap-1.5 mx-2 px-2 py-1 rounded-md border border-zinc-200 bg-white transition-colors focus-within:border-zinc-400;
+  @apply flex items-center gap-1.5 mx-2 px-2 py-1 rounded-md border transition-colors;
+  border-color: var(--theme-border);
+  background: var(--theme-panel-bg);
 }
 
 .sidebar-search-bar-icon {
-  @apply w-3.5 h-3.5 text-zinc-400 shrink-0;
+  @apply w-3.5 h-3.5 shrink-0;
+  color: var(--theme-text-muted);
 }
 
 .sidebar-search-input {
-  @apply flex-1 min-w-0 bg-transparent text-sm text-zinc-800 placeholder-zinc-400 outline-none border-none p-0;
+  @apply flex-1 min-w-0 bg-transparent text-sm outline-none border-none p-0;
+  color: var(--theme-text-primary);
+}
+
+.sidebar-search-input::placeholder {
+  color: var(--theme-text-muted);
 }
 
 .sidebar-search-clear {
-  @apply w-4 h-4 rounded text-zinc-400 flex items-center justify-center transition hover:text-zinc-600;
+  @apply w-4 h-4 rounded flex items-center justify-center transition;
+  color: var(--theme-text-muted);
+}
+
+.sidebar-search-clear:hover {
+  color: var(--theme-text-primary);
 }
 
 .sidebar-search-clear-icon {
@@ -3648,7 +3706,7 @@ async function loadWorktreeBranches(sourceCwd: string): Promise<void> {
 
 
 .content-error {
-  @apply m-0 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700;
+  @apply m-0 rounded-lg border px-3 py-2 text-sm;
 }
 
 .content-grid {
@@ -3672,11 +3730,7 @@ async function loadWorktreeBranches(sourceCwd: string): Promise<void> {
 }
 
 .content-header-terminal-toggle {
-  @apply flex h-8 items-center gap-1.5 rounded-full border border-zinc-200 bg-white px-2.5 text-xs text-zinc-700 transition hover:bg-zinc-50;
-}
-
-.content-header-terminal-toggle[aria-pressed='true'] {
-  @apply border-zinc-300 bg-zinc-100 text-zinc-950;
+  @apply flex h-8 items-center gap-1.5 rounded-full border px-2.5 text-xs transition;
 }
 
 .content-header-terminal-toggle-icon {
@@ -3684,11 +3738,11 @@ async function loadWorktreeBranches(sourceCwd: string): Promise<void> {
 }
 
 .content-header-terminal-shortcut {
-  @apply hidden text-[11px] text-zinc-500 sm:inline;
+  @apply hidden text-[11px] sm:inline;
 }
 
 .content-header-branch-dropdown :deep(.composer-dropdown-trigger) {
-  @apply rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-xs text-zinc-700 transition hover:bg-zinc-50;
+  @apply rounded-full border px-3 py-1.5 text-xs transition;
 }
 
 .content-header-branch-dropdown :deep(.composer-dropdown-value) {
@@ -3700,24 +3754,16 @@ async function loadWorktreeBranches(sourceCwd: string): Promise<void> {
   right: 0;
 }
 
-.content-header-branch-dropdown.is-review-open :deep(.composer-dropdown-trigger) {
-  @apply border-zinc-900 bg-zinc-900 text-white hover:bg-zinc-800;
-}
-
-.content-header-branch-dropdown.is-review-open :deep(.composer-dropdown-chevron) {
-  @apply text-white;
-}
-
 .new-thread-empty {
   @apply flex-1 min-h-0 flex flex-col items-center justify-center gap-0.5 px-3 sm:px-6;
 }
 
 .new-thread-hero {
-  @apply m-0 text-2xl sm:text-[2.5rem] font-normal leading-[1.05] text-zinc-900;
+  @apply m-0 text-2xl sm:text-[2.5rem] font-normal leading-[1.05];
 }
 
 .new-thread-folder-dropdown {
-  @apply text-2xl sm:text-[2.5rem] text-zinc-500;
+  @apply text-2xl sm:text-[2.5rem];
 }
 
 .new-thread-folder-dropdown :deep(.composer-dropdown-trigger) {
@@ -3733,7 +3779,7 @@ async function loadWorktreeBranches(sourceCwd: string): Promise<void> {
 }
 
 .new-thread-folder-selected {
-  @apply mt-2 mb-0 max-w-3xl text-center text-xs text-zinc-500 break-all;
+  @apply mt-2 mb-0 max-w-3xl text-center text-xs break-all;
 }
 
 .new-thread-folder-actions {
@@ -3825,19 +3871,15 @@ async function loadWorktreeBranches(sourceCwd: string): Promise<void> {
 }
 
 .new-thread-folder-action {
-  @apply inline-flex h-9 items-center justify-center rounded-full border border-zinc-200 bg-white px-4 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-default disabled:opacity-60;
-}
-
-.new-thread-folder-action-primary {
-  @apply border-zinc-900 bg-zinc-900 text-white hover:bg-zinc-800;
+  @apply inline-flex h-9 items-center justify-center rounded-full border px-4 text-sm font-medium transition disabled:cursor-default disabled:opacity-60;
 }
 
 .new-thread-open-folder-overlay {
-  @apply fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4;
+  @apply fixed inset-0 z-50 flex items-center justify-center p-4;
 }
 
 .new-thread-open-folder {
-  @apply flex w-full max-w-3xl max-h-[90vh] flex-col gap-2 overflow-y-auto rounded-2xl border border-zinc-200 bg-white px-4 py-4 text-left shadow-xl;
+  @apply flex w-full max-w-3xl max-h-[90vh] flex-col gap-2 overflow-y-auto rounded-2xl border px-4 py-4 text-left;
 }
 
 .new-thread-open-folder-header {
@@ -3845,15 +3887,18 @@ async function loadWorktreeBranches(sourceCwd: string): Promise<void> {
 }
 
 .new-thread-open-folder-title {
-  @apply m-0 text-sm font-semibold text-zinc-900;
+  @apply m-0 text-sm font-semibold;
+  color: var(--theme-text-primary);
 }
 
 .new-thread-open-folder-close {
-  @apply border-0 bg-transparent p-0 text-sm text-zinc-500 transition hover:text-zinc-800;
+  @apply border-0 bg-transparent p-0 text-sm transition;
+  color: var(--theme-text-secondary);
 }
 
 .new-thread-open-folder-label {
-  @apply m-0 text-xs font-medium uppercase tracking-wide text-zinc-500;
+  @apply m-0 text-xs font-medium uppercase tracking-wide;
+  color: var(--theme-text-muted);
 }
 
 .new-thread-open-folder-current {
@@ -3861,7 +3906,14 @@ async function loadWorktreeBranches(sourceCwd: string): Promise<void> {
 }
 
 .new-thread-open-folder-path {
-  @apply min-w-0 flex-1 rounded-xl border border-zinc-200 bg-white px-3 py-2 font-mono text-xs text-zinc-700 outline-none transition focus:border-zinc-400;
+  @apply min-w-0 flex-1 rounded-xl border px-3 py-2 font-mono text-xs outline-none transition;
+  border-color: var(--theme-border);
+  background: var(--theme-panel-subtle-bg);
+  color: var(--theme-text-primary);
+}
+
+.new-thread-open-folder-path:focus {
+  border-color: var(--theme-border-strong);
 }
 
 .new-thread-open-folder-actions {
@@ -3869,20 +3921,14 @@ async function loadWorktreeBranches(sourceCwd: string): Promise<void> {
 }
 
 .new-thread-open-folder-toggle {
-  @apply inline-flex items-center gap-2 text-sm text-zinc-600;
+  @apply inline-flex items-center gap-2 text-sm;
+  color: var(--theme-text-secondary);
 }
 
 .new-thread-open-folder-toggle-input {
-  @apply relative h-4 w-4 shrink-0 appearance-none rounded-[4px] border border-zinc-300 bg-white outline-none transition;
-}
-
-.new-thread-open-folder-toggle-input:focus-visible {
-  box-shadow: 0 0 0 3px rgb(228 228 231);
-}
-
-.new-thread-open-folder-toggle-input:checked {
-  border-color: rgb(24 24 27);
-  background-color: rgb(255 255 255);
+  @apply relative h-4 w-4 shrink-0 appearance-none rounded-[4px] border outline-none transition;
+  border-color: var(--theme-border);
+  background: var(--theme-control-bg);
 }
 
 .new-thread-open-folder-toggle-input::after {
@@ -3892,8 +3938,8 @@ async function loadWorktreeBranches(sourceCwd: string): Promise<void> {
   top: 1px;
   width: 4px;
   height: 8px;
-  border-right: 2px solid rgb(24 24 27);
-  border-bottom: 2px solid rgb(24 24 27);
+  border-right: 2px solid var(--theme-accent);
+  border-bottom: 2px solid var(--theme-accent);
   transform: rotate(45deg);
   opacity: 0;
 }
@@ -3903,7 +3949,10 @@ async function loadWorktreeBranches(sourceCwd: string): Promise<void> {
 }
 
 .new-thread-open-folder-filter {
-  @apply w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition focus:border-zinc-400;
+  @apply w-full rounded-xl border px-3 py-2 text-sm outline-none transition;
+  border-color: var(--theme-border);
+  background: var(--theme-control-bg);
+  color: var(--theme-text-primary);
 }
 
 .new-thread-open-folder-create {
@@ -3915,23 +3964,28 @@ async function loadWorktreeBranches(sourceCwd: string): Promise<void> {
 }
 
 .new-thread-open-folder-create-input {
-  @apply w-full min-w-0 flex-1 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition focus:border-zinc-400;
+  @apply w-full min-w-0 flex-1 rounded-xl border px-3 py-2 text-sm outline-none transition;
+  border-color: var(--theme-border);
+  background: var(--theme-control-bg);
+  color: var(--theme-text-primary);
 }
 
 .new-thread-open-folder-create-submit {
   @apply shrink-0;
 }
 
-.new-thread-folder-action[aria-pressed='true'] {
-  @apply border-zinc-900 bg-zinc-900 text-white hover:bg-zinc-800;
-}
-
 .new-thread-open-folder-status {
-  @apply m-0 rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-600;
+  @apply m-0 rounded-xl border px-3 py-2 text-sm;
+  border-color: var(--theme-border);
+  background: var(--theme-panel-subtle-bg);
+  color: var(--theme-text-secondary);
 }
 
 .new-thread-open-folder-error {
-  @apply m-0 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700;
+  @apply m-0 rounded-xl border px-3 py-2 text-sm;
+  border-color: var(--theme-danger-border);
+  background: var(--theme-danger-soft-bg);
+  color: var(--theme-danger-text);
 }
 
 .new-thread-open-folder-error-actions {
@@ -3941,7 +3995,7 @@ async function loadWorktreeBranches(sourceCwd: string): Promise<void> {
 .new-thread-open-folder-list {
   @apply m-0 flex max-h-72 list-none flex-col gap-1 overflow-y-auto p-0 pr-3;
   scrollbar-gutter: stable;
-  scrollbar-color: rgb(161 161 170) rgb(244 244 245);
+  scrollbar-color: var(--theme-border-strong) var(--theme-control-bg);
   scrollbar-width: thin;
 }
 
@@ -3950,18 +4004,18 @@ async function loadWorktreeBranches(sourceCwd: string): Promise<void> {
 }
 
 .new-thread-open-folder-list::-webkit-scrollbar-track {
-  background: rgb(244 244 245);
+  background: var(--theme-control-bg);
   border-radius: 9999px;
 }
 
 .new-thread-open-folder-list::-webkit-scrollbar-thumb {
-  background: rgb(161 161 170);
+  background: var(--theme-border-strong);
   border-radius: 9999px;
-  border: 2px solid rgb(244 244 245);
+  border: 2px solid var(--theme-control-bg);
 }
 
 .new-thread-open-folder-list::-webkit-scrollbar-thumb:hover {
-  background: rgb(113 113 122);
+  background: var(--theme-control-active-bg);
 }
 
 .new-thread-open-folder-item {
@@ -3969,7 +4023,10 @@ async function loadWorktreeBranches(sourceCwd: string): Promise<void> {
 }
 
 .new-thread-open-folder-item-main {
-  @apply min-w-0 truncate rounded-xl border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-left text-sm font-medium leading-5 text-zinc-900 transition hover:border-zinc-300 hover:bg-zinc-100;
+  @apply min-w-0 truncate rounded-xl border px-2.5 py-1 text-left text-sm font-medium leading-5 transition;
+  border-color: var(--theme-border);
+  background: var(--theme-panel-subtle-bg);
+  color: var(--theme-text-primary);
 }
 
 .new-thread-open-folder-item-main:disabled,
@@ -3982,7 +4039,10 @@ async function loadWorktreeBranches(sourceCwd: string): Promise<void> {
 }
 
 .new-thread-open-folder-item-open {
-  @apply inline-flex h-7 items-center justify-center rounded-xl border border-zinc-200 bg-white px-2.5 text-xs font-medium text-zinc-700 transition hover:bg-zinc-50;
+  @apply inline-flex h-7 items-center justify-center rounded-xl border px-2.5 text-xs font-medium transition;
+  border-color: var(--theme-border);
+  background: var(--theme-control-bg);
+  color: var(--theme-text-secondary);
 }
 
 .new-thread-runtime-dropdown {
@@ -3994,19 +4054,25 @@ async function loadWorktreeBranches(sourceCwd: string): Promise<void> {
 }
 
 .new-thread-branch-select-label {
-  @apply m-0 mb-1 text-xs font-medium uppercase tracking-wide text-zinc-500;
+  @apply m-0 mb-1 text-xs font-medium uppercase tracking-wide;
+  color: var(--theme-text-muted);
 }
 
 .new-thread-branch-dropdown :deep(.composer-dropdown-trigger) {
-  @apply h-9 rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-700;
+  @apply h-9 rounded-xl border px-3 text-sm;
+  border-color: var(--theme-border);
+  background: var(--theme-control-bg);
+  color: var(--theme-text-secondary);
 }
 
 .new-thread-branch-select-help {
-  @apply mt-1 mb-0 text-xs text-zinc-500;
+  @apply mt-1 mb-0 text-xs;
+  color: var(--theme-text-muted);
 }
 
 .new-thread-runtime-help {
-  @apply mt-2 mb-0 max-w-3xl text-center text-xs text-zinc-500;
+  @apply mt-2 mb-0 max-w-3xl text-center text-xs;
+  color: var(--theme-text-muted);
 }
 
 .worktree-init-status {
@@ -4014,7 +4080,9 @@ async function loadWorktreeBranches(sourceCwd: string): Promise<void> {
 }
 
 .worktree-init-status.is-running {
-  @apply border-zinc-300 bg-zinc-50 text-zinc-700;
+  border-color: var(--theme-border);
+  background: var(--theme-panel-subtle-bg);
+  color: var(--theme-text-secondary);
 }
 
 .worktree-init-status.is-error {
@@ -4030,7 +4098,9 @@ async function loadWorktreeBranches(sourceCwd: string): Promise<void> {
 }
 
 .sidebar-settings-area {
-  @apply shrink-0 bg-slate-100 pt-2 px-2 pb-2 border-t border-zinc-200;
+  @apply shrink-0 pt-2 px-2 pb-2 border-t;
+  border-color: var(--theme-border);
+  background: var(--theme-sidebar-bg);
 }
 
 .sidebar-settings-button {
@@ -4038,7 +4108,7 @@ async function loadWorktreeBranches(sourceCwd: string): Promise<void> {
 }
 
 .sidebar-settings-button-version {
-  @apply ml-auto min-w-0 truncate text-right text-xs;
+  @apply ml-auto min-w-0 truncate text-right text-xs text-zinc-500;
 }
 
 .sidebar-settings-icon {
@@ -4257,43 +4327,74 @@ async function loadWorktreeBranches(sourceCwd: string): Promise<void> {
 }
 
 .sidebar-settings-key-input {
-  @apply flex-1 min-w-0 text-xs rounded border border-zinc-200 bg-white px-2 py-1 outline-none transition-colors placeholder:text-zinc-400;
+  @apply flex-1 min-w-0 text-xs rounded border px-2 py-1 outline-none transition-colors;
+  border-color: var(--theme-border);
+  background: var(--theme-control-bg);
+  color: var(--theme-text-primary);
+}
+
+.sidebar-settings-key-input::placeholder {
+  color: var(--theme-text-muted);
 }
 
 .sidebar-settings-key-input:focus {
-  @apply border-zinc-400;
+  border-color: var(--theme-selection-border);
 }
 
 .sidebar-settings-key-save {
-  @apply shrink-0 rounded border border-zinc-200 bg-white px-2.5 py-1 text-xs text-zinc-700 transition-colors hover:bg-zinc-50 disabled:opacity-40 disabled:cursor-default;
+  @apply shrink-0 rounded border px-2.5 py-1 text-xs transition-colors disabled:opacity-40 disabled:cursor-default;
+  border-color: var(--theme-border);
+  background: var(--theme-control-bg);
+  color: var(--theme-text-secondary);
+}
+
+.sidebar-settings-key-save:hover {
+  background: var(--theme-control-hover-bg);
+  color: var(--theme-text-primary);
 }
 
 .sidebar-settings-key-masked {
-  @apply flex-1 min-w-0 text-xs text-zinc-500 font-mono truncate;
+  @apply flex-1 min-w-0 text-xs font-mono truncate;
+  color: var(--theme-text-muted);
 }
 
 .sidebar-settings-key-clear {
-  @apply shrink-0 w-6 h-6 flex items-center justify-center rounded-full border border-zinc-200 text-xs text-zinc-400 transition-colors hover:text-zinc-600 hover:border-zinc-300 disabled:opacity-40;
+  @apply shrink-0 w-6 h-6 flex items-center justify-center rounded-full border text-xs transition-colors disabled:opacity-40;
+  border-color: var(--theme-border);
+  color: var(--theme-text-muted);
+}
+
+.sidebar-settings-key-clear:hover {
+  border-color: var(--theme-border-strong);
+  color: var(--theme-text-primary);
 }
 
 .sidebar-settings-provider-select {
-  @apply min-w-0 max-w-40 rounded-md border border-zinc-200 bg-white px-2 py-1 text-xs text-zinc-700 outline-none transition-colors cursor-pointer;
+  @apply min-w-0 max-w-40 rounded-md border px-2 py-1 text-xs outline-none transition-colors cursor-pointer;
+  border-color: var(--theme-border);
+  background: var(--theme-control-bg);
+  color: var(--theme-text-secondary);
 }
 
 .sidebar-settings-provider-select:focus {
-  @apply border-zinc-400 ring-2 ring-zinc-200;
+  border-color: var(--theme-selection-border);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-selection-border) 28%, transparent);
 }
 
 .sidebar-settings-segmented {
-  @apply inline-flex items-center rounded-md border border-zinc-200 bg-white p-0.5;
+  @apply inline-flex items-center rounded-md border p-0.5;
+  border-color: var(--theme-border);
+  background: var(--theme-control-bg);
 }
 
 .sidebar-settings-segmented-option {
-  @apply rounded px-2 py-1 text-xs text-zinc-600 transition-colors;
+  @apply rounded px-2 py-1 text-xs transition-colors;
+  color: var(--theme-text-secondary);
 }
 
 .sidebar-settings-segmented-option.is-active {
-  @apply bg-zinc-800 text-white;
+  background: var(--theme-selection-bg);
+  color: var(--theme-selection-text);
 }
 
 .sidebar-settings-provider-info {
@@ -4301,51 +4402,12 @@ async function loadWorktreeBranches(sourceCwd: string): Promise<void> {
 }
 
 .sidebar-settings-provider-link {
-  @apply text-xs text-blue-600 hover:text-blue-700 underline shrink-0;
+  @apply text-xs underline shrink-0;
+  color: var(--theme-link);
 }
 
-:root.dark .sidebar-settings-provider-select {
-  @apply border-zinc-600 bg-zinc-800 text-zinc-200;
-}
-
-:root.dark .sidebar-settings-provider-select:focus {
-  @apply border-zinc-500 ring-zinc-700;
-}
-
-:root.dark .sidebar-settings-segmented {
-  @apply border-zinc-600 bg-zinc-800;
-}
-
-:root.dark .sidebar-settings-segmented-option {
-  @apply text-zinc-300;
-}
-
-:root.dark .sidebar-settings-segmented-option.is-active {
-  @apply bg-zinc-100 text-zinc-900;
-}
-
-:root.dark .sidebar-settings-provider-link {
-  @apply text-blue-400 hover:text-blue-300;
-}
-
-:root.dark .sidebar-settings-key-input {
-  @apply border-zinc-600 bg-zinc-800 text-zinc-200 placeholder:text-zinc-500;
-}
-
-:root.dark .sidebar-settings-key-input:focus {
-  @apply border-zinc-500;
-}
-
-:root.dark .sidebar-settings-key-save {
-  @apply border-zinc-600 bg-zinc-700 text-zinc-200 hover:bg-zinc-600;
-}
-
-:root.dark .sidebar-settings-key-masked {
-  @apply text-zinc-400;
-}
-
-:root.dark .sidebar-settings-key-clear {
-  @apply border-zinc-600 text-zinc-500 hover:text-zinc-300 hover:border-zinc-500;
+.sidebar-settings-provider-link:hover {
+  color: var(--theme-link-hover);
 }
 
 .settings-panel-enter-active,
@@ -4364,7 +4426,8 @@ async function loadWorktreeBranches(sourceCwd: string): Promise<void> {
 }
 
 .sidebar-settings-context-value {
-  @apply text-xs font-semibold text-zinc-700 text-right;
+  @apply text-xs font-semibold text-right;
+  color: var(--theme-text-secondary);
 }
 
 .sidebar-settings-context-value[data-state='ok'] {
@@ -4380,15 +4443,19 @@ async function loadWorktreeBranches(sourceCwd: string): Promise<void> {
 }
 
 .sidebar-settings-context-meta {
-  @apply block text-[11px] font-normal text-zinc-500;
+  @apply block text-[11px] font-normal;
+  color: var(--theme-text-muted);
 }
 
 .sidebar-settings-rate-limits {
-  @apply border-t border-zinc-200 px-2 pt-2;
+  @apply border-t px-2 pt-2;
+  border-color: var(--theme-border);
 }
 
 .sidebar-settings-build-label {
-  @apply border-t border-zinc-100 px-3 py-2 text-[11px] text-zinc-500;
+  @apply border-t px-3 py-2 text-[11px];
+  border-color: var(--theme-border);
+  color: var(--theme-text-muted);
 }
 
 </style>

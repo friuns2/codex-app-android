@@ -4264,11 +4264,14 @@ onBeforeUnmount(() => {
 }
 
 .load-more-button {
-  @apply px-4 py-1.5 text-xs rounded-full border border-slate-300 dark:border-slate-600
-         text-slate-500 dark:text-slate-400 bg-transparent
-         hover:bg-slate-100 dark:hover:bg-slate-800
-         disabled:opacity-40 disabled:cursor-not-allowed
-         transition-colors cursor-pointer;
+  @apply px-4 py-1.5 text-xs rounded-full border bg-transparent disabled:opacity-40
+         disabled:cursor-not-allowed transition-colors cursor-pointer;
+  border-color: var(--theme-border);
+  color: var(--theme-text-secondary);
+}
+
+.load-more-button:hover {
+  background: var(--theme-control-hover-bg);
 }
 
 .conversation-item {
@@ -4508,7 +4511,10 @@ onBeforeUnmount(() => {
 }
 
 .plan-card {
-  @apply flex max-w-[min(var(--chat-card-max,76ch),100%)] flex-col gap-3 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-slate-900;
+  @apply flex max-w-[min(var(--chat-card-max,76ch),100%)] flex-col gap-3 rounded-2xl border px-4 py-3;
+  border-color: var(--theme-border);
+  background: var(--theme-panel-bg);
+  color: var(--theme-text-primary);
 }
 
 .plan-card-header {
@@ -4516,15 +4522,18 @@ onBeforeUnmount(() => {
 }
 
 .plan-card-title {
-  @apply m-0 text-sm font-semibold leading-5 text-sky-900;
+  @apply m-0 text-sm font-semibold leading-5;
+  color: var(--theme-text-primary);
 }
 
 .plan-card-badge {
-  @apply inline-flex items-center rounded-full bg-sky-200 px-2 py-0.5 text-[11px] font-medium leading-4 text-sky-900;
+  @apply inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium leading-4;
+  background: var(--theme-control-active-bg);
+  color: var(--theme-text-primary);
 }
 
 .plan-card-explanation {
-  @apply text-slate-700;
+  color: var(--theme-text-secondary);
 }
 
 .plan-card-markdown {
@@ -4542,11 +4551,13 @@ onBeforeUnmount(() => {
 }
 
 .plan-card-markdown :deep(.message-text) {
-  @apply text-sm leading-relaxed whitespace-pre-wrap text-slate-800;
+  @apply text-sm leading-relaxed whitespace-pre-wrap;
+  color: var(--theme-text-primary);
 }
 
 .plan-card-markdown :deep(.message-heading) {
-  @apply text-slate-900 tracking-tight;
+  @apply tracking-tight;
+  color: var(--theme-text-primary);
 }
 
 .plan-card-markdown :deep(.message-heading-h1) {
@@ -4570,15 +4581,20 @@ onBeforeUnmount(() => {
 }
 
 .plan-card-markdown :deep(.message-heading-h6) {
-  @apply text-xs font-semibold leading-snug uppercase tracking-[0.04em] text-slate-600;
+  @apply text-xs font-semibold leading-snug uppercase tracking-[0.04em];
+  color: var(--theme-text-muted);
 }
 
 .plan-card-markdown :deep(.message-blockquote) {
-  @apply border-l-4 border-slate-300 pl-4 py-1 text-sm leading-relaxed whitespace-pre-wrap text-slate-700 bg-slate-50/70 rounded-r-lg;
+  @apply border-l-4 pl-4 py-1 text-sm leading-relaxed whitespace-pre-wrap rounded-r-lg;
+  border-left-color: var(--theme-border-strong);
+  background: var(--theme-control-bg);
+  color: var(--theme-text-secondary);
 }
 
 .plan-card-markdown :deep(.message-list) {
-  @apply pl-5 text-sm leading-relaxed text-slate-800 flex flex-col gap-1.5;
+  @apply pl-5 text-sm leading-relaxed flex flex-col gap-1.5;
+  color: var(--theme-text-primary);
 }
 
 .plan-card-markdown :deep(.message-list-unordered) {
@@ -4610,15 +4626,22 @@ onBeforeUnmount(() => {
 }
 
 .plan-card-markdown :deep(.message-task-checkbox) {
-  @apply mt-0.5 text-sm leading-none text-slate-500 select-none;
+  @apply mt-0.5 text-sm leading-none select-none;
+  color: var(--theme-text-muted);
 }
 
 .plan-card-markdown :deep(.message-code-block) {
-  @apply overflow-hidden rounded-xl border border-slate-200 bg-slate-950/95 text-slate-100;
+  @apply overflow-hidden rounded-xl border;
+  border-color: var(--theme-border);
+  background: var(--theme-code-bg);
+  color: var(--theme-code-text);
 }
 
 .plan-card-markdown :deep(.message-code-language) {
-  @apply border-b border-slate-800 bg-slate-900/90 px-3 py-2 text-[11px] font-medium uppercase tracking-[0.08em] text-slate-400;
+  @apply border-b px-3 py-2 text-[11px] font-medium uppercase tracking-[0.08em];
+  border-color: var(--theme-border-soft);
+  background: var(--theme-code-header-bg);
+  color: var(--theme-code-muted);
 }
 
 .plan-card-markdown :deep(.message-code-pre) {
@@ -4626,15 +4649,19 @@ onBeforeUnmount(() => {
 }
 
 .plan-card-markdown :deep(.message-inline-code) {
-  @apply rounded-md bg-slate-200/80 px-1.5 py-0.5 font-mono text-[0.9em] text-slate-900;
+  @apply rounded-md px-1.5 py-0.5 font-mono text-[0.9em];
+  background: var(--theme-control-bg);
+  color: var(--theme-text-primary);
 }
 
 .plan-card-markdown :deep(.message-file-link) {
-  @apply text-sky-700 underline decoration-sky-300 underline-offset-2;
+  @apply underline underline-offset-2;
+  color: var(--theme-link);
+  text-decoration-color: var(--theme-link-decoration);
 }
 
 .plan-card-markdown :deep(.message-table) {
-  @apply bg-white/90;
+  background: var(--theme-elevated-bg);
 }
 
 .plan-step-list {
@@ -4642,7 +4669,10 @@ onBeforeUnmount(() => {
 }
 
 .plan-step-item {
-  @apply flex items-start gap-2 rounded-xl border border-white/70 bg-white/80 px-3 py-2 text-sm leading-relaxed text-slate-800;
+  @apply flex items-start gap-2 rounded-xl border px-3 py-2 text-sm leading-relaxed;
+  border-color: var(--theme-border);
+  background: var(--theme-elevated-bg);
+  color: var(--theme-text-primary);
 }
 
 .plan-step-item[data-status='completed'] {
@@ -4678,12 +4708,14 @@ onBeforeUnmount(() => {
 }
 
 .message-text {
-  @apply m-0 text-sm leading-relaxed whitespace-pre-wrap break-words text-slate-800;
+  @apply m-0 text-sm leading-relaxed whitespace-pre-wrap break-words;
+  color: var(--theme-text-primary);
   overflow-wrap: anywhere;
 }
 
 .message-heading {
-  @apply m-0 text-slate-900 tracking-tight;
+  @apply m-0 tracking-tight;
+  color: var(--theme-text-primary);
 }
 
 .message-heading-h1 {
@@ -4707,16 +4739,21 @@ onBeforeUnmount(() => {
 }
 
 .message-heading-h6 {
-  @apply text-xs font-semibold leading-snug uppercase tracking-[0.04em] text-slate-600;
+  @apply text-xs font-semibold leading-snug uppercase tracking-[0.04em];
+  color: var(--theme-text-muted);
 }
 
 .message-blockquote {
-  @apply m-0 border-l-4 border-slate-300 pl-4 py-1 text-sm leading-relaxed whitespace-pre-wrap break-words text-slate-700 bg-slate-50/70 rounded-r-lg;
+  @apply m-0 border-l-4 pl-4 py-1 text-sm leading-relaxed whitespace-pre-wrap break-words rounded-r-lg;
+  border-left-color: var(--theme-border-strong);
+  background: var(--theme-control-bg);
+  color: var(--theme-text-secondary);
   overflow-wrap: anywhere;
 }
 
 .message-list {
-  @apply m-0 pl-5 text-sm leading-relaxed text-slate-800 flex flex-col gap-1.5;
+  @apply m-0 pl-5 text-sm leading-relaxed flex flex-col gap-1.5;
+  color: var(--theme-text-primary);
 }
 
 .message-list-unordered {
@@ -4753,7 +4790,8 @@ onBeforeUnmount(() => {
 }
 
 .message-task-checkbox {
-  @apply mt-0.5 text-sm leading-none text-slate-500 select-none;
+  @apply mt-0.5 text-sm leading-none select-none;
+  color: var(--theme-text-muted);
 }
 
 .message-table-wrap {
@@ -4761,12 +4799,16 @@ onBeforeUnmount(() => {
 }
 
 .message-table {
-  @apply min-w-full border-separate border-spacing-0 overflow-hidden rounded-xl border border-slate-200 bg-white text-sm text-slate-800;
+  @apply min-w-full border-separate border-spacing-0 overflow-hidden rounded-xl border text-sm;
+  border-color: var(--theme-border);
+  background: var(--theme-elevated-bg);
+  color: var(--theme-text-primary);
 }
 
 .message-table-head-cell,
 .message-table-cell {
-  @apply border-b border-l border-slate-200 px-3 py-2 align-top whitespace-pre-wrap break-words;
+  @apply border-b border-l px-3 py-2 align-top whitespace-pre-wrap break-words;
+  border-color: var(--theme-border);
   overflow-wrap: anywhere;
 }
 
@@ -4776,7 +4818,9 @@ onBeforeUnmount(() => {
 }
 
 .message-table-head-cell {
-  @apply bg-slate-100 font-semibold text-slate-900;
+  @apply font-semibold;
+  background: var(--theme-elevated-strong-bg);
+  color: var(--theme-text-primary);
 }
 
 .message-table-body-row:last-child .message-table-cell {
@@ -4784,7 +4828,8 @@ onBeforeUnmount(() => {
 }
 
 .message-bold-text {
-  @apply font-semibold text-slate-900;
+  @apply font-semibold;
+  color: var(--theme-text-primary);
 }
 
 .message-italic-text {
@@ -4792,7 +4837,8 @@ onBeforeUnmount(() => {
 }
 
 .message-strikethrough-text {
-  @apply line-through text-slate-500;
+  @apply line-through;
+  color: var(--theme-text-muted);
 }
 
 .message-markdown-image {
@@ -4800,15 +4846,24 @@ onBeforeUnmount(() => {
 }
 
 .message-inline-code {
-  @apply rounded-md border border-slate-200 bg-slate-100/60 px-1.5 py-0.5 text-[0.875em] leading-[1.4] text-slate-900 font-mono;
+  @apply rounded-md border px-1.5 py-0.5 text-[0.875em] leading-[1.4] font-mono;
+  border-color: var(--theme-border);
+  background: var(--theme-control-bg);
+  color: var(--theme-text-primary);
 }
 
 .message-code-block {
-  @apply overflow-hidden rounded-xl border border-slate-200 bg-slate-950 text-slate-100;
+  @apply overflow-hidden rounded-xl border;
+  border-color: var(--theme-border);
+  background: var(--theme-code-bg);
+  color: var(--theme-code-text);
 }
 
 .message-code-language {
-  @apply border-b border-slate-800 px-3 py-2 text-[11px] font-mono uppercase tracking-[0.08em] text-slate-400;
+  @apply border-b px-3 py-2 text-[11px] font-mono uppercase tracking-[0.08em];
+  border-color: var(--theme-border-soft);
+  background: var(--theme-code-header-bg);
+  color: var(--theme-code-muted);
 }
 
 .message-code-pre {
@@ -4820,19 +4875,35 @@ onBeforeUnmount(() => {
 }
 
 .message-file-link {
-  @apply text-sm leading-relaxed text-[#0969da] no-underline hover:text-[#1f6feb] hover:underline underline-offset-2;
+  @apply text-sm leading-relaxed no-underline hover:underline underline-offset-2;
+  color: var(--theme-link);
+  text-decoration-color: var(--theme-link-decoration);
+}
+
+.message-file-link:hover {
+  color: var(--theme-link-hover);
 }
 
 .file-link-context-menu {
-  @apply fixed z-50 min-w-36 rounded-lg border border-zinc-200 bg-white p-1 shadow-xl;
+  @apply fixed z-50 min-w-36 rounded-lg border p-1 shadow-xl;
+  border-color: var(--theme-border);
+  background: var(--theme-elevated-strong-bg);
+  color: var(--theme-text-primary);
 }
 
 .file-link-context-menu-item {
-  @apply block w-full rounded-md px-2 py-1.5 text-left text-xs text-zinc-700 hover:bg-zinc-100;
+  @apply block w-full rounded-md px-2 py-1.5 text-left text-xs;
+  color: var(--theme-text-secondary);
+}
+
+.file-link-context-menu-item:hover {
+  background: var(--theme-control-hover-bg);
+  color: var(--theme-text-primary);
 }
 
 .message-divider {
-  @apply m-0 border-0 h-px bg-slate-300/80;
+  @apply m-0 border-0 h-px;
+  background: var(--theme-border-soft);
 }
 
 .message-stack[data-role='user'] {
@@ -4845,7 +4916,8 @@ onBeforeUnmount(() => {
 }
 
 .message-card[data-role='user'] {
-  @apply rounded-2xl bg-slate-200 px-4 py-3 max-w-[min(560px,100%)];
+  @apply rounded-2xl px-4 py-3 max-w-[min(560px,100%)];
+  background: var(--theme-user-bubble-bg);
   width: fit-content;
   margin-left: auto;
   align-self: flex-end;
@@ -4854,6 +4926,8 @@ onBeforeUnmount(() => {
 .message-card[data-role='assistant'],
 .message-card[data-role='system'] {
   @apply px-0 py-0 bg-transparent border-none rounded-none;
+  width: fit-content;
+  align-self: flex-start;
 }
 
 .conversation-item[data-message-type='worked'] .message-stack,
@@ -4879,11 +4953,13 @@ onBeforeUnmount(() => {
 }
 
 .worked-separator-line {
-  @apply h-px bg-zinc-300/80 flex-1;
+  @apply h-px flex-1;
+  background: var(--theme-border-soft);
 }
 
 .worked-separator-text {
-  @apply m-0 text-sm leading-relaxed font-normal text-slate-800;
+  @apply m-0 text-sm leading-relaxed font-normal;
+  color: var(--theme-text-primary);
 }
 
 .worked-details {
@@ -4903,7 +4979,10 @@ onBeforeUnmount(() => {
 }
 
 .image-modal-close {
-  @apply absolute top-2 right-2 z-10 w-10 h-10 rounded-full bg-white/90 text-slate-900 border border-slate-300 flex items-center justify-center;
+  @apply absolute top-2 right-2 z-10 w-10 h-10 rounded-full border flex items-center justify-center;
+  border-color: var(--theme-border);
+  background: var(--theme-elevated-bg);
+  color: var(--theme-text-primary);
 }
 
 .image-modal-image {
@@ -4915,11 +4994,21 @@ onBeforeUnmount(() => {
 }
 
 .cmd-row {
-  @apply w-full flex items-center gap-2 px-3 py-1.5 rounded-lg border border-zinc-200 bg-zinc-50 cursor-pointer transition text-left hover:bg-zinc-100;
+  @apply w-full flex items-center gap-2 px-3 py-1.5 rounded-lg border cursor-pointer transition text-left;
+  border-color: var(--theme-border);
+  background: var(--theme-panel-bg);
+  color: var(--theme-text-primary);
+}
+
+.cmd-row:hover {
+  background: var(--theme-control-hover-bg);
 }
 
 .cmd-row.cmd-row-group {
-  @apply border-dashed border-zinc-300 bg-zinc-100/90 text-zinc-600;
+  @apply border-dashed;
+  border-color: var(--theme-border-strong);
+  background: var(--theme-control-bg);
+  color: var(--theme-text-secondary);
 }
 
 .cmd-row.cmd-compact {
@@ -4946,7 +5035,8 @@ onBeforeUnmount(() => {
 }
 
 .cmd-chevron {
-  @apply text-[10px] text-zinc-400 transition-transform duration-150 flex-shrink-0;
+  @apply text-[10px] transition-transform duration-150 flex-shrink-0;
+  color: var(--theme-text-muted);
 }
 
 .cmd-chevron-open {
@@ -4954,11 +5044,13 @@ onBeforeUnmount(() => {
 }
 
 .cmd-label {
-  @apply flex-1 min-w-0 truncate text-xs font-mono text-zinc-700;
+  @apply flex-1 min-w-0 truncate text-xs font-mono;
+  color: var(--theme-text-primary);
 }
 
 .cmd-group-label {
-  @apply flex-1 min-w-0 truncate text-xs font-medium text-zinc-600;
+  @apply flex-1 min-w-0 truncate text-xs font-medium;
+  color: var(--theme-text-secondary);
 }
 
 .cmd-status {
@@ -4978,17 +5070,18 @@ onBeforeUnmount(() => {
 }
 
 .cmd-output-wrap {
-  @apply rounded-b-lg bg-zinc-900;
+  @apply rounded-b-lg;
   display: grid;
   grid-template-rows: 0fr;
   transition: grid-template-rows 300ms ease-out, border-color 300ms ease-out;
   border: 1px solid transparent;
   border-top: none;
+  background: var(--theme-code-bg);
 }
 
 .cmd-output-wrap.cmd-output-visible {
   grid-template-rows: 1fr;
-  border-color: #e4e4e7;
+  border-color: var(--theme-border);
 }
 
 .cmd-group-wrap {
@@ -5011,7 +5104,8 @@ onBeforeUnmount(() => {
 }
 
 .cmd-output {
-  @apply m-0 px-3 py-2 text-xs font-mono text-zinc-200 whitespace-pre-wrap break-words max-h-60 overflow-y-auto;
+  @apply m-0 max-h-60 overflow-y-auto whitespace-pre-wrap break-words px-3 py-2 text-xs font-mono;
+  color: var(--theme-code-text);
 }
 
 .cmd-output.cmd-output-condensed {
@@ -5031,11 +5125,13 @@ onBeforeUnmount(() => {
 }
 
 .file-change-summary-label {
-  @apply flex-1 min-w-0 truncate text-xs font-medium text-zinc-700;
+  @apply flex-1 min-w-0 truncate text-xs font-medium;
+  color: var(--theme-text-primary);
 }
 
 .file-change-summary-status {
-  @apply inline-flex max-w-28 items-center justify-end gap-1.5 text-right text-[11px] font-semibold text-zinc-500 flex-shrink-0;
+  @apply inline-flex max-w-28 shrink-0 items-center justify-end gap-1.5 text-right text-[11px] font-semibold;
+  color: var(--theme-text-muted);
 }
 
 .file-change-panel-inner {
@@ -5043,11 +5139,14 @@ onBeforeUnmount(() => {
 }
 
 .file-change-list {
-  @apply m-0 flex list-none flex-col gap-0.5 rounded-xl border border-zinc-200 bg-white/80 p-1.5;
+  @apply m-0 flex list-none flex-col gap-0.5 rounded-xl border p-1.5;
+  border-color: var(--theme-border);
+  background: var(--theme-panel-subtle-bg);
 }
 
 .file-change-item {
-  @apply flex flex-wrap items-center gap-1.5 rounded-lg px-2 py-1 text-sm text-zinc-700;
+  @apply flex flex-wrap items-center gap-1.5 rounded-lg px-2 py-1 text-sm;
+  color: var(--theme-text-primary);
 }
 
 .file-change-badge {
@@ -5075,15 +5174,23 @@ onBeforeUnmount(() => {
 }
 
 .file-change-path-button {
-  @apply min-w-0 border-0 bg-transparent p-0 text-left font-mono text-[13px] text-[#0969da] hover:text-[#1f6feb] hover:underline underline-offset-2;
+  @apply min-w-0 border-0 bg-transparent p-0 text-left font-mono text-[13px] hover:underline underline-offset-2;
+  color: var(--theme-link);
+}
+
+.file-change-path-button:hover {
+  color: var(--theme-link-hover);
 }
 
 .file-change-arrow {
-  @apply text-zinc-400;
+  color: var(--theme-text-muted);
 }
 
 .file-change-delta {
-  @apply ml-auto inline-flex items-center gap-1.5 rounded-full bg-zinc-100 px-2 py-1 text-[11px] font-semibold text-zinc-600;
+  @apply ml-auto inline-flex items-center gap-1.5 rounded-full border px-2 py-1 text-[11px] font-semibold;
+  border-color: var(--theme-border);
+  background: var(--theme-control-bg);
+  color: var(--theme-text-muted);
 }
 
 .file-change-signed-count {
@@ -5353,5 +5460,14 @@ onBeforeUnmount(() => {
   .diff-viewer-line-code {
     @apply px-2 py-1 text-[11px] leading-5;
   }
+}
+</style>
+
+<style>
+:root[data-theme='macos'][data-appearance='light'] .message-body[data-role='assistant'] .message-card[data-role='assistant'],
+:root[data-theme='macos'][data-appearance='dark'] .message-body[data-role='assistant'] .message-card[data-role='assistant'],
+:root[data-theme='macos'][data-appearance='light'] .message-body[data-role='system'] .message-card[data-role='system'],
+:root[data-theme='macos'][data-appearance='dark'] .message-body[data-role='system'] .message-card[data-role='system'] {
+  padding: 0.875rem 1rem;
 }
 </style>

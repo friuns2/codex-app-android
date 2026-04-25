@@ -288,43 +288,70 @@ onMounted(() => {
 }
 
 .skills-hub-title {
-  @apply text-xl sm:text-2xl font-semibold text-zinc-900 m-0;
+  @apply text-xl sm:text-2xl font-semibold m-0;
+  color: var(--theme-text-primary);
 }
 
 .skills-hub-subtitle {
-  @apply text-sm text-zinc-500 m-0;
+  @apply text-sm m-0;
+  color: var(--theme-text-muted);
 }
 
 .skills-hub-sort {
-  @apply shrink-0 rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-xs font-medium text-zinc-600 transition hover:bg-zinc-50 hover:border-zinc-300 cursor-pointer;
+  @apply shrink-0 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition cursor-pointer;
+  border-color: var(--theme-border);
+  background: var(--theme-control-bg);
+  color: var(--theme-text-secondary);
+}
+
+.skills-hub-sort:hover {
+  background: var(--theme-control-hover-bg);
+  border-color: var(--theme-border-strong);
+  color: var(--theme-text-primary);
 }
 
 .skills-sync-panel {
-  @apply rounded-xl border border-zinc-200 bg-zinc-50 p-3 flex flex-col gap-2;
+  @apply rounded-xl border p-3 flex flex-col gap-2;
+  border-color: var(--theme-border);
+  background: var(--theme-panel-subtle-bg);
 }
 
 .skills-sync-header {
-  @apply flex flex-wrap items-center gap-2 text-sm text-zinc-700;
+  @apply flex flex-wrap items-center gap-2 text-sm;
+  color: var(--theme-text-primary);
 }
 
 .skills-sync-badge {
-  @apply text-xs rounded-md border border-zinc-300 bg-white px-2 py-0.5;
+  @apply text-xs rounded-md border px-2 py-0.5;
+  border-color: var(--theme-border);
+  background: var(--theme-control-bg);
+  color: var(--theme-text-secondary);
 }
 
 .skills-sync-badge-link {
-  @apply text-zinc-700 hover:text-zinc-900 hover:border-zinc-400;
+  color: var(--theme-text-secondary);
+}
+
+.skills-sync-badge-link:hover {
+  border-color: var(--theme-border-strong);
+  color: var(--theme-text-primary);
 }
 
 .skills-sync-device {
-  @apply text-xs text-zinc-600 flex items-center gap-2 flex-wrap;
+  @apply text-xs flex items-center gap-2 flex-wrap;
+  color: var(--theme-text-secondary);
 }
 
 .skills-sync-meta {
-  @apply text-xs text-zinc-600 flex items-center gap-3 flex-wrap;
+  @apply text-xs flex items-center gap-3 flex-wrap;
+  color: var(--theme-text-secondary);
 }
 
 .skills-sync-error {
-  @apply text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-md px-2 py-1;
+  @apply text-xs border rounded-md px-2 py-1;
+  border-color: var(--theme-danger-border);
+  background: var(--theme-danger-soft-bg);
+  color: var(--theme-danger-text);
 }
 
 .skills-sync-actions {
@@ -348,7 +375,12 @@ onMounted(() => {
 }
 
 .skills-hub-section-toggle {
-  @apply flex items-center gap-1.5 border-0 bg-transparent p-0 text-sm font-medium text-zinc-600 transition hover:text-zinc-900 cursor-pointer;
+  @apply flex items-center gap-1.5 border-0 bg-transparent p-0 text-sm font-medium transition cursor-pointer;
+  color: var(--theme-text-secondary);
+}
+
+.skills-hub-section-toggle:hover {
+  color: var(--theme-text-primary);
 }
 
 .skills-hub-section-title {
@@ -368,14 +400,19 @@ onMounted(() => {
 }
 
 .skills-hub-loading {
-  @apply text-sm text-zinc-400 py-8 text-center;
+  @apply text-sm py-8 text-center;
+  color: var(--theme-text-muted);
 }
 
 .skills-hub-error {
-  @apply text-sm text-rose-600 py-4 text-center rounded-lg border border-rose-200 bg-rose-50;
+  @apply text-sm py-4 text-center rounded-lg border;
+  border-color: var(--theme-danger-border);
+  background: var(--theme-danger-soft-bg);
+  color: var(--theme-danger-text);
 }
 
 .skills-hub-empty {
-  @apply text-sm text-zinc-400 py-8 text-center;
+  @apply text-sm py-8 text-center;
+  color: var(--theme-text-muted);
 }
 </style>

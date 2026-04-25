@@ -1,1459 +1,3113 @@
 @import "tailwindcss";
+@import "tailwindcss-uikit-colors/v4/macos.css";
 @import "highlight.js/styles/github-dark.css";
+@import "./theme/app-shell-theme.css";
 
-:root.dark {
+/*
+ * Align Tailwind v4's dark variant with the app's explicit appearance
+ * toggle. Without this, `dark:*` utilities fall back to
+ * `prefers-color-scheme: dark` and ignore the user's choice. Keeping
+ * `.dark` as the Tailwind compatibility switch lets `dark:*` utilities
+ * follow the selected appearance while the app itself is themed by tokens.
+ */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Theme token layer
+ *
+ * Theme identity and effective appearance are separate concerns:
+ * `data-theme` selects a named theme, while `data-appearance` resolves the
+ * light/dark presentation after applying the system preference.
+ */
+
+:root[data-theme='default'][data-appearance='light'] {
+  color-scheme: light;
+  --theme-body-background: #f1f5f9;
+  --theme-body-text: #0f172a;
+  --theme-shell-bg: #f1f5f9;
+  --theme-sidebar-bg: #f1f5f9;
+  --theme-main-bg: #ffffff;
+  --theme-panel-bg: rgba(255, 255, 255, 0.94);
+  --theme-panel-subtle-bg: rgba(248, 250, 252, 0.9);
+  --theme-elevated-bg: rgba(255, 255, 255, 0.96);
+  --theme-elevated-strong-bg: #ffffff;
+  --theme-user-bubble-bg: #e2e8f0;
+  --theme-code-bg: #09090b;
+  --theme-code-header-bg: rgba(24, 24, 27, 0.92);
+  --theme-code-text: #f8fafc;
+  --theme-code-muted: #94a3b8;
+  --theme-border: #e4e4e7;
+  --theme-border-strong: #d4d4d8;
+  --theme-border-soft: rgba(228, 228, 231, 0.72);
+  --theme-text-primary: #0f172a;
+  --theme-text-secondary: #3f3f46;
+  --theme-text-muted: #71717a;
+  --theme-link: #0969da;
+  --theme-link-hover: #1f6feb;
+  --theme-link-decoration: rgba(9, 105, 218, 0.28);
+  --theme-control-bg: rgba(255, 255, 255, 0.94);
+  --theme-control-hover-bg: #f4f4f5;
+  --theme-control-active-bg: #e4e4e7;
+  --theme-accent: #18181b;
+  --theme-accent-hover: #27272a;
+  --theme-accent-contrast: #ffffff;
+  --theme-success-solid-bg: #10b981;
+  --theme-success-solid-hover-bg: #059669;
+  --theme-success-solid-text: #ffffff;
+  --theme-success-soft-bg: rgba(16, 185, 129, 0.12);
+  --theme-success-border: rgba(16, 185, 129, 0.35);
+  --theme-success-text: #047857;
+  --theme-warning-solid-bg: #d97706;
+  --theme-warning-solid-hover-bg: #b45309;
+  --theme-warning-solid-text: #ffffff;
+  --theme-warning-soft-bg: rgba(245, 158, 11, 0.12);
+  --theme-warning-border: rgba(245, 158, 11, 0.35);
+  --theme-warning-text: #b45309;
+  --theme-danger-solid-bg: #f43f5e;
+  --theme-danger-solid-hover-bg: #e11d48;
+  --theme-danger-solid-text: #ffffff;
+  --theme-danger-soft-bg: rgba(244, 63, 94, 0.1);
+  --theme-danger-border: rgba(244, 63, 94, 0.35);
+  --theme-danger-text: #be123c;
+  --theme-info-solid-bg: #0284c7;
+  --theme-info-solid-hover-bg: #0369a1;
+  --theme-info-solid-text: #ffffff;
+  --theme-info-soft-bg: rgba(14, 165, 233, 0.1);
+  --theme-info-border: rgba(14, 165, 233, 0.35);
+  --theme-info-text: #0369a1;
+  --theme-selection-bg: rgba(228, 228, 231, 0.88);
+  --theme-selection-border: rgba(212, 212, 216, 0.9);
+  --theme-selection-text: #0f172a;
+  --theme-overlay: rgba(15, 23, 42, 0.4);
+  --theme-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --theme-shadow-md: 0 14px 36px rgba(15, 23, 42, 0.1);
+  --theme-shadow-lg: 0 24px 64px rgba(15, 23, 42, 0.18);
+  --theme-backdrop-blur: 0px;
+}
+
+:root[data-theme='default'][data-appearance='dark'] {
   color-scheme: dark;
-}
-
-:root.dark body {
-  @apply bg-zinc-900 text-zinc-100;
-}
-
-:root.dark .desktop-layout {
-  @apply bg-zinc-900 text-zinc-100;
-}
-
-:root.dark .desktop-sidebar {
-  @apply bg-zinc-900;
-}
-
-:root.dark .desktop-resize-handle {
-  @apply bg-zinc-700 hover:bg-zinc-600;
-}
-
-:root.dark .desktop-main {
-  @apply bg-zinc-950;
-}
-
-:root.dark .mobile-drawer {
-  @apply bg-zinc-900;
-}
-
-:root.dark .sidebar-root {
-  @apply bg-zinc-900;
-}
-
-:root.dark .content-root {
-  @apply bg-zinc-950;
-}
-
-:root.dark .sidebar-scrollable {
-  @apply bg-zinc-900;
-}
-
-:root.dark .sidebar-settings-area {
-  @apply bg-zinc-900 border-zinc-700;
-}
-
-:root.dark .sidebar-settings-button {
-  @apply text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200;
-}
-
-:root.dark .sidebar-settings-panel {
-  @apply border-zinc-700 bg-zinc-800;
-}
-
-:root.dark .sidebar-settings-row {
-  @apply text-zinc-300 hover:bg-zinc-700;
-}
-
-:root.dark .sidebar-settings-row + .sidebar-settings-row {
-  @apply border-zinc-700;
-}
-
-:root.dark .sidebar-settings-context-value {
-  @apply text-zinc-300;
-}
-
-:root.dark .sidebar-settings-context-value[data-state='ok'] {
-  @apply text-emerald-300;
-}
-
-:root.dark .sidebar-settings-context-value[data-state='warning'] {
-  @apply text-amber-300;
-}
-
-:root.dark .sidebar-settings-context-value[data-state='danger'] {
-  @apply text-rose-300;
-}
-
-:root.dark .sidebar-settings-context-meta {
-  @apply text-zinc-400;
-}
-
-:root.dark .sidebar-settings-rate-limits {
-  @apply border-zinc-700;
-}
-
-:root.dark .sidebar-settings-account-section {
-  @apply border-zinc-700 bg-zinc-800/70;
-}
-
-:root.dark .sidebar-settings-account-title {
-  @apply text-zinc-200;
-}
-
-:root.dark .sidebar-settings-account-count {
-  @apply bg-zinc-700 text-zinc-300;
-}
-
-:root.dark .sidebar-settings-account-error {
-  @apply bg-rose-950/40 text-rose-200;
-}
-
-:root.dark .sidebar-settings-account-refresh,
-:root.dark .sidebar-settings-account-switch {
-  @apply border-zinc-600 bg-zinc-700 text-zinc-200 hover:bg-zinc-600;
-}
-
-:root.dark .sidebar-settings-account-empty {
-  @apply text-zinc-400;
-}
-
-:root.dark .sidebar-settings-account-item {
-  @apply border-zinc-700 bg-zinc-900/70;
-}
-
-:root.dark .sidebar-settings-account-item.is-active {
-  @apply border-emerald-500/35 bg-emerald-500/10;
-}
-
-:root.dark .sidebar-settings-account-item.is-unavailable {
-  @apply border-rose-500/35 bg-rose-500/10;
-}
-
-:root.dark .sidebar-settings-account-email {
-  @apply text-zinc-100;
-}
-
-:root.dark .sidebar-settings-account-meta {
-  @apply text-zinc-400;
-}
-
-:root.dark .sidebar-settings-account-quota {
-  @apply text-zinc-300;
-}
-
-:root.dark .sidebar-settings-account-id {
-  @apply bg-zinc-800 text-zinc-300;
-}
-
-:root.dark .sidebar-settings-account-item.is-active .sidebar-settings-account-id {
-  @apply bg-emerald-500/15 text-emerald-200;
-}
-
-:root.dark .sidebar-settings-account-item.is-unavailable .sidebar-settings-account-id {
-  @apply bg-rose-500/15 text-rose-200;
-}
-
-:root.dark .sidebar-settings-account-remove {
-  @apply border-amber-500/35 bg-zinc-700 text-zinc-400 hover:bg-amber-500/10;
-}
-
-:root.dark .sidebar-settings-account-remove.is-confirming {
-  @apply border-amber-400/50 bg-amber-500/10 text-amber-200;
-}
-
-:root.dark .sidebar-settings-value {
-  @apply text-zinc-400 bg-zinc-700;
-}
-
-:root.dark .sidebar-settings-toggle {
-  @apply bg-zinc-600;
-}
-
-:root.dark .sidebar-settings-toggle.is-on {
-  @apply bg-zinc-300;
-}
-
-:root.dark .sidebar-settings-toggle::after {
-  @apply bg-zinc-900;
-}
-
-:root.dark .sidebar-skills-link {
-  @apply border-emerald-900/70 bg-[linear-gradient(135deg,_rgba(6,78,59,0.42),_rgba(24,24,27,0.96))] text-zinc-100 hover:border-emerald-700 hover:bg-emerald-950;
-}
-
-:root.dark .sidebar-skills-link.is-active {
-  @apply border-emerald-700 bg-emerald-950/80 text-zinc-50;
-}
-
-:root.dark .sidebar-search-toggle {
-  @apply text-zinc-400 hover:border-zinc-600 hover:bg-zinc-800;
-}
-
-:root.dark .sidebar-search-toggle[aria-pressed='true'] {
-  @apply border-zinc-600 bg-zinc-800 text-zinc-300;
-}
-
-:root.dark .sidebar-search-bar {
-  @apply border-zinc-600 bg-zinc-800;
-}
-
-:root.dark .sidebar-search-input {
-  @apply text-zinc-200 placeholder-zinc-500;
-}
-
-:root.dark .thread-tree-header {
-  @apply text-zinc-500;
-}
-
-:root.dark .thread-row {
-  @apply hover:bg-zinc-800;
-}
-
-:root.dark .thread-row[data-active='true'] {
-  @apply bg-zinc-800;
-}
-
-:root.dark .thread-row-title {
-  @apply text-zinc-200;
-}
-
-:root.dark .thread-row-time {
-  @apply text-zinc-500;
-}
-
-:root.dark .project-header-row {
-  @apply hover:bg-zinc-800;
-}
-
-:root.dark .project-title {
-  @apply text-zinc-300;
-}
-
-:root.dark .thread-composer-shell {
-  @apply border-zinc-700 bg-zinc-800;
-}
-
-:root.dark .thread-composer-shell--drag-active {
-  @apply border-zinc-400 shadow-zinc-950/60;
-}
-
-:root.dark .thread-composer-input {
-  @apply text-zinc-100;
-}
-
-:root.dark .thread-composer-input:disabled {
-  @apply bg-zinc-700 text-zinc-500;
-}
-
-:root.dark .thread-composer-input-wrap--drag-active {
-  @apply bg-zinc-900/70;
-}
-
-:root.dark .thread-composer-drop-overlay {
-  @apply border-zinc-500 bg-zinc-900/92;
-}
-
-:root.dark .thread-composer-drop-overlay-copy {
-  @apply bg-zinc-100 text-zinc-900;
-}
-
-:root.dark .thread-composer-attach-trigger {
-  @apply text-zinc-400 hover:text-zinc-200;
-}
-
-:root.dark .thread-composer-submit {
-  @apply bg-zinc-200 text-zinc-900 hover:bg-white;
-}
-
-:root.dark .thread-composer-submit:disabled {
-  @apply bg-zinc-700 text-zinc-500;
-}
-
-:root.dark .thread-composer-mic {
-  @apply bg-zinc-700 text-zinc-400 hover:bg-zinc-600 hover:text-zinc-200;
-}
-
-:root.dark .thread-composer-stop {
-  @apply bg-zinc-200 text-zinc-900 hover:bg-white;
-}
-
-:root.dark .composer-dropdown-trigger {
-  @apply text-zinc-400;
-}
-
-
-:root.dark .composer-dropdown-menu {
-  @apply border-zinc-600 bg-zinc-800;
-}
-
-:root.dark .composer-dropdown-option {
-  @apply text-zinc-300 hover:bg-zinc-700;
-}
-
-:root.dark .composer-dropdown-option.is-selected {
-  @apply bg-zinc-700;
-}
-
-:root.dark .content-header {
-  @apply border-zinc-800 bg-zinc-950;
-}
-
-:root.dark .content-header .content-title,
-:root.dark .content-title {
-  @apply text-zinc-200;
-}
-
-:root.dark .sidebar-thread-controls-button {
-  @apply text-zinc-400 hover:border-zinc-600 hover:bg-zinc-800;
-}
-
-:root.dark .new-thread-hero {
-  @apply text-zinc-100;
-}
-
-:root.dark .build-badge {
-  @apply border-zinc-700 bg-zinc-800/95 text-zinc-400;
-}
-
-:root.dark .rate-limit-card {
-  @apply border-zinc-700 bg-zinc-800/95;
-}
-
-:root.dark .rate-limit-card-title {
-  @apply text-zinc-500;
-}
-
-:root.dark .rate-limit-card-plan {
-  @apply bg-zinc-700 text-zinc-300;
-}
-
-:root.dark .rate-limit-card-metric {
-  @apply bg-amber-900/40 text-amber-200;
-}
-
-:root.dark .rate-limit-card-footer {
-  @apply text-zinc-400;
-}
-
-:root.dark .thread-composer-attach-menu {
-  @apply border-zinc-600 bg-zinc-800;
-}
-
-:root.dark .thread-composer-attach-item {
-  @apply text-zinc-300 hover:bg-zinc-700;
-}
-
-:root.dark .thread-composer-attach-separator {
-  @apply bg-zinc-700;
-}
-
-:root.dark .thread-composer-attach-setting {
-  @apply text-zinc-300 hover:bg-zinc-700;
-}
-
-:root.dark .thread-composer-attach-setting-label {
-  @apply text-zinc-100;
-}
-
-:root.dark .thread-composer-attach-setting-description {
-  @apply text-zinc-400;
-}
-
-:root.dark .thread-composer-attach-mode-label {
-  @apply text-zinc-100;
-}
-
-:root.dark .thread-composer-attach-mode-buttons {
-  @apply border-zinc-600 bg-zinc-900;
-}
-
-:root.dark .thread-composer-attach-mode-button {
-  @apply text-zinc-300 hover:text-zinc-100;
-}
-
-:root.dark .thread-composer-attach-mode-button.is-active {
-  @apply bg-zinc-200 text-zinc-900 hover:text-zinc-900;
-}
-
-:root.dark .thread-composer-attach-switch {
-  @apply bg-zinc-600;
-}
-
-:root.dark .thread-composer-attach-switch::after {
-  @apply bg-zinc-100;
-}
-
-:root.dark .thread-composer-attach-switch.is-on {
-  @apply bg-emerald-500;
-}
-
-:root.dark .thread-composer-file-mentions {
-  @apply border-zinc-600 bg-zinc-800;
-}
-
-:root.dark .thread-composer-file-mention-row {
-  @apply text-zinc-300 hover:bg-zinc-700;
-}
-
-:root.dark .thread-composer-file-chip {
-  @apply border-zinc-600 bg-zinc-700 text-zinc-300;
-}
-
-:root.dark .organize-menu-panel {
-  @apply border-zinc-600 bg-zinc-800/95;
-}
-
-:root.dark .organize-menu-item {
-  @apply text-zinc-300 hover:bg-zinc-700;
-}
-
-:root.dark .organize-menu-item[data-active='true'] {
-  @apply bg-zinc-700 text-zinc-100;
-}
-
-:root.dark .project-menu-panel {
-  @apply border-zinc-600 bg-zinc-800;
-}
-
-:root.dark .project-menu-item {
-  @apply text-zinc-300 hover:bg-zinc-700;
-}
-
-:root.dark .thread-menu-panel {
-  @apply border-zinc-600 bg-zinc-800;
-}
-
-:root.dark .thread-menu-item {
-  @apply text-zinc-300 hover:bg-zinc-700;
-}
-
-:root.dark .thread-menu-item-danger {
-  @apply text-rose-300 hover:bg-rose-900/40;
-}
-
-:root.dark .thread-menu-trigger {
-  @apply text-zinc-400;
-}
-
-:root.dark .rename-thread-panel {
-  @apply bg-zinc-800;
-}
-
-:root.dark .rename-thread-title {
-  @apply text-zinc-100;
-}
-
-:root.dark .rename-thread-subtitle {
-  @apply text-zinc-400;
-}
-
-:root.dark .rename-thread-input {
-  @apply border-zinc-600 bg-zinc-700 text-zinc-100;
-}
-
-:root.dark .rename-thread-button {
-  @apply text-zinc-300 hover:bg-zinc-700;
-}
-
-:root.dark .rename-thread-button-primary {
-  @apply bg-zinc-200 text-zinc-900 hover:bg-white;
-}
-
-:root.dark .rename-thread-button-danger {
-  @apply bg-rose-500 text-white hover:bg-rose-400;
-}
-
-:root.dark .thread-pin-button {
-  @apply text-zinc-400;
-}
-
-:root.dark .message-bubble {
-  @apply bg-zinc-800 text-zinc-200;
-}
-
-:root.dark .message-bubble-user {
-  @apply bg-zinc-700;
-}
-
-:root.dark .composer-search-dropdown-menu {
-  @apply border-zinc-600 bg-zinc-800;
-}
-
-:root.dark .composer-search-dropdown-option {
-  @apply text-zinc-300 hover:bg-zinc-700;
-}
-
-:root.dark .message-text {
-  @apply text-zinc-200;
-}
-
-:root.dark .message-heading {
-  @apply text-zinc-100;
-}
-
-:root.dark .message-heading-h6 {
-  @apply text-zinc-400;
-}
-
-:root.dark .message-bold-text {
-  @apply text-zinc-100;
-}
-
-:root.dark .message-italic-text {
-  @apply text-zinc-200;
-}
-
-:root.dark .message-strikethrough-text {
-  @apply text-zinc-400;
-}
-
-:root.dark .message-blockquote {
-  @apply border-zinc-600 bg-zinc-800/70 text-zinc-300;
-}
-
-:root.dark .message-list {
-  @apply text-zinc-200;
-}
-
-:root.dark .message-task-checkbox {
-  @apply text-zinc-400;
-}
-
-:root.dark .message-card[data-role='user'] {
-  @apply bg-zinc-700;
-}
-
-:root.dark .message-copy-button {
-  @apply border-zinc-700 bg-zinc-800/90 text-zinc-300 hover:border-zinc-600 hover:bg-zinc-800 hover:text-zinc-100;
-}
-
-:root.dark .message-copy-button[data-copied='true'] {
-  @apply border-emerald-500/40 bg-emerald-500/10 text-emerald-200;
-}
-
-:root.dark .message-rollback-button {
-  @apply text-amber-400/70 hover:text-amber-300;
-}
-
-:root.dark .message-inline-code {
-  @apply border-zinc-600 bg-zinc-700/60 text-zinc-200;
-}
-
-:root.dark .message-table {
-  @apply border-zinc-700 bg-zinc-900/90 text-zinc-100;
-}
-
-:root.dark .message-table-head-cell,
-:root.dark .message-table-cell {
-  @apply border-zinc-700;
-}
-
-:root.dark .message-table-head-cell {
-  @apply bg-zinc-800 text-zinc-100;
-}
-
-:root.dark .message-code-block {
-  @apply border-zinc-700 bg-zinc-950 text-zinc-100;
-}
-
-:root.dark .message-code-language {
-  @apply border-zinc-800 text-zinc-400;
-}
-
-:root.dark .message-divider {
-  @apply bg-zinc-700/80;
-}
-
-:root.dark .message-file-chip {
-  @apply border-zinc-600 bg-zinc-700 text-zinc-300;
-}
-
-:root.dark .conversation-loading,
-:root.dark .conversation-empty {
-  @apply text-zinc-500;
-}
-
-:root.dark .live-overlay-label {
-  @apply text-zinc-400;
-}
-
-:root.dark .live-overlay-reasoning {
-  @apply text-zinc-500;
-}
-
-:root.dark .cmd-row {
-  @apply border-zinc-700 bg-zinc-800 hover:bg-zinc-700;
-}
-
-:root.dark .cmd-row.cmd-row-group {
-  @apply border-zinc-700 bg-zinc-800 text-zinc-300 hover:bg-zinc-700;
-}
-
-:root.dark .cmd-chevron {
-  @apply text-zinc-300;
-}
-
-:root.dark .cmd-label {
-  @apply text-zinc-300;
-}
-
-:root.dark .cmd-group-label {
-  @apply text-zinc-300;
-}
-
-:root.dark .cmd-status {
-  @apply text-zinc-400;
-}
-
-:root.dark .cmd-status-running .cmd-status {
-  @apply text-amber-300;
-}
-
-:root.dark .cmd-status-ok .cmd-status {
-  @apply text-emerald-300;
-}
-
-:root.dark .cmd-status-error .cmd-status {
-  @apply text-rose-300;
-}
-
-:root.dark .cmd-output-wrap.cmd-output-visible {
-  @apply border-zinc-700;
-}
-
-:root.dark .file-change-summary-label {
-  @apply text-zinc-200;
-}
-
-:root.dark .file-change-path-button {
-  @apply text-sky-300 hover:text-sky-200;
-}
-
-:root.dark .file-change-summary-status {
-  @apply text-zinc-400;
-}
-
-:root.dark .file-change-list {
-  @apply border-zinc-700 bg-zinc-900/70;
-}
-
-:root.dark .file-change-item {
-  @apply text-zinc-200;
-}
-
-:root.dark .file-change-badge[data-operation='add'] {
-  @apply bg-emerald-950/70 text-emerald-300;
-}
-
-:root.dark .file-change-badge[data-operation='update'] {
-  @apply bg-sky-950/70 text-sky-300;
-}
-
-:root.dark .file-change-badge[data-operation='delete'] {
-  @apply bg-rose-950/70 text-rose-300;
-}
-
-:root.dark .file-change-badge[data-operation='move'] {
-  @apply bg-amber-950/70 text-amber-300;
-}
-
-:root.dark .file-change-arrow {
-  @apply text-zinc-500;
-}
-
-:root.dark .file-change-delta {
-  @apply bg-zinc-800 text-zinc-300;
-}
-
-:root.dark .file-change-signed-count[data-tone='add'] {
-  @apply text-emerald-300;
-}
-
-:root.dark .file-change-signed-count[data-tone='remove'] {
-  @apply text-rose-300;
-}
-
-:root.dark .diff-viewer-shell {
-  @apply border-zinc-700 bg-zinc-900;
-}
-
-:root.dark .diff-viewer-sidebar {
-  @apply border-zinc-700 bg-zinc-950;
-}
-
-:root.dark .diff-viewer-sidebar-header {
-  @apply border-zinc-700;
-}
-
-:root.dark .diff-viewer-sidebar-title {
-  @apply text-zinc-100;
-}
-
-:root.dark .diff-viewer-sidebar-count {
-  @apply text-zinc-400;
-}
-
-:root.dark .diff-viewer-file-button {
-  @apply hover:border-zinc-700 hover:bg-zinc-900;
-}
-
-:root.dark .diff-viewer-file-button[data-active='true'] {
-  @apply border-sky-800 bg-zinc-900;
-}
-
-:root.dark .diff-viewer-file-label {
-  @apply text-zinc-200;
-}
-
-:root.dark .diff-viewer-file-delta {
-  @apply bg-zinc-800 text-zinc-300;
-}
-
-:root.dark .diff-viewer-main {
-  @apply bg-zinc-900;
-}
-
-:root.dark .diff-viewer-toolbar {
-  @apply border-zinc-700 bg-zinc-900;
-}
-
-:root.dark .diff-viewer-mobile-files-button {
-  @apply border-zinc-700 bg-zinc-800 text-zinc-200;
-}
-
-:root.dark .diff-viewer-title {
-  @apply text-zinc-100;
-}
-
-:root.dark .diff-viewer-subtitle {
-  @apply text-zinc-400;
-}
-
-:root.dark .diff-viewer-empty-title {
-  @apply text-zinc-100;
-}
-
-:root.dark .diff-viewer-empty-text {
-  @apply text-zinc-400;
-}
-
-:root.dark .diff-viewer-meta {
-  @apply border-zinc-700 bg-zinc-950;
-}
-
-:root.dark .diff-viewer-language {
-  @apply bg-zinc-800 text-zinc-300;
-}
-
-:root.dark .diff-viewer-mobile-sheet {
-  @apply border-zinc-700 bg-zinc-900;
-}
-
-:root.dark .diff-viewer-mobile-sheet-handle {
-  @apply bg-zinc-700;
-}
-
-:root.dark .diff-viewer-mobile-sheet-header {
-  @apply border-zinc-700;
-}
-
-:root.dark .diff-viewer-close {
-  @apply border-zinc-700 bg-zinc-800 text-zinc-100;
-}
-
-:root.dark .content-header-branch-dropdown .composer-dropdown-trigger {
-  @apply border-zinc-700 bg-zinc-900 text-zinc-300 hover:bg-zinc-800;
-}
-
-:root.dark .content-header-branch-dropdown.is-review-open .composer-dropdown-trigger {
-  @apply border-zinc-200 bg-zinc-200 text-zinc-900 hover:bg-white;
-}
-
-:root.dark .content-header-branch-dropdown.is-review-open .composer-dropdown-chevron {
-  @apply text-zinc-900;
-}
-
-:root.dark .review-pane {
-  @apply border-zinc-700 bg-zinc-900;
-}
-
-:root.dark .review-pane-header,
-:root.dark .review-pane-toolbar,
-:root.dark .review-pane-bulk-actions,
-:root.dark .review-pane-hunk-header {
-  @apply border-zinc-700;
-}
-
-:root.dark .review-pane-header,
-:root.dark .review-pane-toolbar,
-:root.dark .review-pane-hunk-header,
-:root.dark .review-pane-summary-card,
-:root.dark .review-pane-file-header,
-:root.dark .review-pane-hunk,
-:root.dark .review-pane-finding,
-:root.dark .review-pane-sheet {
-  @apply bg-zinc-900;
-}
-
-:root.dark .review-pane-eyebrow {
-  @apply text-zinc-500;
-}
-
-:root.dark .review-pane-title,
-:root.dark .review-pane-empty-title,
-:root.dark .review-pane-file-title,
-:root.dark .review-pane-summary-title,
-:root.dark .review-pane-finding-title,
-:root.dark .review-pane-sheet-title {
-  @apply text-zinc-100;
-}
-
-:root.dark .review-pane-empty-text,
-:root.dark .review-pane-file-subtitle,
-:root.dark .review-pane-hunk-meta,
-:root.dark .review-pane-finding-location,
-:root.dark .review-pane-finding-body {
-  @apply text-zinc-400;
-}
-
-:root.dark .review-pane-close,
-:root.dark .review-pane-mobile-files-button,
-:root.dark .review-pane-refresh,
-:root.dark .review-pane-bulk-button,
-:root.dark .review-pane-row-button,
-:root.dark .review-pane-primary-cta {
-  @apply border-zinc-600 bg-zinc-800 text-zinc-200 hover:bg-zinc-700;
-}
-
-:root.dark .review-pane-control-label {
-  @apply text-zinc-500;
-}
-
-:root.dark .review-pane-branch-select-wrap {
-  @apply border-zinc-600 bg-zinc-800;
-}
-
-:root.dark .review-pane-branch-select {
-  @apply text-zinc-200;
-}
-
-:root.dark .review-pane-segmented {
-  @apply bg-zinc-800;
-}
-
-:root.dark .review-pane-segmented-button {
-  @apply text-zinc-400;
-}
-
-:root.dark .review-pane-segmented-button::before {
-  @apply bg-zinc-600;
-}
-
-:root.dark .review-pane-segmented-button[data-active='true'] {
-  @apply border-sky-400/40 bg-sky-500 text-white;
-}
-
-:root.dark .review-pane-segmented-button[data-active='true']::before {
-  @apply bg-white;
-}
-
-:root.dark .review-pane-run,
-:root.dark .review-pane-primary-cta {
-  @apply border-emerald-500 bg-emerald-500 text-white hover:bg-emerald-400;
-}
-
-:root.dark .review-pane-refresh {
-  @apply border-amber-500/35 bg-amber-500/12 text-amber-200 hover:bg-amber-500/20;
-}
-
-:root.dark .review-pane-meta span,
-:root.dark .review-pane-sheet-count {
-  @apply bg-zinc-800 text-zinc-300;
-}
-
-:root.dark .review-pane-summary-pill.review-pane-summary-pill-add {
-  @apply bg-emerald-500/15 text-emerald-300;
-}
-
-:root.dark .review-pane-summary-pill.review-pane-summary-pill-remove {
-  @apply bg-rose-500/15 text-rose-300;
-}
-
-:root.dark .review-pane-file-list {
-  @apply border-zinc-700 bg-zinc-950/70;
-}
-
-:root.dark .review-pane-tree-folder {
-  @apply text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100;
-}
-
-:root.dark .review-pane-tree-folder-sheet {
-  @apply bg-zinc-800/80;
-}
-
-:root.dark .review-pane-tree-folder-count {
-  @apply bg-zinc-700 text-zinc-300;
-}
-
-:root.dark .review-pane-resizer {
-  @apply bg-zinc-800;
-}
-
-:root.dark .review-pane-resizer::before {
-  @apply bg-zinc-600;
-}
-
-:root.dark .review-pane-resizer:hover::before {
-  @apply bg-sky-400;
-}
-
-:root.dark .review-pane-file {
-  @apply hover:border-zinc-600 hover:bg-zinc-800;
-}
-
-:root.dark .review-pane-file[data-active='true'] {
-  @apply border-zinc-500 bg-zinc-800;
-}
-
-:root.dark .review-pane-file-path {
-  @apply text-zinc-100;
-}
-
-:root.dark .review-pane-file-op[data-operation='update'] {
-  @apply bg-amber-500/15 text-amber-200;
-}
-
-:root.dark .review-pane-file-op[data-operation='add'] {
-  @apply bg-emerald-500/15 text-emerald-200;
-}
-
-:root.dark .review-pane-file-op[data-operation='delete'] {
-  @apply bg-rose-500/15 text-rose-200;
-}
-
-:root.dark .review-pane-file-op[data-operation='rename'] {
-  @apply bg-sky-500/15 text-sky-200;
-}
-
-:root.dark .review-pane-file-delta,
-:root.dark .review-pane-meta {
-  @apply text-zinc-500;
-}
-
-:root.dark .review-pane-delta-add {
-  @apply text-emerald-300;
-}
-
-:root.dark .review-pane-delta-remove {
-  @apply text-rose-300;
-}
-
-:root.dark .review-pane-delta-separator {
-  @apply text-zinc-500;
-}
-
-:root.dark .review-pane-file-header,
-:root.dark .review-pane-hunk,
-:root.dark .review-pane-summary-card,
-:root.dark .review-pane-finding {
-  @apply border-zinc-700;
-}
-
-:root.dark .review-pane-hunk[data-active='true'] {
-  box-shadow: 0 0 0 1px rgba(244, 244, 245, 0.12);
-  @apply border-zinc-400;
-}
-
-:root.dark .review-pane-lines,
-:root.dark .review-pane-raw-diff {
-  @apply border-zinc-700 bg-zinc-950;
-}
-
-:root.dark .review-pane-line-number,
-:root.dark .review-pane-line-marker {
-  @apply text-zinc-600;
-}
-
-:root.dark .review-pane-line[data-kind='add'] .review-pane-line-marker,
-:root.dark .review-pane-line[data-kind='add'] .review-pane-line-code {
-  @apply text-emerald-300;
-}
-
-:root.dark .review-pane-line[data-kind='remove'] .review-pane-line-marker,
-:root.dark .review-pane-line[data-kind='remove'] .review-pane-line-code {
-  @apply text-rose-300;
-}
-
-:root.dark .review-pane-sheet-handle {
-  @apply bg-zinc-700;
-}
-
-:root.dark .review-pane-sheet-backdrop {
-  @apply bg-black/55;
-}
-
-:root.dark .worked-separator-text {
-  @apply text-zinc-300;
-}
-
-:root.dark .worked-separator-line {
-  @apply bg-zinc-700;
-}
-
-:root.dark .request-card {
-  @apply border-amber-700 bg-amber-900/30;
-}
-
-:root.dark .request-title {
-  @apply text-amber-200;
-}
-
-:root.dark .request-meta {
-  @apply text-amber-400;
-}
-
-:root.dark .request-reason {
-  @apply text-amber-200;
-}
-
-:root.dark .request-button {
-  @apply border-amber-700 bg-zinc-800 text-amber-200 hover:bg-zinc-700;
-}
-
-:root.dark .request-button-primary {
-  @apply border-amber-600 bg-amber-600 text-white hover:bg-amber-700;
-}
-
-:root.dark .request-question-option-description {
-  @apply text-amber-400;
-}
-
-:root.dark .plan-card {
-  @apply border-sky-700/70 bg-slate-900/78;
-}
-
-:root.dark .plan-card-title {
-  @apply text-sky-200;
-}
-
-:root.dark .plan-card-badge {
-  @apply bg-sky-800 text-sky-100;
-}
-
-:root.dark .plan-card-explanation {
-  @apply text-zinc-200;
-}
-
-:root.dark .plan-card-markdown .message-text,
-:root.dark .plan-card-markdown .message-heading,
-:root.dark .plan-card-markdown .message-list,
-:root.dark .plan-card-markdown .message-list-item-text {
-  @apply text-zinc-200;
-}
-
-:root.dark .plan-card-markdown .message-heading-h6 {
-  @apply text-zinc-400;
-}
-
-:root.dark .plan-card-markdown .message-blockquote {
-  @apply border-zinc-600 bg-zinc-800/70 text-zinc-300;
-}
-
-:root.dark .plan-card-markdown .message-inline-code {
-  @apply bg-zinc-800 text-zinc-100;
-}
-
-:root.dark .plan-card-markdown .message-file-link {
-  @apply text-sky-300 decoration-sky-500;
-}
-
-:root.dark .plan-card-markdown .message-table {
-  @apply bg-zinc-900/90;
-}
-
-:root.dark .plan-step-item {
-  @apply border-zinc-700 bg-zinc-800/72 text-zinc-100;
-}
-
-:root.dark .plan-step-item[data-status='completed'] {
-  @apply border-emerald-900 bg-emerald-950/40;
-}
-
-:root.dark .plan-step-item[data-status='inProgress'] {
-  @apply border-amber-900 bg-amber-950/40;
-}
-
-:root.dark .plan-step-status {
-  @apply bg-zinc-700 text-zinc-200;
-}
-
-:root.dark .plan-step-status[data-status='completed'] {
-  @apply bg-emerald-900 text-emerald-200;
-}
-
-:root.dark .plan-step-status[data-status='inProgress'] {
-  @apply bg-amber-900 text-amber-200;
-}
-
-:root.dark .plan-card-implement-button {
-  @apply border-zinc-600 bg-zinc-800 text-zinc-100 hover:border-zinc-500 hover:bg-zinc-700;
-}
-
-:root.dark .message-image-button {
-  @apply border-zinc-600 bg-zinc-800;
-}
-
-:root.dark .message-file-link {
-  @apply text-blue-400 hover:text-blue-300;
-}
-
-:root.dark .composer-dropdown-search-input {
-  @apply border-zinc-600 bg-zinc-700 text-zinc-200;
-}
-
-:root.dark .composer-dropdown-chevron {
-  @apply text-zinc-500;
-}
-
-:root.dark .composer-dropdown-empty {
-  @apply text-zinc-500;
-}
-
-:root.dark .search-dropdown-trigger,
-:root.dark .search-dropdown-trigger:disabled,
-:root.dark .search-dropdown-value,
-:root.dark .search-dropdown-chevron {
-  @apply text-zinc-400;
-}
-
-:root.dark .search-dropdown-menu-wrap-up,
-:root.dark .search-dropdown-menu-wrap-down {
-  @apply border-zinc-700 bg-zinc-900 shadow-[0_18px_48px_rgba(0,0,0,0.45)];
-}
-
-:root.dark .search-dropdown-search-wrap {
-  @apply border-zinc-800;
-}
-
-:root.dark .search-dropdown-search,
-:root.dark .search-dropdown-create,
-:root.dark .search-dropdown-create-icon {
-  @apply border-zinc-700 bg-zinc-950 text-zinc-100 placeholder-zinc-500;
-}
-
-:root.dark .search-dropdown-create:hover,
-:root.dark .search-dropdown-create-icon:hover {
-  @apply bg-zinc-900;
-}
-
-:root.dark .search-dropdown-option {
-  @apply text-zinc-200;
-}
-
-:root.dark .search-dropdown-option.is-highlighted,
-:root.dark .search-dropdown-option-main:hover {
-  @apply bg-zinc-800;
-}
-
-:root.dark .search-dropdown-option-label {
-  @apply text-zinc-100;
-}
-
-:root.dark .search-dropdown-option-desc {
-  @apply text-zinc-400;
-}
-
-:root.dark .search-dropdown-option-remove {
-  @apply text-zinc-300;
-}
-
-:root.dark .search-dropdown-option-remove:hover {
-  @apply bg-zinc-700 text-zinc-100;
-}
-
-:root.dark .search-dropdown-empty {
-  @apply text-zinc-500;
-}
-
-:root.dark .thread-composer-skill-chip {
-  @apply border-emerald-800 bg-emerald-900/40 text-emerald-300;
-}
-
-:root.dark .thread-composer-input::placeholder {
-  @apply text-zinc-500;
-}
-
-:root.dark .new-thread-folder-dropdown {
-  @apply text-zinc-400;
-}
-
-:root.dark .new-thread-folder-dropdown .composer-dropdown-trigger {
-  @apply text-zinc-300;
-}
-
-:root.dark .new-thread-folder-dropdown .composer-dropdown-value {
-  @apply text-zinc-200;
-}
-
-:root.dark .runtime-toggle {
-  @apply border-zinc-700 bg-zinc-900;
-}
-
-:root.dark .runtime-toggle-option {
-  @apply text-zinc-300;
-}
-
-:root.dark .runtime-toggle-option:hover {
-  @apply bg-zinc-800 text-zinc-100;
-}
-
-:root.dark .runtime-toggle-option.is-selected {
-  @apply border-zinc-600 bg-zinc-800 text-zinc-100 shadow-none;
-}
-
-:root.dark .runtime-toggle-option:focus-visible {
-  @apply ring-zinc-600 ring-offset-zinc-900;
-}
-
-:root.dark .runtime-toggle-option-icon {
-  @apply text-zinc-400;
-}
-
-:root.dark .runtime-toggle-option.is-selected .runtime-toggle-option-icon {
-  @apply text-zinc-200;
-}
-
-:root.dark .worktree-init-status.is-running {
-  @apply border-zinc-600 bg-zinc-800 text-zinc-300;
-}
-
-:root.dark .worktree-init-status.is-error {
-  @apply border-rose-700 bg-rose-950/40 text-rose-200;
-}
-
-:root.dark .skills-hub-title {
-  @apply text-zinc-100;
-}
-
-:root.dark .skills-hub-subtitle {
-  @apply text-zinc-400;
-}
-
-:root.dark .skills-hub-search-wrap {
-  @apply border-zinc-700 bg-zinc-800 focus-within:border-zinc-500;
-}
-
-:root.dark .skills-hub-search-icon {
-  @apply text-zinc-500;
-}
-
-:root.dark .skills-hub-search {
-  @apply text-zinc-200 placeholder-zinc-500;
-}
-
-:root.dark .skills-hub-search-btn,
-:root.dark .skills-hub-sort {
-  @apply border-zinc-600 bg-zinc-800 text-zinc-200 hover:bg-zinc-700 hover:border-zinc-500;
-}
-
-:root.dark .skills-hub-count {
-  @apply text-zinc-500;
-}
-
-:root.dark .skills-sync-panel {
-  @apply border-zinc-700 bg-zinc-800;
-}
-
-:root.dark .skills-sync-header {
-  @apply text-zinc-300;
-}
-
-:root.dark .skills-sync-badge {
-  @apply border-zinc-600 bg-zinc-700 text-zinc-200;
-}
-
-:root.dark .skills-sync-badge-link {
-  @apply text-zinc-200 hover:text-white hover:border-zinc-500;
-}
-
-:root.dark .skills-sync-device,
-:root.dark .skills-sync-meta {
-  @apply text-zinc-400;
-}
-
-:root.dark .skills-sync-device a {
-  @apply text-blue-400 hover:text-blue-300;
-}
-
-:root.dark .skills-sync-device code {
-  @apply border border-zinc-600 bg-zinc-700 px-1.5 py-0.5 rounded text-zinc-200;
-}
-
-:root.dark .skills-sync-error {
-  @apply border-rose-800 bg-rose-950/40 text-rose-200;
-}
-
-:root.dark .skills-hub-section-toggle {
-  @apply text-zinc-300 hover:text-zinc-100;
-}
-
-:root.dark .skills-hub-loading,
-:root.dark .skills-hub-empty {
-  @apply text-zinc-400;
-}
-
-:root.dark .skills-hub-error {
-  @apply border-rose-800 bg-rose-950/40 text-rose-200;
-}
-
-:root.dark .directory-title,
-:root.dark .directory-card-title,
-:root.dark .directory-modal-title,
-:root.dark .directory-mini-heading,
-:root.dark .directory-detail-heading {
-  @apply text-zinc-100;
-}
-
-:root.dark .directory-subtitle,
-:root.dark .directory-card-meta,
-:root.dark .directory-card-description,
-:root.dark .directory-mini-list,
-:root.dark .directory-detail-description {
-  @apply text-zinc-400;
-}
-
-:root.dark .directory-tabs,
-:root.dark .directory-search,
-:root.dark .directory-card,
-:root.dark .directory-loading,
-:root.dark .directory-empty,
-:root.dark .directory-modal,
-:root.dark .directory-refresh,
-:root.dark .directory-action,
-:root.dark .directory-action-link,
-:root.dark .directory-modal-close {
-  @apply border-zinc-700 bg-zinc-900 text-zinc-100;
-}
-
-:root.dark .directory-tab,
-:root.dark .directory-sort-button {
-  @apply text-zinc-400 hover:text-zinc-100;
-}
-
-:root.dark .directory-search {
-  @apply text-zinc-100 placeholder:text-zinc-500 focus:border-zinc-500;
-}
-
-:root.dark .directory-tab.is-active,
-:root.dark .directory-sort-button.is-active,
-:root.dark .directory-detail-block,
-:root.dark .directory-auth-panel,
-:root.dark .directory-chip {
-  @apply border-zinc-700 bg-zinc-800 text-zinc-100;
-}
-
-:root.dark .directory-sort-group {
-  @apply border-zinc-700 bg-zinc-950;
-}
-
-:root.dark .directory-badge.is-muted,
-:root.dark .directory-auth-status.is-muted {
-  @apply border-zinc-700 bg-zinc-900 text-zinc-400;
-}
-
-:root.dark .skill-card {
-  @apply border-zinc-700 bg-zinc-800 hover:border-zinc-600 hover:bg-zinc-700/70;
-}
-
-:root.dark .skill-card-avatar {
-  @apply bg-zinc-700;
-}
-
-:root.dark .skill-card-avatar-fallback {
-  @apply bg-zinc-600 text-zinc-300;
-}
-
-:root.dark .skill-card-name {
-  @apply text-zinc-100;
-}
-
-:root.dark .skill-card-badge-disabled {
-  @apply border-zinc-600 bg-zinc-700 text-zinc-300;
-}
-
-:root.dark .skill-card-owner {
-  @apply text-zinc-400;
-}
-
-:root.dark .skill-card-browse {
-  @apply text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200;
-}
-
-:root.dark .skill-card-desc {
-  @apply text-zinc-300;
-}
-
-:root.dark .skill-card-date {
-  @apply text-zinc-500;
-}
-
-:root.dark .sdm-panel {
-  @apply bg-zinc-800;
-}
-
-:root.dark .sdm-title {
-  @apply text-zinc-100;
-}
-
-:root.dark .sdm-badge-disabled {
-  @apply border-zinc-600 bg-zinc-700 text-zinc-300;
-}
-
-:root.dark .sdm-owner {
-  @apply text-zinc-400;
-}
-
-:root.dark .sdm-close {
-  @apply text-zinc-400 hover:bg-zinc-700 hover:text-zinc-100;
-}
-
-:root.dark .sdm-desc {
-  @apply text-zinc-300;
-}
-
-:root.dark .sdm-readme-loading {
-  @apply text-zinc-400;
-}
-
-:root.dark .sdm-readme {
-  @apply text-zinc-300 border-zinc-700;
-}
-
-:root.dark .sdm-readme h2 {
-  @apply text-zinc-100;
-}
-
-:root.dark .sdm-readme h3 {
-  @apply text-zinc-200;
-}
-
-:root.dark .sdm-readme h4 {
-  @apply text-zinc-300;
-}
-
-:root.dark .sdm-readme code {
-  @apply bg-zinc-700 text-zinc-200;
-}
-
-:root.dark .sdm-footer {
-  @apply border-zinc-700;
-}
-
-:root.dark .sdm-btn-primary {
-  @apply bg-zinc-200 text-zinc-900 hover:bg-white;
-}
-
-:root.dark .sdm-btn-secondary {
-  @apply bg-zinc-700 text-zinc-200 hover:bg-zinc-600;
+  --theme-body-background: #18181b;
+  --theme-body-text: #f4f4f5;
+  --theme-shell-bg: #18181b;
+  --theme-sidebar-bg: #18181b;
+  --theme-main-bg: #09090b;
+  --theme-panel-bg: rgba(39, 39, 42, 0.96);
+  --theme-panel-subtle-bg: rgba(39, 39, 42, 0.84);
+  --theme-elevated-bg: rgba(39, 39, 42, 0.96);
+  --theme-elevated-strong-bg: #27272a;
+  --theme-user-bubble-bg: #3f3f46;
+  --theme-code-bg: #09090b;
+  --theme-code-header-bg: rgba(24, 24, 27, 0.96);
+  --theme-code-text: #f4f4f5;
+  --theme-code-muted: #a1a1aa;
+  --theme-border: #3f3f46;
+  --theme-border-strong: #52525b;
+  --theme-border-soft: rgba(63, 63, 70, 0.82);
+  --theme-text-primary: #f4f4f5;
+  --theme-text-secondary: #d4d4d8;
+  --theme-text-muted: #a1a1aa;
+  --theme-link: #7dd3fc;
+  --theme-link-hover: #bae6fd;
+  --theme-link-decoration: rgba(125, 211, 252, 0.28);
+  --theme-control-bg: rgba(39, 39, 42, 0.94);
+  --theme-control-hover-bg: #3f3f46;
+  --theme-control-active-bg: #52525b;
+  --theme-accent: #3f3f46;
+  --theme-accent-hover: #52525b;
+  --theme-accent-contrast: #f4f4f5;
+  --theme-success-solid-bg: #10b981;
+  --theme-success-solid-hover-bg: #34d399;
+  --theme-success-solid-text: #ffffff;
+  --theme-success-soft-bg: rgba(16, 185, 129, 0.1);
+  --theme-success-border: rgba(16, 185, 129, 0.35);
+  --theme-success-text: #a7f3d0;
+  --theme-warning-solid-bg: #d97706;
+  --theme-warning-solid-hover-bg: #f59e0b;
+  --theme-warning-solid-text: #ffffff;
+  --theme-warning-soft-bg: rgba(245, 158, 11, 0.12);
+  --theme-warning-border: rgba(245, 158, 11, 0.35);
+  --theme-warning-text: #fde68a;
+  --theme-danger-solid-bg: #f43f5e;
+  --theme-danger-solid-hover-bg: #fb7185;
+  --theme-danger-solid-text: #ffffff;
+  --theme-danger-soft-bg: rgba(244, 63, 94, 0.1);
+  --theme-danger-border: rgba(244, 63, 94, 0.35);
+  --theme-danger-text: #fecdd3;
+  --theme-info-solid-bg: #0ea5e9;
+  --theme-info-solid-hover-bg: #38bdf8;
+  --theme-info-solid-text: #ffffff;
+  --theme-info-soft-bg: rgba(14, 165, 233, 0.12);
+  --theme-info-border: rgba(14, 165, 233, 0.35);
+  --theme-info-text: #bae6fd;
+  --theme-selection-bg: rgba(63, 63, 70, 0.92);
+  --theme-selection-border: rgba(82, 82, 91, 0.92);
+  --theme-selection-text: #f4f4f5;
+  --theme-overlay: rgba(0, 0, 0, 0.42);
+  --theme-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --theme-shadow-md: 0 14px 36px rgba(0, 0, 0, 0.32);
+  --theme-shadow-lg: 0 24px 64px rgba(0, 0, 0, 0.42);
+  --theme-backdrop-blur: 0px;
+}
+
+:root[data-theme='graphite'][data-appearance='light'] {
+  color-scheme: light;
+  --theme-body-background: #eef2f7;
+  --theme-body-text: #111827;
+  --theme-shell-bg: #e7edf5;
+  --theme-sidebar-bg: #e7edf5;
+  --theme-main-bg: #fbfdff;
+  --theme-panel-bg: rgba(255, 255, 255, 0.92);
+  --theme-panel-subtle-bg: rgba(239, 244, 250, 0.92);
+  --theme-elevated-bg: rgba(255, 255, 255, 0.97);
+  --theme-elevated-strong-bg: #ffffff;
+  --theme-user-bubble-bg: #dbe4ef;
+  --theme-code-bg: #0f172a;
+  --theme-code-header-bg: rgba(15, 23, 42, 0.94);
+  --theme-code-text: #e5eefb;
+  --theme-code-muted: #94a3b8;
+  --theme-border: #d5dde8;
+  --theme-border-strong: #c1ccda;
+  --theme-border-soft: rgba(213, 221, 232, 0.8);
+  --theme-text-primary: #111827;
+  --theme-text-secondary: #374151;
+  --theme-text-muted: #6b7280;
+  --theme-link: #2563eb;
+  --theme-link-hover: #1d4ed8;
+  --theme-link-decoration: rgba(37, 99, 235, 0.26);
+  --theme-control-bg: rgba(248, 250, 252, 0.96);
+  --theme-control-hover-bg: #e8eef6;
+  --theme-control-active-bg: #dbe4ef;
+  --theme-accent: #1f2937;
+  --theme-accent-hover: #111827;
+  --theme-accent-contrast: #f9fafb;
+  --theme-success-solid-bg: #10b981;
+  --theme-success-solid-hover-bg: #059669;
+  --theme-success-solid-text: #ffffff;
+  --theme-success-soft-bg: rgba(16, 185, 129, 0.12);
+  --theme-success-border: rgba(16, 185, 129, 0.35);
+  --theme-success-text: #047857;
+  --theme-warning-solid-bg: #d97706;
+  --theme-warning-solid-hover-bg: #b45309;
+  --theme-warning-solid-text: #ffffff;
+  --theme-warning-soft-bg: rgba(245, 158, 11, 0.12);
+  --theme-warning-border: rgba(245, 158, 11, 0.35);
+  --theme-warning-text: #b45309;
+  --theme-danger-solid-bg: #f43f5e;
+  --theme-danger-solid-hover-bg: #e11d48;
+  --theme-danger-solid-text: #ffffff;
+  --theme-danger-soft-bg: rgba(244, 63, 94, 0.1);
+  --theme-danger-border: rgba(244, 63, 94, 0.35);
+  --theme-danger-text: #be123c;
+  --theme-info-solid-bg: #2563eb;
+  --theme-info-solid-hover-bg: #1d4ed8;
+  --theme-info-solid-text: #ffffff;
+  --theme-info-soft-bg: rgba(37, 99, 235, 0.1);
+  --theme-info-border: rgba(37, 99, 235, 0.35);
+  --theme-info-text: #1d4ed8;
+  --theme-selection-bg: rgba(219, 228, 239, 0.9);
+  --theme-selection-border: rgba(193, 204, 218, 0.9);
+  --theme-selection-text: #111827;
+  --theme-overlay: rgba(15, 23, 42, 0.42);
+  --theme-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.07);
+  --theme-shadow-md: 0 16px 36px rgba(15, 23, 42, 0.11);
+  --theme-shadow-lg: 0 28px 72px rgba(15, 23, 42, 0.18);
+  --theme-backdrop-blur: 0px;
+}
+
+:root[data-theme='graphite'][data-appearance='dark'] {
+  color-scheme: dark;
+  --theme-body-background: #111827;
+  --theme-body-text: #e5e7eb;
+  --theme-shell-bg: #111827;
+  --theme-sidebar-bg: #111827;
+  --theme-main-bg: #030712;
+  --theme-panel-bg: rgba(31, 41, 55, 0.96);
+  --theme-panel-subtle-bg: rgba(31, 41, 55, 0.84);
+  --theme-elevated-bg: rgba(31, 41, 55, 0.96);
+  --theme-elevated-strong-bg: #1f2937;
+  --theme-user-bubble-bg: #374151;
+  --theme-code-bg: #030712;
+  --theme-code-header-bg: rgba(3, 7, 18, 0.96);
+  --theme-code-text: #e5e7eb;
+  --theme-code-muted: #9ca3af;
+  --theme-border: #374151;
+  --theme-border-strong: #4b5563;
+  --theme-border-soft: rgba(55, 65, 81, 0.82);
+  --theme-text-primary: #e5e7eb;
+  --theme-text-secondary: #cbd5e1;
+  --theme-text-muted: #9ca3af;
+  --theme-link: #93c5fd;
+  --theme-link-hover: #bfdbfe;
+  --theme-link-decoration: rgba(147, 197, 253, 0.3);
+  --theme-control-bg: rgba(31, 41, 55, 0.94);
+  --theme-control-hover-bg: #374151;
+  --theme-control-active-bg: #4b5563;
+  --theme-accent: #374151;
+  --theme-accent-hover: #4b5563;
+  --theme-accent-contrast: #e5e7eb;
+  --theme-success-solid-bg: #10b981;
+  --theme-success-solid-hover-bg: #34d399;
+  --theme-success-solid-text: #ffffff;
+  --theme-success-soft-bg: rgba(16, 185, 129, 0.1);
+  --theme-success-border: rgba(16, 185, 129, 0.35);
+  --theme-success-text: #a7f3d0;
+  --theme-warning-solid-bg: #d97706;
+  --theme-warning-solid-hover-bg: #f59e0b;
+  --theme-warning-solid-text: #ffffff;
+  --theme-warning-soft-bg: rgba(245, 158, 11, 0.12);
+  --theme-warning-border: rgba(245, 158, 11, 0.35);
+  --theme-warning-text: #fde68a;
+  --theme-danger-solid-bg: #f43f5e;
+  --theme-danger-solid-hover-bg: #fb7185;
+  --theme-danger-solid-text: #ffffff;
+  --theme-danger-soft-bg: rgba(244, 63, 94, 0.1);
+  --theme-danger-border: rgba(244, 63, 94, 0.35);
+  --theme-danger-text: #fecdd3;
+  --theme-info-solid-bg: #3b82f6;
+  --theme-info-solid-hover-bg: #60a5fa;
+  --theme-info-solid-text: #ffffff;
+  --theme-info-soft-bg: rgba(59, 130, 246, 0.12);
+  --theme-info-border: rgba(59, 130, 246, 0.35);
+  --theme-info-text: #bfdbfe;
+  --theme-selection-bg: rgba(55, 65, 81, 0.92);
+  --theme-selection-border: rgba(75, 85, 99, 0.92);
+  --theme-selection-text: #e5e7eb;
+  --theme-overlay: rgba(0, 0, 0, 0.46);
+  --theme-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --theme-shadow-md: 0 14px 36px rgba(0, 0, 0, 0.34);
+  --theme-shadow-lg: 0 24px 64px rgba(0, 0, 0, 0.44);
+  --theme-backdrop-blur: 0px;
+}
+
+:root[data-theme='macos'][data-appearance='light'] {
+  color-scheme: light;
+  --theme-font-sans:
+    "SF Pro Display",
+    "SF Pro Text",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Helvetica Neue",
+    sans-serif;
+  --theme-font-mono:
+    "SF Mono",
+    "SFMono-Regular",
+    ui-monospace,
+    "Cascadia Code",
+    "Source Code Pro",
+    Menlo,
+    Monaco,
+    monospace;
+  --theme-body-background: rgb(var(--color-materialThick-light));
+  --theme-body-text: rgb(var(--color-text-light));
+  --theme-shell-bg: rgb(var(--color-materialThick-light));
+  --theme-sidebar-bg: rgb(var(--color-sidebar-light));
+  --theme-macos-sidebar-surface-bg: color-mix(in srgb, rgb(var(--color-sidebar-light)) 94%, rgb(var(--color-materialThin-light)));
+  --theme-main-bg: rgb(var(--color-materialThin-light));
+  --theme-panel-bg: rgb(var(--color-materialMedium-light));
+  --theme-panel-subtle-bg: rgb(var(--color-materialThin-light));
+  --theme-elevated-bg: rgb(var(--color-materialThick-light));
+  --theme-elevated-strong-bg: rgb(var(--color-materialOpaque-light));
+  --theme-floating-panel-bg: rgb(var(--color-materialOpaque-light));
+  --theme-user-bubble-bg: rgb(var(--color-selectionUnfocusedFill-light));
+  --theme-code-bg: rgba(17, 24, 39, 0.92);
+  --theme-code-header-bg: rgba(30, 41, 59, 0.92);
+  --theme-code-text: #f8fafc;
+  --theme-code-muted: #cbd5e1;
+  --theme-border: rgb(var(--color-fill-light));
+  --theme-border-strong: rgb(var(--color-fillSecondary-light));
+  --theme-border-soft: rgb(var(--color-textQuinary-light));
+  --theme-text-primary: rgb(var(--color-text-light));
+  --theme-text-secondary: rgb(var(--color-textSecondary-light));
+  --theme-text-muted: rgb(var(--color-textTertiary-light));
+  --theme-link: rgb(var(--color-blue-light));
+  --theme-link-hover: rgb(var(--color-blue-dark));
+  --theme-link-decoration: rgb(var(--color-selectionFocused-light));
+  --theme-control-bg: rgb(var(--color-controlEnabled-light));
+  --theme-control-hover-bg: rgb(var(--color-fillQuinary-light));
+  --theme-control-active-bg: rgb(var(--color-selectionUnfocusedFill-light));
+  --theme-accent: rgb(var(--color-blue-light));
+  --theme-accent-hover: rgb(var(--color-blue-dark));
+  --theme-accent-contrast: #ffffff;
+  --theme-success-solid-bg: rgb(var(--color-green-light));
+  --theme-success-solid-hover-bg: rgb(var(--color-green-dark));
+  --theme-success-solid-text: #ffffff;
+  --theme-success-soft-bg: color-mix(in srgb, rgb(var(--color-green-light)) 14%, transparent);
+  --theme-success-border: color-mix(in srgb, rgb(var(--color-green-light)) 30%, transparent);
+  --theme-success-text: rgb(var(--color-green-dark));
+  --theme-warning-solid-bg: rgb(var(--color-orange-light));
+  --theme-warning-solid-hover-bg: rgb(var(--color-orange-dark));
+  --theme-warning-solid-text: #ffffff;
+  --theme-warning-soft-bg: color-mix(in srgb, rgb(var(--color-orange-light)) 14%, transparent);
+  --theme-warning-border: color-mix(in srgb, rgb(var(--color-orange-light)) 30%, transparent);
+  --theme-warning-text: rgb(var(--color-orange-dark));
+  --theme-danger-solid-bg: rgb(var(--color-red-light));
+  --theme-danger-solid-hover-bg: rgb(var(--color-red-dark));
+  --theme-danger-solid-text: #ffffff;
+  --theme-danger-soft-bg: color-mix(in srgb, rgb(var(--color-red-light)) 12%, transparent);
+  --theme-danger-border: color-mix(in srgb, rgb(var(--color-red-light)) 28%, transparent);
+  --theme-danger-text: rgb(var(--color-red-dark));
+  --theme-info-solid-bg: rgb(var(--color-blue-dark));
+  --theme-info-solid-hover-bg: rgb(var(--color-blue-light));
+  --theme-info-solid-text: #ffffff;
+  --theme-info-soft-bg: color-mix(in srgb, rgb(var(--color-blue-light)) 12%, transparent);
+  --theme-info-border: color-mix(in srgb, rgb(var(--color-blue-light)) 28%, transparent);
+  --theme-info-text: rgb(var(--color-blue-dark));
+  --theme-selection-bg: rgb(var(--color-selectionFocused-light));
+  --theme-selection-border: color-mix(in srgb, rgb(var(--color-selectionFocusedFill-light)) 32%, transparent);
+  --theme-selection-text: #12304f;
+  --theme-overlay: rgb(var(--color-popover-light));
+  --theme-shadow-sm: 0 1px 3px rgba(29, 29, 31, 0.08);
+  --theme-shadow-md: 0 12px 28px rgba(29, 29, 31, 0.09);
+  --theme-shadow-lg: 0 20px 48px rgba(29, 29, 31, 0.14);
+  --theme-backdrop-blur: 18px;
+  --theme-macos-control-radius: 12px;
+  --theme-macos-panel-radius: 18px;
+  --theme-macos-row-radius: 10px;
+}
+
+:root[data-theme='macos'][data-appearance='dark'] {
+  color-scheme: dark;
+  --theme-font-sans:
+    "SF Pro Display",
+    "SF Pro Text",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Helvetica Neue",
+    sans-serif;
+  --theme-font-mono:
+    "SF Mono",
+    "SFMono-Regular",
+    ui-monospace,
+    "Cascadia Code",
+    "Source Code Pro",
+    Menlo,
+    Monaco,
+    monospace;
+  --theme-body-background: rgb(var(--color-materialThick-dark));
+  --theme-body-text: rgb(var(--color-text-dark));
+  --theme-shell-bg: rgb(var(--color-materialThick-dark));
+  --theme-sidebar-bg: rgb(var(--color-sidebar-dark));
+  --theme-macos-sidebar-surface-bg: color-mix(in srgb, rgb(var(--color-sidebar-dark)) 94%, rgb(var(--color-materialThin-dark)));
+  --theme-main-bg: rgb(var(--color-materialThin-dark));
+  --theme-panel-bg: rgb(var(--color-materialMedium-dark));
+  --theme-panel-subtle-bg: rgb(var(--color-materialThin-dark));
+  --theme-elevated-bg: rgb(var(--color-materialThick-dark));
+  --theme-elevated-strong-bg: rgb(var(--color-materialOpaque-dark));
+  --theme-floating-panel-bg: rgb(var(--color-materialOpaque-dark));
+  --theme-user-bubble-bg: rgb(var(--color-selectionUnfocusedFill-dark));
+  --theme-code-bg: rgba(2, 6, 23, 0.96);
+  --theme-code-header-bg: rgba(15, 23, 42, 0.96);
+  --theme-code-text: #e2e8f0;
+  --theme-code-muted: #94a3b8;
+  --theme-border: rgb(var(--color-fill-dark));
+  --theme-border-strong: rgb(var(--color-fillSecondary-dark));
+  --theme-border-soft: rgb(var(--color-textQuinary-dark));
+  --theme-text-primary: rgb(var(--color-text-dark));
+  --theme-text-secondary: rgb(var(--color-textSecondary-dark));
+  --theme-text-muted: rgb(var(--color-textTertiary-dark));
+  --theme-link: rgb(var(--color-blue-dark));
+  --theme-link-hover: rgb(var(--color-blue-light));
+  --theme-link-decoration: rgb(var(--color-selectionFocused-dark));
+  --theme-control-bg: color-mix(in srgb, rgb(var(--color-controlEnabled-dark)) 58%, rgb(var(--color-materialOpaque-dark)));
+  --theme-control-hover-bg: color-mix(in srgb, rgb(var(--color-fillQuinary-dark)) 58%, rgb(var(--color-materialOpaque-dark)));
+  --theme-control-active-bg: rgb(var(--color-selectionUnfocusedFill-dark));
+  --theme-accent: rgb(var(--color-blue-dark));
+  --theme-accent-hover: rgb(var(--color-blue-light));
+  --theme-accent-contrast: #ffffff;
+  --theme-success-solid-bg: rgb(var(--color-green-dark));
+  --theme-success-solid-hover-bg: rgb(var(--color-green-light));
+  --theme-success-solid-text: #ffffff;
+  --theme-success-soft-bg: color-mix(in srgb, rgb(var(--color-green-dark)) 12%, transparent);
+  --theme-success-border: color-mix(in srgb, rgb(var(--color-green-dark)) 28%, transparent);
+  --theme-success-text: rgb(var(--color-green-dark));
+  --theme-warning-solid-bg: rgb(var(--color-orange-dark));
+  --theme-warning-solid-hover-bg: rgb(var(--color-orange-light));
+  --theme-warning-solid-text: #ffffff;
+  --theme-warning-soft-bg: color-mix(in srgb, rgb(var(--color-orange-dark)) 14%, transparent);
+  --theme-warning-border: color-mix(in srgb, rgb(var(--color-orange-dark)) 30%, transparent);
+  --theme-warning-text: rgb(var(--color-orange-light));
+  --theme-danger-solid-bg: rgb(var(--color-red-dark));
+  --theme-danger-solid-hover-bg: rgb(var(--color-red-light));
+  --theme-danger-solid-text: #ffffff;
+  --theme-danger-soft-bg: color-mix(in srgb, rgb(var(--color-red-dark)) 12%, transparent);
+  --theme-danger-border: color-mix(in srgb, rgb(var(--color-red-dark)) 30%, transparent);
+  --theme-danger-text: rgb(var(--color-red-light));
+  --theme-info-solid-bg: rgb(var(--color-blue-dark));
+  --theme-info-solid-hover-bg: rgb(var(--color-blue-light));
+  --theme-info-solid-text: #ffffff;
+  --theme-info-soft-bg: color-mix(in srgb, rgb(var(--color-blue-dark)) 14%, transparent);
+  --theme-info-border: color-mix(in srgb, rgb(var(--color-blue-dark)) 30%, transparent);
+  --theme-info-text: rgb(var(--color-blue-light));
+  --theme-selection-bg: rgb(var(--color-selectionFocused-dark));
+  --theme-selection-border: color-mix(in srgb, rgb(var(--color-selectionFocusedFill-dark)) 32%, transparent);
+  --theme-selection-text: #f5f5f7;
+  --theme-overlay: rgb(var(--color-popover-dark));
+  --theme-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.22);
+  --theme-shadow-md: 0 12px 28px rgba(0, 0, 0, 0.24);
+  --theme-shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.3);
+  --theme-backdrop-blur: 20px;
+  --theme-macos-control-radius: 12px;
+  --theme-macos-panel-radius: 18px;
+  --theme-macos-row-radius: 10px;
+}
+
+body {
+  background: var(--theme-body-background);
+  color: var(--theme-body-text);
+}
+
+.desktop-layout {
+  background: var(--theme-shell-bg);
+  color: var(--theme-text-primary);
+}
+
+.desktop-sidebar {
+  background: var(--theme-sidebar-bg);
+}
+
+.sidebar-root,
+.sidebar-scrollable {
+  background: var(--theme-sidebar-bg);
+}
+
+.desktop-main {
+  background: var(--theme-main-bg);
+  color: var(--theme-text-primary);
+}
+
+.content-root {
+  background: var(--theme-main-bg);
+  color: var(--theme-text-primary);
+}
+
+.sidebar-settings-area {
+  background: var(--theme-sidebar-bg);
+  border-color: var(--theme-border);
+}
+
+.composer-dropdown-trigger {
+  color: var(--theme-text-secondary);
+}
+
+.composer-dropdown-menu {
+  border-color: var(--theme-border);
+  background: var(--theme-panel-bg);
+}
+
+.message-bubble {
+  background: var(--theme-panel-bg);
+  color: var(--theme-text-primary);
+}
+
+.message-bubble-user,
+.message-card[data-role='user'] {
+  background: var(--theme-user-bubble-bg);
+}
+
+.message-text {
+  color: var(--theme-text-primary);
+}
+
+.message-list,
+.message-italic-text {
+  color: var(--theme-text-primary);
+}
+
+.message-heading,
+.message-bold-text {
+  color: var(--theme-text-primary);
+}
+
+.message-inline-code {
+  border-color: var(--theme-border);
+  background: var(--theme-control-bg);
+  color: var(--theme-text-primary);
+}
+
+.message-code-block {
+  border-color: var(--theme-border);
+  background: var(--theme-code-bg);
+  color: var(--theme-code-text);
+}
+
+.message-code-language {
+  border-color: var(--theme-border-soft);
+  color: var(--theme-code-muted);
+}
+
+.conversation-loading,
+.conversation-empty {
+  color: var(--theme-text-muted);
+}
+
+.cmd-row {
+  border-color: var(--theme-border);
+  background: var(--theme-panel-bg);
+}
+
+.cmd-row:hover,
+.cmd-row.cmd-row-group:hover {
+  background: var(--theme-control-hover-bg);
+}
+
+.cmd-row.cmd-row-group,
+.cmd-chevron,
+.cmd-label,
+.cmd-group-label {
+  color: var(--theme-text-secondary);
+}
+
+.cmd-status {
+  color: var(--theme-text-muted);
+}
+
+.cmd-output-wrap.cmd-output-visible {
+  border-color: var(--theme-border);
+}
+
+:root[data-appearance='dark']:not([data-theme='macos']) .sidebar-settings-button {
+  color: var(--theme-text-secondary);
+}
+
+:root[data-appearance='dark']:not([data-theme='macos']) .sidebar-settings-button:hover {
+  background: var(--theme-control-hover-bg);
+  color: var(--theme-text-primary);
+}
+
+:root[data-appearance='dark']:not([data-theme='macos']) .sidebar-settings-button-version {
+  color: var(--theme-text-muted);
+}
+
+:root[data-appearance='dark']:not([data-theme='macos']) .sidebar-settings-panel {
+  border-color: var(--theme-border);
+  background: var(--theme-panel-bg);
+}
+
+:root[data-appearance='dark']:not([data-theme='macos']) .sidebar-settings-row {
+  color: var(--theme-text-primary);
+}
+
+:root[data-appearance='dark']:not([data-theme='macos']) .sidebar-settings-row:hover {
+  background: var(--theme-control-hover-bg);
+}
+
+:root[data-appearance='dark']:not([data-theme='macos']) .sidebar-settings-language-dropdown .composer-dropdown-trigger {
+  border-color: var(--theme-border);
+  background: var(--theme-control-bg);
+  color: var(--theme-text-secondary);
+}
+
+:root[data-appearance='dark']:not([data-theme='macos']) .sidebar-settings-row + .sidebar-settings-row {
+  border-color: var(--theme-border);
+}
+
+:root[data-appearance='dark']:not([data-theme='macos']) .sidebar-settings-telegram-panel,
+:root[data-appearance='dark']:not([data-theme='macos']) .sidebar-settings-account-section {
+  border-color: var(--theme-border);
+  background: var(--theme-panel-subtle-bg);
+}
+
+:root[data-appearance='dark']:not([data-theme='macos']) .sidebar-settings-field-label,
+:root[data-appearance='dark']:not([data-theme='macos']) .sidebar-settings-account-title,
+:root[data-appearance='dark']:not([data-theme='macos']) .sidebar-settings-account-email {
+  color: var(--theme-text-primary);
+}
+
+:root[data-appearance='dark']:not([data-theme='macos']) .sidebar-settings-input,
+:root[data-appearance='dark']:not([data-theme='macos']) .sidebar-settings-textarea {
+  border-color: var(--theme-border);
+  background: var(--theme-control-bg);
+  color: var(--theme-text-primary);
+}
+
+:root[data-appearance='dark']:not([data-theme='macos']) .sidebar-settings-input:focus,
+:root[data-appearance='dark']:not([data-theme='macos']) .sidebar-settings-textarea:focus {
+  border-color: var(--theme-selection-border);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-selection-border) 28%, transparent);
+}
+
+:root[data-appearance='dark']:not([data-theme='macos']) .sidebar-settings-field-help,
+:root[data-appearance='dark']:not([data-theme='macos']) .sidebar-settings-account-empty,
+:root[data-appearance='dark']:not([data-theme='macos']) .sidebar-settings-account-meta,
+:root[data-appearance='dark']:not([data-theme='macos']) .sidebar-settings-account-quota {
+  color: var(--theme-text-muted);
+}
+
+:root[data-appearance='dark']:not([data-theme='macos']) .sidebar-settings-account-collapse,
+:root[data-appearance='dark']:not([data-theme='macos']) .sidebar-settings-account-refresh,
+:root[data-appearance='dark']:not([data-theme='macos']) .sidebar-settings-account-switch {
+  border-color: var(--theme-border);
+  background: var(--theme-control-bg);
+  color: var(--theme-text-secondary);
+}
+
+:root[data-appearance='dark']:not([data-theme='macos']) .sidebar-settings-account-collapse:hover,
+:root[data-appearance='dark']:not([data-theme='macos']) .sidebar-settings-account-refresh:hover,
+:root[data-appearance='dark']:not([data-theme='macos']) .sidebar-settings-account-switch:hover {
+  background: var(--theme-control-hover-bg);
+  color: var(--theme-text-primary);
+}
+
+:root[data-appearance='dark']:not([data-theme='macos']) .sidebar-settings-account-count,
+:root[data-appearance='dark']:not([data-theme='macos']) .sidebar-settings-account-id,
+:root[data-appearance='dark']:not([data-theme='macos']) .sidebar-settings-value {
+  background: var(--theme-control-active-bg);
+  color: var(--theme-text-secondary);
+}
+
+:root[data-appearance='dark']:not([data-theme='macos']) .sidebar-settings-account-item {
+  border-color: var(--theme-border);
+  background: var(--theme-panel-bg);
+}
+
+:root[data-appearance='dark']:not([data-theme='macos']) .sidebar-settings-account-remove {
+  border-color: var(--theme-warning-border);
+  background: var(--theme-warning-soft-bg);
+  color: var(--theme-warning-text);
+}
+
+:root[data-appearance='dark']:not([data-theme='macos']) .sidebar-settings-account-remove:hover {
+  background: color-mix(in srgb, var(--theme-warning-soft-bg) 88%, var(--theme-warning-solid-bg));
+}
+
+:root[data-appearance='dark']:not([data-theme='macos']) .sidebar-settings-toggle {
+  background: var(--theme-border-strong);
+}
+
+:root[data-appearance='dark']:not([data-theme='macos']) .sidebar-settings-toggle::after {
+  background: var(--theme-elevated-strong-bg);
+}
+
+:root[data-appearance='dark']:not([data-theme='macos']) .sidebar-settings-toggle.is-on {
+  background: var(--theme-selection-bg);
+}
+
+:root[data-appearance='dark']:not([data-theme='macos']) .sidebar-settings-error {
+  background: var(--theme-danger-soft-bg);
+  color: var(--theme-danger-text);
+}
+
+:root[data-theme][data-appearance] .desktop-resize-handle,
+:root[data-theme][data-appearance] .thread-composer-attach-switch,
+:root[data-theme][data-appearance] .review-pane-segmented-button::before,
+:root[data-theme][data-appearance] .review-pane-resizer::before,
+:root[data-theme][data-appearance] .diff-viewer-mobile-sheet-handle,
+:root[data-theme][data-appearance] .review-pane-sheet-handle {
+  background: var(--theme-border-strong);
+}
+
+:root[data-theme][data-appearance] .desktop-resize-handle:hover,
+:root[data-theme][data-appearance] .review-pane-resizer:hover::before {
+  background: var(--theme-control-active-bg);
+}
+
+:root[data-theme][data-appearance] .mobile-drawer,
+:root[data-theme][data-appearance] .content-header,
+:root[data-theme][data-appearance] .diff-viewer-main,
+:root[data-theme][data-appearance] .review-pane-header,
+:root[data-theme][data-appearance] .review-pane-toolbar,
+:root[data-theme][data-appearance] .review-pane-bulk-actions,
+:root[data-theme][data-appearance] .review-pane-hunk-header,
+:root[data-theme][data-appearance] .review-pane-summary-card,
+:root[data-theme][data-appearance] .review-pane-file-header,
+:root[data-theme][data-appearance] .review-pane-hunk,
+:root[data-theme][data-appearance] .review-pane-finding,
+:root[data-theme][data-appearance] .review-pane-sheet,
+:root[data-theme][data-appearance] .sdm-panel,
+:root[data-theme][data-appearance] .rename-thread-panel {
+  background: var(--theme-main-bg);
+}
+
+:root[data-theme][data-appearance] .sidebar-settings-context-value,
+:root[data-theme][data-appearance] .sidebar-settings-account-quota,
+:root[data-theme][data-appearance] .sidebar-search-toggle,
+:root[data-theme][data-appearance] .sidebar-skills-link,
+:root[data-theme][data-appearance] .project-title,
+:root[data-theme][data-appearance] .thread-composer-attach-trigger,
+:root[data-theme][data-appearance] .thread-menu-trigger,
+:root[data-theme][data-appearance] .live-overlay-label,
+:root[data-theme][data-appearance] .skills-sync-device,
+:root[data-theme][data-appearance] .skills-sync-meta,
+:root[data-theme][data-appearance] .skills-hub-subtitle,
+:root[data-theme][data-appearance] .skills-hub-section-toggle,
+:root[data-theme][data-appearance] .skill-card-owner,
+:root[data-theme][data-appearance] .sdm-owner,
+:root[data-theme][data-appearance] .thread-composer-attach-setting-description,
+:root[data-theme][data-appearance] .rate-limit-card-footer,
+:root[data-theme][data-appearance] .rate-limit-card-title,
+:root[data-theme][data-appearance] .request-meta,
+:root[data-theme][data-appearance] .request-question-option-description,
+:root[data-theme][data-appearance] .review-pane-control-label,
+:root[data-theme][data-appearance] .review-pane-file-delta,
+:root[data-theme][data-appearance] .review-pane-meta,
+:root[data-theme][data-appearance] .review-pane-delta-separator,
+:root[data-theme][data-appearance] .diff-viewer-subtitle,
+:root[data-theme][data-appearance] .diff-viewer-empty-text,
+:root[data-theme][data-appearance] .thread-row-time,
+:root[data-theme][data-appearance] .thread-tree-header,
+:root[data-theme][data-appearance] .thread-pin-button,
+:root[data-theme][data-appearance] .composer-dropdown-chevron,
+:root[data-theme][data-appearance] .composer-dropdown-empty,
+:root[data-theme][data-appearance] .conversation-loading,
+:root[data-theme][data-appearance] .conversation-empty,
+:root[data-theme][data-appearance] .worktree-init-status.is-running {
+  color: var(--theme-text-muted);
+}
+
+:root[data-theme][data-appearance] .sidebar-settings-context-value[data-state='ok'],
+:root[data-theme][data-appearance] .cmd-status-ok .cmd-status,
+:root[data-theme][data-appearance] .file-change-signed-count[data-tone='add'],
+:root[data-theme][data-appearance] .review-pane-delta-add {
+  color: var(--theme-success-text);
+}
+
+:root[data-theme][data-appearance] .sidebar-settings-context-value[data-state='warning'],
+:root[data-theme][data-appearance] .cmd-status-running .cmd-status {
+  color: var(--theme-warning-text);
+}
+
+:root[data-theme][data-appearance] .sidebar-settings-context-value[data-state='danger'],
+:root[data-theme][data-appearance] .cmd-status-error .cmd-status,
+:root[data-theme][data-appearance] .file-change-signed-count[data-tone='remove'],
+:root[data-theme][data-appearance] .review-pane-delta-remove {
+  color: var(--theme-danger-text);
+}
+
+:root[data-theme][data-appearance] .sidebar-settings-context-meta,
+:root[data-theme][data-appearance] .sidebar-settings-account-meta,
+:root[data-theme][data-appearance] .sidebar-settings-account-empty,
+:root[data-theme][data-appearance] .sidebar-settings-key-masked,
+:root[data-theme][data-appearance] .sidebar-search-input::placeholder,
+:root[data-theme][data-appearance] .thread-composer-input::placeholder,
+:root[data-theme][data-appearance] .live-overlay-reasoning,
+:root[data-theme][data-appearance] .file-change-summary-status,
+:root[data-theme][data-appearance] .file-change-arrow,
+:root[data-theme][data-appearance] .review-pane-eyebrow,
+:root[data-theme][data-appearance] .review-pane-empty-text,
+:root[data-theme][data-appearance] .review-pane-file-subtitle,
+:root[data-theme][data-appearance] .review-pane-hunk-meta,
+:root[data-theme][data-appearance] .review-pane-finding-location,
+:root[data-theme][data-appearance] .review-pane-finding-body,
+:root[data-theme][data-appearance] .review-pane-line-number,
+:root[data-theme][data-appearance] .review-pane-line-marker,
+:root[data-theme][data-appearance] .review-pane-file-delta,
+:root[data-theme][data-appearance] .skills-hub-count,
+:root[data-theme][data-appearance] .skills-hub-loading,
+:root[data-theme][data-appearance] .skills-hub-empty,
+:root[data-theme][data-appearance] .skill-card-date,
+:root[data-theme][data-appearance] .sdm-readme-loading,
+:root[data-theme][data-appearance] .request-meta,
+:root[data-theme][data-appearance] .request-question-option-description {
+  color: var(--theme-text-muted);
+}
+
+:root[data-theme][data-appearance] .rate-limit-card,
+:root[data-theme][data-appearance] .skills-sync-panel,
+:root[data-theme][data-appearance] .skill-card,
+:root[data-theme][data-appearance] .thread-composer-shell,
+:root[data-theme][data-appearance] .thread-composer-file-mentions,
+:root[data-theme][data-appearance] .review-pane-file-list,
+:root[data-theme][data-appearance] .file-change-list,
+:root[data-theme][data-appearance] .diff-viewer-shell,
+:root[data-theme][data-appearance] .diff-viewer-toolbar,
+:root[data-theme][data-appearance] .diff-viewer-mobile-sheet,
+:root[data-theme][data-appearance] .review-pane,
+:root[data-theme][data-appearance] .review-pane-file-header,
+:root[data-theme][data-appearance] .review-pane-hunk,
+:root[data-theme][data-appearance] .review-pane-summary-card,
+:root[data-theme][data-appearance] .review-pane-finding,
+:root[data-theme][data-appearance] .request-card,
+:root[data-theme][data-appearance] .build-badge {
+  border-color: var(--theme-border);
+  background: var(--theme-panel-bg);
+}
+
+:root[data-theme][data-appearance] .file-change-list,
+:root[data-theme][data-appearance] .request-card,
+:root[data-theme][data-appearance] .build-badge,
+:root[data-theme][data-appearance] .rate-limit-card,
+:root[data-theme][data-appearance] .skills-sync-panel,
+:root[data-theme][data-appearance] .skill-card {
+  background: var(--theme-panel-subtle-bg);
+}
+
+:root[data-theme][data-appearance] .sidebar-settings-account-title,
+:root[data-theme][data-appearance] .sidebar-settings-account-email,
+:root[data-theme][data-appearance] .thread-row-title,
+:root[data-theme][data-appearance] .thread-composer-input,
+:root[data-theme][data-appearance] .thread-composer-attach-setting-label,
+:root[data-theme][data-appearance] .thread-composer-attach-mode-label,
+:root[data-theme][data-appearance] .rename-thread-title,
+:root[data-theme][data-appearance] .new-thread-hero,
+:root[data-theme][data-appearance] .file-change-summary-label,
+:root[data-theme][data-appearance] .file-change-item,
+:root[data-theme][data-appearance] .diff-viewer-sidebar-title,
+:root[data-theme][data-appearance] .diff-viewer-file-label,
+:root[data-theme][data-appearance] .diff-viewer-title,
+:root[data-theme][data-appearance] .diff-viewer-empty-title,
+:root[data-theme][data-appearance] .review-pane-title,
+:root[data-theme][data-appearance] .review-pane-empty-title,
+:root[data-theme][data-appearance] .review-pane-file-title,
+:root[data-theme][data-appearance] .review-pane-summary-title,
+:root[data-theme][data-appearance] .review-pane-finding-title,
+:root[data-theme][data-appearance] .review-pane-sheet-title,
+:root[data-theme][data-appearance] .skills-hub-title,
+:root[data-theme][data-appearance] .skill-card-name,
+:root[data-theme][data-appearance] .sdm-title,
+:root[data-theme][data-appearance] .request-title,
+:root[data-theme][data-appearance] .request-reason {
+  color: var(--theme-text-primary);
+}
+
+:root[data-theme][data-appearance] .rate-limit-card-plan,
+:root[data-theme][data-appearance] .thread-composer-file-chip,
+:root[data-theme][data-appearance] .message-file-chip,
+:root[data-theme][data-appearance] .file-change-delta,
+:root[data-theme][data-appearance] .diff-viewer-file-delta,
+:root[data-theme][data-appearance] .diff-viewer-language,
+:root[data-theme][data-appearance] .review-pane-meta span,
+:root[data-theme][data-appearance] .review-pane-sheet-count,
+:root[data-theme][data-appearance] .review-pane-tree-folder-count,
+:root[data-theme][data-appearance] .skills-sync-badge,
+:root[data-theme][data-appearance] .skill-card-badge-disabled,
+:root[data-theme][data-appearance] .sdm-badge-disabled {
+  background: var(--theme-control-active-bg);
+  color: var(--theme-text-secondary);
+}
+
+:root[data-theme][data-appearance] .sidebar-settings-account-error,
+:root[data-theme][data-appearance] .skills-sync-error,
+:root[data-theme][data-appearance] .skills-hub-error,
+:root[data-theme][data-appearance] .worktree-init-status.is-error {
+  border-color: var(--theme-danger-border);
+  background: var(--theme-danger-soft-bg);
+  color: var(--theme-danger-text);
+}
+
+:root[data-theme][data-appearance] .thread-composer-mic,
+:root[data-theme][data-appearance] .diff-viewer-mobile-files-button,
+:root[data-theme][data-appearance] .diff-viewer-close,
+:root[data-theme][data-appearance] .review-pane-close,
+:root[data-theme][data-appearance] .review-pane-mobile-files-button,
+:root[data-theme][data-appearance] .review-pane-bulk-button,
+:root[data-theme][data-appearance] .review-pane-row-button,
+:root[data-theme][data-appearance] .message-copy-button,
+:root[data-theme][data-appearance] .message-image-button,
+:root[data-theme][data-appearance] .request-button,
+:root[data-theme][data-appearance] .skills-hub-search-btn,
+:root[data-theme][data-appearance] .skills-hub-sort,
+:root[data-theme][data-appearance] .sdm-btn-secondary {
+  border-color: var(--theme-border);
+  background: var(--theme-control-bg);
+  color: var(--theme-text-secondary);
+}
+
+:root[data-theme][data-appearance] .thread-composer-mic:hover,
+:root[data-theme][data-appearance] .diff-viewer-mobile-files-button:hover,
+:root[data-theme][data-appearance] .diff-viewer-close:hover,
+:root[data-theme][data-appearance] .review-pane-close:hover,
+:root[data-theme][data-appearance] .review-pane-mobile-files-button:hover,
+:root[data-theme][data-appearance] .review-pane-bulk-button:hover,
+:root[data-theme][data-appearance] .review-pane-row-button:hover,
+:root[data-theme][data-appearance] .message-copy-button:hover,
+:root[data-theme][data-appearance] .request-button:hover,
+:root[data-theme][data-appearance] .skills-hub-search-btn:hover,
+:root[data-theme][data-appearance] .skills-hub-sort:hover,
+:root[data-theme][data-appearance] .sdm-btn-secondary:hover,
+:root[data-theme][data-appearance] .sidebar-skills-link:hover,
+:root[data-theme][data-appearance] .sidebar-thread-controls-button:hover,
+:root[data-theme][data-appearance] .sidebar-search-toggle:hover,
+:root[data-theme][data-appearance] .thread-composer-attach-trigger:hover,
+:root[data-theme][data-appearance] .thread-menu-trigger:hover,
+:root[data-theme][data-appearance] .review-pane-tree-folder:hover,
+:root[data-theme][data-appearance] .skill-card-browse:hover,
+:root[data-theme][data-appearance] .sdm-close:hover {
+  background: var(--theme-control-hover-bg);
+  color: var(--theme-text-primary);
+}
+
+:root[data-theme][data-appearance] .sidebar-settings-account-item,
+:root[data-theme][data-appearance] .review-pane-tree-folder-sheet,
+:root[data-theme][data-appearance] .review-pane-branch-select-wrap,
+:root[data-theme][data-appearance] .review-pane-segmented,
+:root[data-theme][data-appearance] .sidebar-search-bar,
+:root[data-theme][data-appearance] .composer-search-dropdown-menu,
+:root[data-theme][data-appearance] .thread-composer-attach-menu,
+:root[data-theme][data-appearance] .organize-menu-panel,
+:root[data-theme][data-appearance] .project-menu-panel,
+:root[data-theme][data-appearance] .thread-menu-panel {
+  border-color: var(--theme-border);
+  background: var(--theme-panel-bg);
+}
+
+:root[data-theme][data-appearance] .queued-messages-inner {
+  border-color: var(--theme-border);
+  background: color-mix(in srgb, var(--theme-panel-subtle-bg) 92%, transparent);
+}
+
+:root[data-theme][data-appearance] .queued-row-icon,
+:root[data-theme][data-appearance] .queued-row-delete {
+  color: var(--theme-text-muted);
+}
+
+:root[data-theme][data-appearance] .queued-row-text {
+  color: var(--theme-text-secondary);
+}
+
+:root[data-theme][data-appearance] .queued-row-edit,
+:root[data-theme][data-appearance] .queued-row-steer {
+  border-color: var(--theme-border);
+  background: var(--theme-control-bg);
+  color: var(--theme-text-secondary);
+}
+
+:root[data-theme][data-appearance] .queued-row-edit:hover,
+:root[data-theme][data-appearance] .queued-row-steer:hover {
+  background: var(--theme-control-hover-bg);
+  color: var(--theme-text-primary);
+}
+
+:root[data-theme][data-appearance] .queued-row-delete:hover {
+  background: var(--theme-danger-soft-bg);
+  color: var(--theme-danger-text);
+}
+
+:root[data-theme][data-appearance] .thread-pending-request-shell {
+  border-color: var(--theme-border);
+  background: var(--theme-panel-bg);
+  color: var(--theme-text-primary);
+  box-shadow: var(--theme-shadow-lg);
+}
+
+:root[data-theme][data-appearance] .thread-pending-request-eyebrow,
+:root[data-theme][data-appearance] .thread-pending-request-select-label {
+  color: var(--theme-text-muted);
+}
+
+:root[data-theme][data-appearance] .thread-pending-request-title,
+:root[data-theme][data-appearance] .thread-pending-request-option-label,
+:root[data-theme][data-appearance] .thread-pending-request-question-title,
+:root[data-theme][data-appearance] .thread-pending-request-link,
+:root[data-theme][data-appearance] .thread-pending-request-checkbox-row {
+  color: var(--theme-text-primary);
+}
+
+:root[data-theme][data-appearance] .thread-pending-request-counter,
+:root[data-theme][data-appearance] .thread-pending-request-command-line,
+:root[data-theme][data-appearance] .thread-pending-request-preview,
+:root[data-theme][data-appearance] .thread-pending-request-question {
+  border-color: var(--theme-border);
+  background: var(--theme-panel-subtle-bg);
+}
+
+:root[data-theme][data-appearance] .thread-pending-request-counter,
+:root[data-theme][data-appearance] .thread-pending-request-option-index,
+:root[data-theme][data-appearance] .thread-pending-request-question-text,
+:root[data-theme][data-appearance] .thread-pending-request-question-description,
+:root[data-theme][data-appearance] .thread-pending-request-input::placeholder {
+  color: var(--theme-text-muted);
+}
+
+:root[data-theme][data-appearance] .thread-pending-request-option,
+:root[data-theme][data-appearance] .thread-pending-request-inline-input,
+:root[data-theme][data-appearance] .thread-pending-request-link,
+:root[data-theme][data-appearance] .thread-pending-request-select,
+:root[data-theme][data-appearance] .thread-pending-request-input,
+:root[data-theme][data-appearance] .thread-pending-request-secondary {
+  border-color: var(--theme-border);
+  background: var(--theme-control-bg);
+  color: var(--theme-text-secondary);
+}
+
+:root[data-theme][data-appearance] .thread-pending-request-option:hover,
+:root[data-theme][data-appearance] .thread-pending-request-inline-input:hover,
+:root[data-theme][data-appearance] .thread-pending-request-link:hover,
+:root[data-theme][data-appearance] .thread-pending-request-secondary:hover {
+  background: var(--theme-control-hover-bg);
+  color: var(--theme-text-primary);
+}
+
+:root[data-theme][data-appearance] .thread-pending-request-option.is-selected {
+  border-color: var(--theme-selection-border);
+  background: var(--theme-selection-bg);
+  color: var(--theme-selection-text);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--theme-selection-border) 22%, transparent);
+}
+
+:root[data-theme][data-appearance] .thread-pending-request-inline-input.is-active {
+  color: var(--theme-text-primary);
+}
+
+:root[data-theme][data-appearance] .thread-pending-request-inline-input:focus-within,
+:root[data-theme][data-appearance] .thread-pending-request-select:focus,
+:root[data-theme][data-appearance] .thread-pending-request-input:focus {
+  border-color: var(--theme-border-strong);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-selection-border) 28%, transparent);
+}
+
+:root[data-theme][data-appearance] .thread-pending-request-inline-control {
+  color: var(--theme-text-primary);
+}
+
+:root[data-theme][data-appearance] .thread-pending-request-validation-error {
+  color: var(--theme-danger-text);
+}
+
+:root[data-theme][data-appearance] .thread-pending-request-checkbox {
+  accent-color: var(--theme-accent);
+}
+
+:root[data-theme][data-appearance] .thread-pending-request-primary {
+  border-color: var(--theme-accent);
+  background: var(--theme-accent);
+  color: var(--theme-accent-contrast);
+}
+
+:root[data-theme][data-appearance] .thread-pending-request-primary:hover {
+  border-color: var(--theme-accent-hover);
+  background: var(--theme-accent-hover);
+}
+
+:root[data-theme][data-appearance] .sidebar-settings-account-item.is-active,
+:root[data-theme][data-appearance] .sidebar-settings-account-item.is-active .sidebar-settings-account-id,
+:root[data-theme][data-appearance] .message-copy-button[data-copied='true'],
+:root[data-theme][data-appearance] .review-pane-summary-pill.review-pane-summary-pill-add,
+:root[data-theme][data-appearance] .review-pane-file-op[data-operation='add'],
+:root[data-theme][data-appearance] .file-change-badge[data-operation='add'],
+:root[data-theme][data-appearance] .plan-step-item[data-status='completed'],
+:root[data-theme][data-appearance] .thread-composer-skill-chip {
+  border-color: var(--theme-success-border);
+  background: var(--theme-success-soft-bg);
+  color: var(--theme-success-text);
+}
+
+:root[data-theme][data-appearance] .sidebar-settings-account-item.is-unavailable,
+:root[data-theme][data-appearance] .sidebar-settings-account-item.is-unavailable .sidebar-settings-account-id,
+:root[data-theme][data-appearance] .review-pane-summary-pill.review-pane-summary-pill-remove,
+:root[data-theme][data-appearance] .review-pane-file-op[data-operation='delete'],
+:root[data-theme][data-appearance] .file-change-badge[data-operation='delete'] {
+  border-color: var(--theme-danger-border);
+  background: var(--theme-danger-soft-bg);
+  color: var(--theme-danger-text);
+}
+
+:root[data-theme][data-appearance] .sidebar-settings-account-remove,
+:root[data-theme][data-appearance] .review-pane-refresh,
+:root[data-theme][data-appearance] .file-change-badge[data-operation='move'],
+:root[data-theme][data-appearance] .review-pane-file-op[data-operation='update'],
+:root[data-theme][data-appearance] .plan-step-item[data-status='inProgress'] {
+  border-color: var(--theme-warning-border);
+  background: var(--theme-warning-soft-bg);
+  color: var(--theme-warning-text);
+}
+
+:root[data-theme][data-appearance] .sidebar-settings-account-remove:hover,
+:root[data-theme][data-appearance] .review-pane-refresh:hover,
+:root[data-theme][data-appearance] .sidebar-settings-account-remove.is-confirming {
+  background: var(--theme-warning-soft-bg);
+  color: var(--theme-warning-text);
+}
+
+:root[data-theme][data-appearance] .review-pane-file-op[data-operation='rename'],
+:root[data-theme][data-appearance] .file-change-badge[data-operation='update'],
+:root[data-theme][data-appearance] .content-header-branch-dropdown.is-review-open .composer-dropdown-trigger,
+:root[data-theme][data-appearance] .review-pane-segmented-button[data-active='true'] {
+  border-color: var(--theme-info-border);
+  background: var(--theme-info-soft-bg);
+  color: var(--theme-info-text);
+}
+
+:root[data-theme][data-appearance] .content-header-branch-dropdown.is-review-open .composer-dropdown-chevron,
+:root[data-theme][data-appearance] .review-pane-segmented-button[data-active='true']::before {
+  color: var(--theme-info-solid-text);
+  background: var(--theme-info-solid-text);
+}
+
+:root[data-theme][data-appearance] .review-pane-run,
+:root[data-theme][data-appearance] .review-pane-primary-cta {
+  border-color: var(--theme-success-solid-bg);
+  background: var(--theme-success-solid-bg);
+  color: var(--theme-success-solid-text);
+}
+
+:root[data-theme][data-appearance] .review-pane-run:hover,
+:root[data-theme][data-appearance] .review-pane-primary-cta:hover {
+  background: var(--theme-success-solid-hover-bg);
+}
+
+:root[data-theme][data-appearance] .thread-composer-submit,
+:root[data-theme][data-appearance] .thread-composer-stop,
+:root[data-theme][data-appearance] .rename-thread-button-primary,
+:root[data-theme][data-appearance] .sdm-btn-primary {
+  background: var(--theme-accent);
+  color: var(--theme-accent-contrast);
+}
+
+:root[data-theme][data-appearance] .thread-composer-submit:hover,
+:root[data-theme][data-appearance] .thread-composer-stop:hover,
+:root[data-theme][data-appearance] .rename-thread-button-primary:hover,
+:root[data-theme][data-appearance] .sdm-btn-primary:hover {
+  background: var(--theme-accent-hover);
+}
+
+:root[data-theme][data-appearance] .thread-composer-submit:disabled,
+:root[data-theme][data-appearance] .thread-composer-input:disabled {
+  background: var(--theme-control-active-bg);
+  color: var(--theme-text-muted);
+}
+
+:root[data-theme][data-appearance] .rename-thread-button-danger,
+:root[data-theme][data-appearance] .request-button-primary {
+  border-color: var(--theme-danger-solid-bg);
+  background: var(--theme-danger-solid-bg);
+  color: var(--theme-danger-solid-text);
+}
+
+:root[data-theme][data-appearance] .rename-thread-button-danger:hover,
+:root[data-theme][data-appearance] .request-button-primary:hover {
+  background: var(--theme-danger-solid-hover-bg);
+}
+
+:root[data-theme][data-appearance] .request-button-primary {
+  border-color: var(--theme-warning-solid-bg);
+  background: var(--theme-warning-solid-bg);
+  color: var(--theme-warning-solid-text);
+}
+
+:root[data-theme][data-appearance] .request-button-primary:hover {
+  background: var(--theme-warning-solid-hover-bg);
+}
+
+:root[data-theme][data-appearance] .runtime-toggle-option.is-selected,
+:root[data-theme][data-appearance] .composer-dropdown-option.is-selected,
+:root[data-theme][data-appearance] .organize-menu-item[data-active='true'],
+:root[data-theme][data-appearance] .thread-row[data-active='true'],
+:root[data-theme][data-appearance] .review-pane-file[data-active='true'],
+:root[data-theme][data-appearance] .diff-viewer-file-button[data-active='true'] {
+  border-color: var(--theme-selection-border);
+  background: var(--theme-selection-bg);
+  color: var(--theme-selection-text);
+}
+
+:root[data-theme][data-appearance] .thread-composer-attach-switch::after {
+  background: var(--theme-elevated-strong-bg);
+}
+
+:root[data-theme][data-appearance] .thread-composer-attach-switch.is-on {
+  background: var(--theme-success-solid-bg);
+}
+
+:root[data-theme][data-appearance] .sidebar-search-input,
+:root[data-theme][data-appearance] .rename-thread-input,
+:root[data-theme][data-appearance] .composer-dropdown-search-input,
+:root[data-theme][data-appearance] .review-pane-branch-select,
+:root[data-theme][data-appearance] .skills-hub-search,
+:root[data-theme][data-appearance] .thread-composer-input {
+  color: var(--theme-text-primary);
+}
+
+:root[data-theme][data-appearance] .rename-thread-input,
+:root[data-theme][data-appearance] .composer-dropdown-search-input,
+:root[data-theme][data-appearance] .review-pane-branch-select-wrap,
+:root[data-theme][data-appearance] .content-header-branch-dropdown .composer-dropdown-trigger {
+  border-color: var(--theme-border);
+  background: var(--theme-control-bg);
+}
+
+:root[data-theme][data-appearance] .review-pane-lines,
+:root[data-theme][data-appearance] .review-pane-raw-diff,
+:root[data-theme][data-appearance] .diff-viewer-sidebar,
+:root[data-theme][data-appearance] .diff-viewer-meta {
+  border-color: var(--theme-border);
+  background: var(--theme-code-bg);
+}
+
+:root[data-theme][data-appearance] .review-pane-header,
+:root[data-theme][data-appearance] .review-pane-toolbar,
+:root[data-theme][data-appearance] .review-pane-bulk-actions,
+:root[data-theme][data-appearance] .review-pane-hunk-header,
+:root[data-theme][data-appearance] .review-pane-file-header,
+:root[data-theme][data-appearance] .review-pane-hunk,
+:root[data-theme][data-appearance] .review-pane-summary-card,
+:root[data-theme][data-appearance] .review-pane-finding,
+:root[data-theme][data-appearance] .review-pane-sheet,
+:root[data-theme][data-appearance] .review-pane-file-list,
+:root[data-theme][data-appearance] .review-pane-sidebar,
+:root[data-theme][data-appearance] .review-pane-resizer,
+:root[data-theme][data-appearance] .diff-viewer-sidebar-header,
+:root[data-theme][data-appearance] .diff-viewer-toolbar,
+:root[data-theme][data-appearance] .diff-viewer-mobile-sheet-header,
+:root[data-theme][data-appearance] .sdm-footer {
+  border-color: var(--theme-border);
+}
+
+:root[data-theme][data-appearance] .review-pane-file,
+:root[data-theme][data-appearance] .diff-viewer-file-button,
+:root[data-theme][data-appearance] .project-menu-item,
+:root[data-theme][data-appearance] .thread-menu-item,
+:root[data-theme][data-appearance] .thread-composer-attach-item,
+:root[data-theme][data-appearance] .thread-composer-attach-setting,
+:root[data-theme][data-appearance] .thread-composer-file-mention-row,
+:root[data-theme][data-appearance] .composer-search-dropdown-option,
+:root[data-theme][data-appearance] .organize-menu-item,
+:root[data-theme][data-appearance] .rename-thread-button,
+:root[data-theme][data-appearance] .project-header-row,
+:root[data-theme][data-appearance] .thread-row,
+:root[data-theme][data-appearance] .runtime-toggle-option,
+:root[data-theme][data-appearance] .skill-card,
+:root[data-theme][data-appearance] .thread-composer-attach-mode-button {
+  color: var(--theme-text-secondary);
+}
+
+:root[data-theme][data-appearance] .review-pane-file:hover,
+:root[data-theme][data-appearance] .diff-viewer-file-button:hover,
+:root[data-theme][data-appearance] .project-menu-item:hover,
+:root[data-theme][data-appearance] .thread-menu-item:hover,
+:root[data-theme][data-appearance] .thread-composer-attach-item:hover,
+:root[data-theme][data-appearance] .thread-composer-attach-setting:hover,
+:root[data-theme][data-appearance] .thread-composer-file-mention-row:hover,
+:root[data-theme][data-appearance] .composer-search-dropdown-option:hover,
+:root[data-theme][data-appearance] .organize-menu-item:hover,
+:root[data-theme][data-appearance] .rename-thread-button:hover,
+:root[data-theme][data-appearance] .project-header-row:hover,
+:root[data-theme][data-appearance] .thread-row:hover,
+:root[data-theme][data-appearance] .runtime-toggle-option:hover,
+:root[data-theme][data-appearance] .thread-composer-attach-mode-button:hover {
+  background: var(--theme-control-hover-bg);
+  color: var(--theme-text-primary);
+}
+
+:root[data-theme][data-appearance] .thread-menu-item-danger {
+  color: var(--theme-danger-text);
+}
+
+:root[data-theme][data-appearance] .thread-menu-item-danger:hover {
+  background: var(--theme-danger-soft-bg);
+}
+
+:root[data-theme][data-appearance] .file-change-path-button,
+:root[data-theme][data-appearance] .message-file-link,
+:root[data-theme][data-appearance] .skills-sync-device a {
+  color: var(--theme-link);
+}
+
+:root[data-theme][data-appearance] .file-change-path-button:hover,
+:root[data-theme][data-appearance] .message-file-link:hover,
+:root[data-theme][data-appearance] .skills-sync-device a:hover {
+  color: var(--theme-link-hover);
+}
+
+:root[data-theme][data-appearance] .request-card,
+:root[data-theme][data-appearance] .request-button {
+  border-color: var(--theme-warning-border);
+  background: var(--theme-warning-soft-bg);
+  color: var(--theme-warning-text);
+}
+
+:root[data-theme][data-appearance] .review-pane-sheet-backdrop {
+  background: var(--theme-overlay);
+}
+
+:root[data-theme][data-appearance] .thread-composer-shell--drag-active,
+:root[data-theme][data-appearance] .review-pane-hunk[data-active='true'] {
+  border-color: var(--theme-selection-border);
+  box-shadow: var(--theme-shadow-sm);
+}
+
+:root[data-theme='macos'][data-appearance='light'] body,
+:root[data-theme='macos'][data-appearance='dark'] body {
+  background-attachment: fixed;
+  font-family: var(--theme-font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+:root[data-theme='macos'][data-appearance='light'] code,
+:root[data-theme='macos'][data-appearance='light'] pre,
+:root[data-theme='macos'][data-appearance='light'] kbd,
+:root[data-theme='macos'][data-appearance='light'] samp,
+:root[data-theme='macos'][data-appearance='dark'] code,
+:root[data-theme='macos'][data-appearance='dark'] pre,
+:root[data-theme='macos'][data-appearance='dark'] kbd,
+:root[data-theme='macos'][data-appearance='dark'] samp {
+  font-family: var(--theme-font-mono);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .desktop-layout,
+:root[data-theme='macos'][data-appearance='dark'] .desktop-layout {
+  background: var(--theme-shell-bg);
+  gap: 0;
+  backdrop-filter: blur(var(--theme-backdrop-blur)) saturate(150%);
+  -webkit-backdrop-filter: blur(var(--theme-backdrop-blur)) saturate(150%);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .desktop-sidebar,
+:root[data-theme='macos'][data-appearance='dark'] .desktop-sidebar,
+:root[data-theme='macos'][data-appearance='light'] .desktop-main,
+:root[data-theme='macos'][data-appearance='dark'] .desktop-main,
+:root[data-theme='macos'][data-appearance='light'] .mobile-drawer,
+:root[data-theme='macos'][data-appearance='dark'] .mobile-drawer,
+:root[data-theme='macos'][data-appearance='light'] .sidebar-settings-area,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-settings-area,
+:root[data-theme='macos'][data-appearance='light'] .content-header,
+:root[data-theme='macos'][data-appearance='dark'] .content-header,
+:root[data-theme='macos'][data-appearance='light'] .thread-composer-shell,
+:root[data-theme='macos'][data-appearance='dark'] .thread-composer-shell,
+:root[data-theme='macos'][data-appearance='light'] .diff-viewer-shell,
+:root[data-theme='macos'][data-appearance='dark'] .diff-viewer-shell,
+:root[data-theme='macos'][data-appearance='light'] .diff-viewer-mobile-sheet,
+:root[data-theme='macos'][data-appearance='dark'] .diff-viewer-mobile-sheet {
+  backdrop-filter: blur(var(--theme-backdrop-blur)) saturate(150%);
+  -webkit-backdrop-filter: blur(var(--theme-backdrop-blur)) saturate(150%);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .desktop-sidebar,
+:root[data-theme='macos'][data-appearance='dark'] .desktop-sidebar {
+  background: var(--theme-macos-sidebar-surface-bg);
+  border-right: 1px solid var(--theme-border-soft);
+  box-shadow: inset -1px 0 0 var(--theme-border);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .desktop-sidebar,
+:root[data-theme='macos'][data-appearance='light'] .desktop-main,
+:root[data-theme='macos'][data-appearance='dark'] .desktop-sidebar,
+:root[data-theme='macos'][data-appearance='dark'] .desktop-main {
+  min-height: 0;
+  border-radius: 0;
+}
+
+:root[data-theme='macos'][data-appearance='light'] .desktop-main,
+:root[data-theme='macos'][data-appearance='dark'] .desktop-main {
+  overflow: hidden;
+  border: 0;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--theme-main-bg) 94%, var(--theme-elevated-bg)) 0%,
+    var(--theme-main-bg) 100%
+  );
+  box-shadow:
+    inset 1px 0 0 color-mix(in srgb, var(--theme-border) 52%, transparent),
+    inset 0 1px 0 var(--theme-border-soft);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .sidebar-scrollable,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-scrollable {
+  padding: 0.75rem 0.5rem 0.625rem;
+  gap: 0.75rem;
+}
+
+:root[data-theme='macos'][data-appearance='light'] .sidebar-thread-controls-host,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-thread-controls-host,
+:root[data-theme='macos'][data-appearance='light'] .sidebar-thread-controls-header-host,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-thread-controls-header-host {
+  margin-top: 0;
+  padding-inline: 0.25rem;
+  padding-bottom: 0;
+}
+
+:root[data-theme='macos'][data-appearance='light'] .sidebar-primary-nav,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-primary-nav {
+  gap: 0.25rem;
+}
+
+:root[data-theme='macos'][data-appearance='light'] .sidebar-settings-area,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-settings-area {
+  background: color-mix(
+    in srgb,
+    var(--theme-panel-subtle-bg) 96%,
+    var(--theme-macos-sidebar-surface-bg)
+  );
+}
+
+:root[data-theme='macos'][data-appearance='light'] .sidebar-settings-panel,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-settings-panel {
+  overflow: clip;
+  border-color: color-mix(in srgb, var(--theme-border) 64%, transparent);
+  background: color-mix(in srgb, var(--theme-panel-bg) 94%, var(--theme-main-bg));
+  padding-block: 0.4375rem;
+  box-shadow:
+    inset 0 1px 0 var(--theme-border-soft),
+    var(--theme-shadow-md);
+  backdrop-filter: blur(calc(var(--theme-backdrop-blur) * 0.42)) saturate(155%);
+  -webkit-backdrop-filter: blur(calc(var(--theme-backdrop-blur) * 0.42)) saturate(155%);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .sidebar-settings-account-section,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-settings-account-section,
+:root[data-theme='macos'][data-appearance='light'] .sidebar-settings-telegram-panel,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-settings-telegram-panel {
+  margin: 0.375rem 0.375rem 0.25rem;
+  border: 1px solid color-mix(in srgb, var(--theme-border) 48%, transparent);
+  border-radius: calc(var(--theme-macos-panel-radius) - 4px);
+  background: color-mix(in srgb, var(--theme-panel-subtle-bg) 74%, var(--theme-main-bg));
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--theme-border-soft) 86%, transparent),
+    0 1px 0 rgba(15, 23, 42, 0.04);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .sidebar-settings-account-section,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-settings-account-section {
+  padding: 0.75rem 0.75rem 0.8125rem;
+}
+
+:root[data-theme='macos'][data-appearance='light'] .sidebar-settings-telegram-panel,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-settings-telegram-panel {
+  padding: 0.75rem 0.75rem 0.8125rem;
+}
+
+:root[data-theme='macos'][data-appearance='light'] .sidebar-settings-account-header,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-settings-account-header {
+  margin-bottom: 0.625rem;
+  gap: 0.5rem;
+}
+
+:root[data-theme='macos'][data-appearance='light'] .sidebar-settings-account-list,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-settings-account-list {
+  gap: 0.5rem;
+}
+
+:root[data-theme='macos'][data-appearance='light'] .sidebar-settings-account-item,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-settings-account-item {
+  border-radius: calc(var(--theme-macos-panel-radius) - 6px);
+  border-color: color-mix(in srgb, var(--theme-border) 58%, transparent);
+  background: color-mix(in srgb, var(--theme-control-bg) 84%, var(--theme-main-bg));
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--theme-border-soft) 84%, transparent),
+    0 1px 0 rgba(15, 23, 42, 0.03);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .sidebar-settings-account-actions,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-settings-account-actions {
+  width: auto;
+  min-width: 5.125rem;
+  gap: 0.5rem;
+}
+
+:root[data-theme='macos'][data-appearance='light'] .sidebar-settings-row--select,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-settings-row--select {
+  gap: 0.75rem;
+}
+
+:root[data-theme='macos'][data-appearance='light'] .sidebar-settings-row--input,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-settings-row--input {
+  margin: 0.25rem 0.375rem 0;
+  border-top: 0;
+  border-radius: calc(var(--theme-macos-panel-radius) - 4px);
+  padding: 0.75rem 0.875rem 0.8125rem;
+  background: color-mix(in srgb, var(--theme-panel-subtle-bg) 74%, transparent);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .sidebar-settings-provider-info,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-settings-provider-info,
+:root[data-theme='macos'][data-appearance='light'] .sidebar-settings-key-group,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-settings-key-group {
+  gap: 0.5rem;
+}
+
+:root[data-theme='macos'][data-appearance='light'] .sidebar-settings-field-help,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-settings-field-help {
+  margin-top: 0.25rem;
+  line-height: 1.35;
+}
+
+:root[data-theme='macos'][data-appearance='light'] .sidebar-settings-telegram-actions,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-settings-telegram-actions {
+  margin-top: 0.875rem;
+}
+
+:root[data-theme='macos'][data-appearance='light'] .sidebar-settings-rate-limits,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-settings-rate-limits {
+  margin: 0.375rem 0.375rem 0;
+  padding: 0.625rem 0.75rem 0;
+}
+
+:root[data-theme='macos'][data-appearance='light'] .sidebar-settings-build-label,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-settings-build-label {
+  margin: 0.125rem 0.375rem 0;
+  padding: 0.625rem 0.75rem 0.75rem;
+}
+
+:root[data-theme='macos'][data-appearance='light'] .sidebar-settings-row,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-settings-row {
+  appearance: none;
+  -webkit-appearance: none;
+  border: 0;
+  border-radius: calc(var(--theme-macos-control-radius) + 2px);
+  min-height: 2.5rem;
+  gap: 0.625rem;
+  padding-inline: 0.75rem;
+  background: transparent;
+  box-shadow: none;
+}
+
+:root[data-theme='macos'][data-appearance='light'] .sidebar-settings-row:hover,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-settings-row:hover {
+  background: color-mix(in srgb, var(--theme-control-hover-bg) 44%, transparent);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .sidebar-settings-row + .sidebar-settings-row,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-settings-row + .sidebar-settings-row {
+  border-top-color: color-mix(in srgb, var(--theme-border) 56%, transparent);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .sidebar-settings-label,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-settings-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--theme-text-primary);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+:root[data-theme='macos'][data-appearance='light'] .sidebar-settings-value,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-settings-value,
+:root[data-theme='macos'][data-appearance='light'] .sidebar-settings-provider-select,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-settings-provider-select,
+:root[data-theme='macos'][data-appearance='light'] .sidebar-settings-language-dropdown .composer-dropdown-trigger,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-settings-language-dropdown .composer-dropdown-trigger,
+:root[data-theme='macos'][data-appearance='light'] .sidebar-settings-key-input,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-settings-key-input,
+:root[data-theme='macos'][data-appearance='light'] .sidebar-settings-key-save,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-settings-key-save,
+:root[data-theme='macos'][data-appearance='light'] .sidebar-settings-key-clear,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-settings-key-clear,
+:root[data-theme='macos'][data-appearance='light'] .sidebar-settings-account-refresh,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-settings-account-refresh,
+:root[data-theme='macos'][data-appearance='light'] .sidebar-settings-account-collapse,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-settings-account-collapse,
+:root[data-theme='macos'][data-appearance='light'] .sidebar-settings-account-switch,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-settings-account-switch,
+:root[data-theme='macos'][data-appearance='light'] .sidebar-settings-account-remove,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-settings-account-remove,
+:root[data-theme='macos'][data-appearance='light'] .sidebar-settings-telegram-save,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-settings-telegram-save {
+  min-height: 1.875rem;
+  border-radius: 999px;
+  padding-inline: 0.625rem;
+  font-size: 0.8125rem;
+  background: color-mix(in srgb, var(--theme-control-bg) 72%, var(--theme-main-bg));
+  border-color: color-mix(in srgb, var(--theme-border) 72%, transparent);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--theme-border-soft) 88%, transparent),
+    inset 0 -1px 0 color-mix(in srgb, var(--theme-border) 18%, transparent);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .sidebar-settings-value,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-settings-value {
+  font-weight: 500;
+  color: var(--theme-text-secondary);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .sidebar-settings-toggle,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-settings-toggle {
+  background: color-mix(in srgb, var(--theme-control-bg) 82%, var(--theme-main-bg));
+  box-shadow:
+    inset 0 1px 0 var(--theme-border-soft),
+    inset 0 0 0 1px color-mix(in srgb, var(--theme-border) 86%, transparent);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .sidebar-settings-segmented,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-settings-segmented {
+  min-height: 1.75rem;
+  border-color: color-mix(in srgb, var(--theme-border) 70%, transparent);
+  background: color-mix(in srgb, var(--theme-control-bg) 68%, var(--theme-main-bg));
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--theme-border-soft) 82%, transparent),
+    inset 0 -1px 0 color-mix(in srgb, var(--theme-border) 16%, transparent);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .sidebar-settings-segmented-option,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-settings-segmented-option {
+  min-height: 1.5rem;
+  padding-inline: 0.625rem;
+  font-weight: 500;
+}
+
+:root[data-theme='macos'][data-appearance='light'] .sidebar-settings-account-count,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-settings-account-count {
+  min-width: 1.375rem;
+  justify-content: center;
+  border: 0;
+  background: color-mix(in srgb, var(--theme-control-bg) 44%, transparent);
+  color: var(--theme-text-muted);
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+:root[data-theme='macos'][data-appearance='light'] .content-header,
+:root[data-theme='macos'][data-appearance='dark'] .content-header {
+  background: color-mix(in srgb, var(--theme-sidebar-bg) 84%, var(--theme-main-bg));
+  border-bottom: 1px solid var(--theme-border-soft);
+  box-shadow:
+    inset 0 1px 0 var(--theme-border-soft),
+    var(--theme-shadow-md);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .content-header .content-title,
+:root[data-theme='macos'][data-appearance='dark'] .content-header .content-title {
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+:root[data-theme='macos'][data-appearance='light'] .thread-composer-shell,
+:root[data-theme='macos'][data-appearance='dark'] .thread-composer-shell {
+  border-radius: var(--theme-macos-panel-radius);
+  background: color-mix(in srgb, var(--theme-elevated-bg) 96%, var(--theme-main-bg));
+  box-shadow:
+    inset 0 1px 0 var(--theme-border-soft),
+    var(--theme-shadow-md);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .thread-composer-input-wrap,
+:root[data-theme='macos'][data-appearance='dark'] .thread-composer-input-wrap {
+  border-radius: calc(var(--theme-macos-panel-radius) - 4px);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .sidebar-search-bar,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-search-bar {
+  border-radius: 999px;
+  padding: 0.3125rem 0.5rem;
+  background: color-mix(in srgb, var(--theme-control-bg) 82%, var(--theme-main-bg));
+  box-shadow:
+    inset 0 0 0 1px var(--theme-border),
+    inset 0 1px 1px rgba(0, 0, 0, 0.04);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .sidebar-search-bar:focus-within,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-search-bar:focus-within {
+  border-color: color-mix(in srgb, var(--theme-accent) 38%, var(--theme-border));
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--theme-accent) 44%, var(--theme-border)),
+    0 0 0 3px color-mix(in srgb, var(--theme-accent) 14%, transparent);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .sidebar-settings-button,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-settings-button,
+:root[data-theme='macos'][data-appearance='light'] .sidebar-skills-link,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-skills-link,
+:root[data-theme='macos'][data-appearance='light'] .sidebar-search-toggle,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-search-toggle,
+:root[data-theme='macos'][data-appearance='light'] .sidebar-settings-row,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-settings-row,
+:root[data-theme='macos'][data-appearance='light'] .thread-row,
+:root[data-theme='macos'][data-appearance='dark'] .thread-row,
+:root[data-theme='macos'][data-appearance='light'] .project-header-row,
+:root[data-theme='macos'][data-appearance='dark'] .project-header-row,
+:root[data-theme='macos'][data-appearance='light'] .sidebar-thread-controls-button,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-thread-controls-button,
+:root[data-theme='macos'][data-appearance='light'] .organize-menu-item,
+:root[data-theme='macos'][data-appearance='dark'] .organize-menu-item,
+:root[data-theme='macos'][data-appearance='light'] .project-menu-item,
+:root[data-theme='macos'][data-appearance='dark'] .project-menu-item,
+:root[data-theme='macos'][data-appearance='light'] .thread-menu-item,
+:root[data-theme='macos'][data-appearance='dark'] .thread-menu-item,
+:root[data-theme='macos'][data-appearance='light'] .composer-dropdown-option,
+:root[data-theme='macos'][data-appearance='dark'] .composer-dropdown-option {
+  border-radius: var(--theme-macos-row-radius);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .sidebar-settings-button,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-settings-button,
+:root[data-theme='macos'][data-appearance='light'] .sidebar-skills-link,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-skills-link,
+:root[data-theme='macos'][data-appearance='light'] .thread-row,
+:root[data-theme='macos'][data-appearance='dark'] .thread-row,
+:root[data-theme='macos'][data-appearance='light'] .project-header-row,
+:root[data-theme='macos'][data-appearance='dark'] .project-header-row {
+  min-height: 2rem;
+  padding-inline: 0.75rem;
+  border: 1px solid transparent;
+}
+
+:root[data-theme='macos'][data-appearance='light'] .sidebar-search-bar,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-search-bar,
+:root[data-theme='macos'][data-appearance='light'] .sidebar-settings-provider-select,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-settings-provider-select,
+:root[data-theme='macos'][data-appearance='light'] .sidebar-settings-key-input,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-settings-key-input,
+:root[data-theme='macos'][data-appearance='light'] .sidebar-settings-key-save,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-settings-key-save,
+:root[data-theme='macos'][data-appearance='light'] .sidebar-settings-account-item,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-settings-account-item,
+:root[data-theme='macos'][data-appearance='light'] .sidebar-settings-account-refresh,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-settings-account-refresh,
+:root[data-theme='macos'][data-appearance='light'] .sidebar-settings-account-switch,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-settings-account-switch,
+:root[data-theme='macos'][data-appearance='light'] .sidebar-settings-account-collapse,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-settings-account-collapse,
+:root[data-theme='macos'][data-appearance='light'] .sidebar-settings-account-id,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-settings-account-id,
+:root[data-theme='macos'][data-appearance='light'] .sidebar-settings-value,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-settings-value,
+:root[data-theme='macos'][data-appearance='light'] .thread-composer-file-chip,
+:root[data-theme='macos'][data-appearance='dark'] .thread-composer-file-chip,
+:root[data-theme='macos'][data-appearance='light'] .message-file-chip,
+:root[data-theme='macos'][data-appearance='dark'] .message-file-chip,
+:root[data-theme='macos'][data-appearance='light'] .file-change-delta,
+:root[data-theme='macos'][data-appearance='dark'] .file-change-delta,
+:root[data-theme='macos'][data-appearance='light'] .diff-viewer-file-delta,
+:root[data-theme='macos'][data-appearance='dark'] .diff-viewer-file-delta,
+:root[data-theme='macos'][data-appearance='light'] .diff-viewer-language,
+:root[data-theme='macos'][data-appearance='dark'] .diff-viewer-language,
+:root[data-theme='macos'][data-appearance='light'] .thread-composer-submit,
+:root[data-theme='macos'][data-appearance='dark'] .thread-composer-submit,
+:root[data-theme='macos'][data-appearance='light'] .thread-composer-stop,
+:root[data-theme='macos'][data-appearance='dark'] .thread-composer-stop,
+:root[data-theme='macos'][data-appearance='light'] .thread-composer-mic,
+:root[data-theme='macos'][data-appearance='dark'] .thread-composer-mic,
+:root[data-theme='macos'][data-appearance='light'] .composer-dropdown-trigger,
+:root[data-theme='macos'][data-appearance='dark'] .composer-dropdown-trigger,
+:root[data-theme='macos'][data-appearance='light'] .sidebar-thread-controls-button,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-thread-controls-button,
+:root[data-theme='macos'][data-appearance='light'] .diff-viewer-close,
+:root[data-theme='macos'][data-appearance='dark'] .diff-viewer-close,
+:root[data-theme='macos'][data-appearance='light'] .diff-viewer-mobile-files-button,
+:root[data-theme='macos'][data-appearance='dark'] .diff-viewer-mobile-files-button,
+:root[data-theme='macos'][data-appearance='light'] .message-copy-button,
+:root[data-theme='macos'][data-appearance='dark'] .message-copy-button,
+:root[data-theme='macos'][data-appearance='light'] .review-pane-segmented-button,
+:root[data-theme='macos'][data-appearance='dark'] .review-pane-segmented-button {
+  border-radius: var(--theme-macos-control-radius);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .thread-type-menu-trigger,
+:root[data-theme='macos'][data-appearance='dark'] .thread-type-menu-trigger {
+  border-radius: var(--theme-macos-control-radius);
+  background: color-mix(in srgb, var(--theme-control-bg) 58%, transparent);
+  border: 1px solid color-mix(in srgb, var(--theme-border) 44%, transparent);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--theme-border-soft) 84%, transparent),
+    0 1px 1px rgba(29, 29, 31, 0.06);
+  backdrop-filter: blur(calc(var(--theme-backdrop-blur) * 0.3)) saturate(150%);
+  -webkit-backdrop-filter: blur(calc(var(--theme-backdrop-blur) * 0.3)) saturate(150%);
+  transition:
+    background-color 140ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    border-color 140ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 160ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    color 140ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 140ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .thread-type-menu-trigger:hover,
+:root[data-theme='macos'][data-appearance='dark'] .thread-type-menu-trigger:hover {
+  background: color-mix(in srgb, var(--theme-control-hover-bg) 78%, var(--theme-floating-panel-bg));
+  border-color: color-mix(in srgb, var(--theme-border) 62%, transparent);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .sidebar-search-toggle,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-search-toggle,
+:root[data-theme='macos'][data-appearance='light'] .sidebar-thread-controls-button,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-thread-controls-button {
+  background: transparent;
+  border: 1px solid transparent;
+}
+
+:root[data-theme='macos'][data-appearance='light'] .sidebar-search-toggle:hover,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-search-toggle:hover,
+:root[data-theme='macos'][data-appearance='light'] .sidebar-thread-controls-button:hover,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-thread-controls-button:hover {
+  background: color-mix(in srgb, var(--theme-control-hover-bg) 82%, transparent);
+  border-color: var(--theme-border);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .sidebar-settings-button:hover,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-settings-button:hover,
+:root[data-theme='macos'][data-appearance='light'] .sidebar-skills-link:hover,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-skills-link:hover,
+:root[data-theme='macos'][data-appearance='light'] .project-header-row:hover,
+:root[data-theme='macos'][data-appearance='dark'] .project-header-row:hover,
+:root[data-theme='macos'][data-appearance='light'] .thread-row:hover,
+:root[data-theme='macos'][data-appearance='dark'] .thread-row:hover {
+  background: color-mix(in srgb, var(--theme-control-hover-bg) 72%, transparent);
+  border-color: color-mix(in srgb, var(--theme-border) 56%, transparent);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .sidebar-search-toggle[aria-pressed='true'],
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-search-toggle[aria-pressed='true'],
+:root[data-theme='macos'][data-appearance='light'] .sidebar-skills-link.is-active,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-skills-link.is-active,
+:root[data-theme='macos'][data-appearance='light'] .thread-row[data-active='true'],
+:root[data-theme='macos'][data-appearance='dark'] .thread-row[data-active='true'] {
+  background: color-mix(in srgb, var(--theme-selection-bg) 78%, var(--theme-floating-panel-bg));
+  border-color: color-mix(in srgb, var(--theme-selection-border) 68%, transparent);
+  box-shadow:
+    inset 0 1px 0 var(--theme-border-soft),
+    0 1px 2px rgba(29, 29, 31, 0.08);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .content-header-branch-dropdown .composer-dropdown-trigger,
+:root[data-theme='macos'][data-appearance='dark'] .content-header-branch-dropdown .composer-dropdown-trigger,
+:root[data-theme='macos'][data-appearance='light'] .content-header-terminal-toggle,
+:root[data-theme='macos'][data-appearance='dark'] .content-header-terminal-toggle,
+:root[data-theme='macos'][data-appearance='light'] .thread-composer-stop,
+:root[data-theme='macos'][data-appearance='dark'] .thread-composer-stop {
+  background: transparent;
+  color: var(--theme-text-secondary);
+  border: 0;
+  box-shadow: none;
+}
+
+:root[data-theme='macos'][data-appearance='light'] .content-header-branch-dropdown.is-review-open .composer-dropdown-trigger,
+:root[data-theme='macos'][data-appearance='dark'] .content-header-branch-dropdown.is-review-open .composer-dropdown-trigger,
+:root[data-theme='macos'][data-appearance='light'] .content-header-terminal-toggle[aria-pressed='true'],
+:root[data-theme='macos'][data-appearance='dark'] .content-header-terminal-toggle[aria-pressed='true'] {
+  background: color-mix(in srgb, var(--theme-control-hover-bg) 92%, transparent);
+  color: var(--theme-text-primary);
+  border: 0;
+}
+
+:root[data-theme='macos'][data-appearance='light'] .content-header-branch-dropdown .composer-dropdown-trigger:hover,
+:root[data-theme='macos'][data-appearance='dark'] .content-header-branch-dropdown .composer-dropdown-trigger:hover,
+:root[data-theme='macos'][data-appearance='light'] .content-header-terminal-toggle:hover,
+:root[data-theme='macos'][data-appearance='dark'] .content-header-terminal-toggle:hover,
+:root[data-theme='macos'][data-appearance='light'] .thread-composer-stop:hover,
+:root[data-theme='macos'][data-appearance='dark'] .thread-composer-stop:hover {
+  background: color-mix(in srgb, var(--theme-control-hover-bg) 92%, transparent);
+  border: 0;
+}
+
+:root[data-theme='macos'][data-appearance='light'] .sidebar-search-toggle,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-search-toggle,
+:root[data-theme='macos'][data-appearance='light'] .sidebar-thread-controls-button,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-thread-controls-button,
+:root[data-theme='macos'][data-appearance='light'] .thread-menu-trigger,
+:root[data-theme='macos'][data-appearance='dark'] .thread-menu-trigger,
+:root[data-theme='macos'][data-appearance='light'] .project-menu-trigger,
+:root[data-theme='macos'][data-appearance='dark'] .project-menu-trigger,
+:root[data-theme='macos'][data-appearance='light'] .organize-menu-trigger,
+:root[data-theme='macos'][data-appearance='dark'] .organize-menu-trigger,
+:root[data-theme='macos'][data-appearance='light'] .thread-start-button,
+:root[data-theme='macos'][data-appearance='dark'] .thread-start-button,
+:root[data-theme='macos'][data-appearance='light'] .content-header-branch-dropdown .composer-dropdown-trigger,
+:root[data-theme='macos'][data-appearance='dark'] .content-header-branch-dropdown .composer-dropdown-trigger,
+:root[data-theme='macos'][data-appearance='light'] .thread-composer-stop,
+:root[data-theme='macos'][data-appearance='dark'] .thread-composer-stop {
+  background: color-mix(in srgb, var(--theme-control-bg) 58%, transparent);
+  border: 1px solid color-mix(in srgb, var(--theme-border) 44%, transparent);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--theme-border-soft) 84%, transparent),
+    0 1px 1px rgba(29, 29, 31, 0.06);
+  backdrop-filter: blur(calc(var(--theme-backdrop-blur) * 0.3)) saturate(150%);
+  -webkit-backdrop-filter: blur(calc(var(--theme-backdrop-blur) * 0.3)) saturate(150%);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .sidebar-search-toggle,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-search-toggle,
+:root[data-theme='macos'][data-appearance='light'] .sidebar-thread-controls-button,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-thread-controls-button,
+:root[data-theme='macos'][data-appearance='light'] .thread-menu-trigger,
+:root[data-theme='macos'][data-appearance='dark'] .thread-menu-trigger,
+:root[data-theme='macos'][data-appearance='light'] .project-menu-trigger,
+:root[data-theme='macos'][data-appearance='dark'] .project-menu-trigger,
+:root[data-theme='macos'][data-appearance='light'] .organize-menu-trigger,
+:root[data-theme='macos'][data-appearance='dark'] .organize-menu-trigger,
+:root[data-theme='macos'][data-appearance='light'] .thread-start-button,
+:root[data-theme='macos'][data-appearance='dark'] .thread-start-button,
+:root[data-theme='macos'][data-appearance='light'] .content-header-branch-dropdown .composer-dropdown-trigger,
+:root[data-theme='macos'][data-appearance='dark'] .content-header-branch-dropdown .composer-dropdown-trigger,
+:root[data-theme='macos'][data-appearance='light'] .thread-composer-stop,
+:root[data-theme='macos'][data-appearance='dark'] .thread-composer-stop,
+:root[data-theme='macos'][data-appearance='light'] .organize-menu-item,
+:root[data-theme='macos'][data-appearance='dark'] .organize-menu-item,
+:root[data-theme='macos'][data-appearance='light'] .project-menu-item,
+:root[data-theme='macos'][data-appearance='dark'] .project-menu-item,
+:root[data-theme='macos'][data-appearance='light'] .thread-menu-item,
+:root[data-theme='macos'][data-appearance='dark'] .thread-menu-item,
+:root[data-theme='macos'][data-appearance='light'] .composer-dropdown-option,
+:root[data-theme='macos'][data-appearance='dark'] .composer-dropdown-option,
+:root[data-theme='macos'][data-appearance='light'] .thread-composer-file-mention-row,
+:root[data-theme='macos'][data-appearance='dark'] .thread-composer-file-mention-row,
+:root[data-theme='macos'][data-appearance='light'] .thread-composer-attach-item,
+:root[data-theme='macos'][data-appearance='dark'] .thread-composer-attach-item,
+:root[data-theme='macos'][data-appearance='light'] .thread-composer-attach-setting,
+:root[data-theme='macos'][data-appearance='dark'] .thread-composer-attach-setting {
+  transition:
+    background-color 140ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    border-color 140ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 160ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    color 140ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 140ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .thread-type-menu-option,
+:root[data-theme='macos'][data-appearance='dark'] .thread-type-menu-option,
+:root[data-theme='macos'][data-appearance='light'] .thread-type-menu-action-button,
+:root[data-theme='macos'][data-appearance='dark'] .thread-type-menu-action-button,
+:root[data-theme='macos'][data-appearance='light'] .file-link-context-menu-item,
+:root[data-theme='macos'][data-appearance='dark'] .file-link-context-menu-item {
+  min-height: 1.875rem;
+  border-radius: var(--theme-macos-row-radius);
+  padding-inline: 0.625rem;
+  font-size: 0.8125rem;
+  transition:
+    background-color 140ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    border-color 140ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 160ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    color 140ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 140ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .thread-type-menu-option:hover,
+:root[data-theme='macos'][data-appearance='dark'] .thread-type-menu-option:hover,
+:root[data-theme='macos'][data-appearance='light'] .thread-type-menu-action-button:hover,
+:root[data-theme='macos'][data-appearance='dark'] .thread-type-menu-action-button:hover,
+:root[data-theme='macos'][data-appearance='light'] .file-link-context-menu-item:hover,
+:root[data-theme='macos'][data-appearance='dark'] .file-link-context-menu-item:hover {
+  background: color-mix(in srgb, var(--theme-control-hover-bg) 72%, transparent);
+  color: var(--theme-text-primary);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .sidebar-search-toggle:hover,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-search-toggle:hover,
+:root[data-theme='macos'][data-appearance='light'] .sidebar-thread-controls-button:hover,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-thread-controls-button:hover,
+:root[data-theme='macos'][data-appearance='light'] .thread-menu-trigger:hover,
+:root[data-theme='macos'][data-appearance='dark'] .thread-menu-trigger:hover,
+:root[data-theme='macos'][data-appearance='light'] .project-menu-trigger:hover,
+:root[data-theme='macos'][data-appearance='dark'] .project-menu-trigger:hover,
+:root[data-theme='macos'][data-appearance='light'] .organize-menu-trigger:hover,
+:root[data-theme='macos'][data-appearance='dark'] .organize-menu-trigger:hover,
+:root[data-theme='macos'][data-appearance='light'] .thread-start-button:hover,
+:root[data-theme='macos'][data-appearance='dark'] .thread-start-button:hover,
+:root[data-theme='macos'][data-appearance='light'] .content-header-branch-dropdown .composer-dropdown-trigger:hover,
+:root[data-theme='macos'][data-appearance='dark'] .content-header-branch-dropdown .composer-dropdown-trigger:hover,
+:root[data-theme='macos'][data-appearance='light'] .thread-composer-stop:hover,
+:root[data-theme='macos'][data-appearance='dark'] .thread-composer-stop:hover {
+  background: color-mix(in srgb, var(--theme-control-hover-bg) 78%, var(--theme-floating-panel-bg));
+  border-color: color-mix(in srgb, var(--theme-border) 62%, transparent);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .organize-menu-item,
+:root[data-theme='macos'][data-appearance='dark'] .organize-menu-item,
+:root[data-theme='macos'][data-appearance='light'] .project-menu-item,
+:root[data-theme='macos'][data-appearance='dark'] .project-menu-item,
+:root[data-theme='macos'][data-appearance='light'] .thread-menu-item,
+:root[data-theme='macos'][data-appearance='dark'] .thread-menu-item,
+:root[data-theme='macos'][data-appearance='light'] .composer-dropdown-option,
+:root[data-theme='macos'][data-appearance='dark'] .composer-dropdown-option,
+:root[data-theme='macos'][data-appearance='light'] .thread-composer-file-mention-row,
+:root[data-theme='macos'][data-appearance='dark'] .thread-composer-file-mention-row,
+:root[data-theme='macos'][data-appearance='light'] .thread-composer-attach-item,
+:root[data-theme='macos'][data-appearance='dark'] .thread-composer-attach-item,
+:root[data-theme='macos'][data-appearance='light'] .thread-composer-attach-setting,
+:root[data-theme='macos'][data-appearance='dark'] .thread-composer-attach-setting {
+  min-height: 1.875rem;
+  padding-inline: 0.625rem;
+  font-size: 0.8125rem;
+}
+
+:root[data-theme='macos'][data-appearance='light'] .sidebar-search-toggle:focus-visible,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-search-toggle:focus-visible,
+:root[data-theme='macos'][data-appearance='light'] .sidebar-thread-controls-button:focus-visible,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-thread-controls-button:focus-visible,
+:root[data-theme='macos'][data-appearance='light'] .thread-type-menu-trigger:focus-visible,
+:root[data-theme='macos'][data-appearance='dark'] .thread-type-menu-trigger:focus-visible,
+:root[data-theme='macos'][data-appearance='light'] .thread-menu-trigger:focus-visible,
+:root[data-theme='macos'][data-appearance='dark'] .thread-menu-trigger:focus-visible,
+:root[data-theme='macos'][data-appearance='light'] .project-menu-trigger:focus-visible,
+:root[data-theme='macos'][data-appearance='dark'] .project-menu-trigger:focus-visible,
+:root[data-theme='macos'][data-appearance='light'] .organize-menu-trigger:focus-visible,
+:root[data-theme='macos'][data-appearance='dark'] .organize-menu-trigger:focus-visible,
+:root[data-theme='macos'][data-appearance='light'] .thread-start-button:focus-visible,
+:root[data-theme='macos'][data-appearance='dark'] .thread-start-button:focus-visible,
+:root[data-theme='macos'][data-appearance='light'] .content-header-branch-dropdown .composer-dropdown-trigger:focus-visible,
+:root[data-theme='macos'][data-appearance='dark'] .content-header-branch-dropdown .composer-dropdown-trigger:focus-visible,
+:root[data-theme='macos'][data-appearance='light'] .thread-composer-stop:focus-visible,
+:root[data-theme='macos'][data-appearance='dark'] .thread-composer-stop:focus-visible,
+:root[data-theme='macos'][data-appearance='light'] .organize-menu-item:focus-visible,
+:root[data-theme='macos'][data-appearance='dark'] .organize-menu-item:focus-visible,
+:root[data-theme='macos'][data-appearance='light'] .project-menu-item:focus-visible,
+:root[data-theme='macos'][data-appearance='dark'] .project-menu-item:focus-visible,
+:root[data-theme='macos'][data-appearance='light'] .thread-menu-item:focus-visible,
+:root[data-theme='macos'][data-appearance='dark'] .thread-menu-item:focus-visible,
+:root[data-theme='macos'][data-appearance='light'] .thread-type-menu-action-button:focus-visible,
+:root[data-theme='macos'][data-appearance='dark'] .thread-type-menu-action-button:focus-visible,
+:root[data-theme='macos'][data-appearance='light'] .composer-dropdown-option:focus-visible,
+:root[data-theme='macos'][data-appearance='dark'] .composer-dropdown-option:focus-visible,
+:root[data-theme='macos'][data-appearance='light'] .thread-composer-file-mention-row:focus-visible,
+:root[data-theme='macos'][data-appearance='dark'] .thread-composer-file-mention-row:focus-visible,
+:root[data-theme='macos'][data-appearance='light'] .thread-composer-attach-item:focus-visible,
+:root[data-theme='macos'][data-appearance='dark'] .thread-composer-attach-item:focus-visible,
+:root[data-theme='macos'][data-appearance='light'] .thread-composer-attach-setting:focus-visible,
+:root[data-theme='macos'][data-appearance='dark'] .thread-composer-attach-setting:focus-visible,
+:root[data-theme='macos'][data-appearance='light'] .file-link-context-menu-item:focus-visible,
+:root[data-theme='macos'][data-appearance='dark'] .file-link-context-menu-item:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--theme-accent) 54%, transparent);
+  outline-offset: 0;
+  border-color: color-mix(in srgb, var(--theme-accent) 34%, var(--theme-border));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-accent) 16%, transparent);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .sidebar-search-toggle:disabled,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-search-toggle:disabled,
+:root[data-theme='macos'][data-appearance='light'] .sidebar-thread-controls-button:disabled,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-thread-controls-button:disabled,
+:root[data-theme='macos'][data-appearance='light'] .thread-menu-trigger:disabled,
+:root[data-theme='macos'][data-appearance='dark'] .thread-menu-trigger:disabled,
+:root[data-theme='macos'][data-appearance='light'] .project-menu-trigger:disabled,
+:root[data-theme='macos'][data-appearance='dark'] .project-menu-trigger:disabled,
+:root[data-theme='macos'][data-appearance='light'] .organize-menu-trigger:disabled,
+:root[data-theme='macos'][data-appearance='dark'] .organize-menu-trigger:disabled,
+:root[data-theme='macos'][data-appearance='light'] .thread-start-button:disabled,
+:root[data-theme='macos'][data-appearance='dark'] .thread-start-button:disabled,
+:root[data-theme='macos'][data-appearance='light'] .content-header-branch-dropdown .composer-dropdown-trigger:disabled,
+:root[data-theme='macos'][data-appearance='dark'] .content-header-branch-dropdown .composer-dropdown-trigger:disabled,
+:root[data-theme='macos'][data-appearance='light'] .thread-composer-stop:disabled,
+:root[data-theme='macos'][data-appearance='dark'] .thread-composer-stop:disabled,
+:root[data-theme='macos'][data-appearance='light'] .organize-menu-item[aria-disabled='true'],
+:root[data-theme='macos'][data-appearance='dark'] .organize-menu-item[aria-disabled='true'],
+:root[data-theme='macos'][data-appearance='light'] .project-menu-item[aria-disabled='true'],
+:root[data-theme='macos'][data-appearance='dark'] .project-menu-item[aria-disabled='true'],
+:root[data-theme='macos'][data-appearance='light'] .thread-menu-item[aria-disabled='true'],
+:root[data-theme='macos'][data-appearance='dark'] .thread-menu-item[aria-disabled='true'],
+:root[data-theme='macos'][data-appearance='light'] .composer-dropdown-option[aria-disabled='true'],
+:root[data-theme='macos'][data-appearance='dark'] .composer-dropdown-option[aria-disabled='true'],
+:root[data-theme='macos'][data-appearance='light'] .thread-composer-file-mention-row[aria-disabled='true'],
+:root[data-theme='macos'][data-appearance='dark'] .thread-composer-file-mention-row[aria-disabled='true'],
+:root[data-theme='macos'][data-appearance='light'] .thread-composer-attach-item[aria-disabled='true'],
+:root[data-theme='macos'][data-appearance='dark'] .thread-composer-attach-item[aria-disabled='true'],
+:root[data-theme='macos'][data-appearance='light'] .thread-composer-attach-setting[aria-disabled='true'],
+:root[data-theme='macos'][data-appearance='dark'] .thread-composer-attach-setting[aria-disabled='true'] {
+  background: color-mix(in srgb, var(--theme-control-bg) 34%, transparent);
+  border-color: color-mix(in srgb, var(--theme-border) 28%, transparent);
+  color: var(--theme-text-muted);
+  opacity: 0.55;
+}
+
+:root[data-theme='macos'][data-appearance='light'] .thread-tree-header,
+:root[data-theme='macos'][data-appearance='dark'] .thread-tree-header,
+:root[data-theme='macos'][data-appearance='light'] .thread-row-time,
+:root[data-theme='macos'][data-appearance='dark'] .thread-row-time,
+:root[data-theme='macos'][data-appearance='light'] .sidebar-settings-button-version,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-settings-button-version,
+:root[data-theme='macos'][data-appearance='light'] .sidebar-settings-account-meta,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-settings-account-meta,
+:root[data-theme='macos'][data-appearance='light'] .sidebar-settings-context-meta,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-settings-context-meta,
+:root[data-theme='macos'][data-appearance='light'] .sidebar-settings-build-label,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-settings-build-label {
+  font-size: 0.75rem;
+  letter-spacing: 0.01em;
+}
+
+:root[data-theme='macos'][data-appearance='light'] .composer-dropdown-menu,
+:root[data-theme='macos'][data-appearance='dark'] .composer-dropdown-menu,
+:root[data-theme='macos'][data-appearance='light'] .search-dropdown-menu-wrap-up,
+:root[data-theme='macos'][data-appearance='dark'] .search-dropdown-menu-wrap-up,
+:root[data-theme='macos'][data-appearance='light'] .search-dropdown-menu-wrap-down,
+:root[data-theme='macos'][data-appearance='dark'] .search-dropdown-menu-wrap-down,
+:root[data-theme='macos'][data-appearance='light'] .thread-composer-attach-menu,
+:root[data-theme='macos'][data-appearance='dark'] .thread-composer-attach-menu,
+:root[data-theme='macos'][data-appearance='light'] .composer-search-dropdown-menu,
+:root[data-theme='macos'][data-appearance='dark'] .composer-search-dropdown-menu,
+:root[data-theme='macos'][data-appearance='light'] .account-menu-panel,
+:root[data-theme='macos'][data-appearance='dark'] .account-menu-panel,
+:root[data-theme='macos'][data-appearance='light'] .skill-picker,
+:root[data-theme='macos'][data-appearance='dark'] .skill-picker,
+:root[data-theme='macos'][data-appearance='light'] .organize-menu-panel,
+:root[data-theme='macos'][data-appearance='dark'] .organize-menu-panel,
+:root[data-theme='macos'][data-appearance='light'] .project-menu-panel,
+:root[data-theme='macos'][data-appearance='dark'] .project-menu-panel,
+:root[data-theme='macos'][data-appearance='light'] .thread-menu-panel,
+:root[data-theme='macos'][data-appearance='dark'] .thread-menu-panel,
+:root[data-theme='macos'][data-appearance='light'] .rename-thread-panel,
+:root[data-theme='macos'][data-appearance='dark'] .rename-thread-panel,
+:root[data-theme='macos'][data-appearance='light'] .file-link-context-menu,
+:root[data-theme='macos'][data-appearance='dark'] .file-link-context-menu,
+:root[data-theme='macos'][data-appearance='light'] .thread-composer-file-mentions,
+:root[data-theme='macos'][data-appearance='dark'] .thread-composer-file-mentions {
+  background: var(--theme-floating-panel-bg);
+  border: 1px solid var(--theme-border);
+  box-shadow:
+    inset 0 1px 0 var(--theme-border-soft),
+    var(--theme-shadow-lg);
+  backdrop-filter: blur(var(--theme-backdrop-blur)) saturate(170%);
+  -webkit-backdrop-filter: blur(var(--theme-backdrop-blur)) saturate(170%);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .queued-messages-inner,
+:root[data-theme='macos'][data-appearance='dark'] .queued-messages-inner,
+:root[data-theme='macos'][data-appearance='light'] .thread-pending-request-shell,
+:root[data-theme='macos'][data-appearance='dark'] .thread-pending-request-shell {
+  border-radius: var(--theme-macos-panel-radius);
+  background: color-mix(in srgb, var(--theme-elevated-bg) 96%, var(--theme-main-bg));
+  box-shadow:
+    inset 0 1px 0 var(--theme-border-soft),
+    var(--theme-shadow-md);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .queued-row-edit,
+:root[data-theme='macos'][data-appearance='dark'] .queued-row-edit,
+:root[data-theme='macos'][data-appearance='light'] .queued-row-steer,
+:root[data-theme='macos'][data-appearance='dark'] .queued-row-steer,
+:root[data-theme='macos'][data-appearance='light'] .queued-row-delete,
+:root[data-theme='macos'][data-appearance='dark'] .queued-row-delete,
+:root[data-theme='macos'][data-appearance='light'] .thread-pending-request-option,
+:root[data-theme='macos'][data-appearance='dark'] .thread-pending-request-option,
+:root[data-theme='macos'][data-appearance='light'] .thread-pending-request-inline-input,
+:root[data-theme='macos'][data-appearance='dark'] .thread-pending-request-inline-input,
+:root[data-theme='macos'][data-appearance='light'] .thread-pending-request-link,
+:root[data-theme='macos'][data-appearance='dark'] .thread-pending-request-link,
+:root[data-theme='macos'][data-appearance='light'] .thread-pending-request-select,
+:root[data-theme='macos'][data-appearance='dark'] .thread-pending-request-select,
+:root[data-theme='macos'][data-appearance='light'] .thread-pending-request-input,
+:root[data-theme='macos'][data-appearance='dark'] .thread-pending-request-input,
+:root[data-theme='macos'][data-appearance='light'] .thread-pending-request-primary,
+:root[data-theme='macos'][data-appearance='dark'] .thread-pending-request-primary,
+:root[data-theme='macos'][data-appearance='light'] .thread-pending-request-secondary,
+:root[data-theme='macos'][data-appearance='dark'] .thread-pending-request-secondary {
+  border-radius: var(--theme-macos-control-radius);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .directory-card,
+:root[data-theme='macos'][data-appearance='dark'] .directory-card,
+:root[data-theme='macos'][data-appearance='light'] .directory-modal,
+:root[data-theme='macos'][data-appearance='dark'] .directory-modal {
+  border-radius: var(--theme-macos-panel-radius);
+  border-color: color-mix(in srgb, var(--theme-border) 74%, transparent);
+  background: color-mix(in srgb, var(--theme-floating-panel-bg) 98%, var(--theme-main-bg));
+  box-shadow:
+    inset 0 1px 0 var(--theme-border-soft),
+    var(--theme-shadow-md);
+  backdrop-filter: blur(calc(var(--theme-backdrop-blur) * 0.55)) saturate(160%);
+  -webkit-backdrop-filter: blur(calc(var(--theme-backdrop-blur) * 0.55)) saturate(160%);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .directory-tabs,
+:root[data-theme='macos'][data-appearance='dark'] .directory-tabs,
+:root[data-theme='macos'][data-appearance='light'] .directory-sort-group,
+:root[data-theme='macos'][data-appearance='dark'] .directory-sort-group,
+:root[data-theme='macos'][data-appearance='light'] .directory-refresh,
+:root[data-theme='macos'][data-appearance='dark'] .directory-refresh,
+:root[data-theme='macos'][data-appearance='light'] .directory-action,
+:root[data-theme='macos'][data-appearance='dark'] .directory-action,
+:root[data-theme='macos'][data-appearance='light'] .directory-action-link,
+:root[data-theme='macos'][data-appearance='dark'] .directory-action-link,
+:root[data-theme='macos'][data-appearance='light'] .directory-modal-close,
+:root[data-theme='macos'][data-appearance='dark'] .directory-modal-close,
+:root[data-theme='macos'][data-appearance='light'] .directory-search,
+:root[data-theme='macos'][data-appearance='dark'] .directory-search {
+  border-radius: var(--theme-macos-control-radius);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .thread-terminal-panel,
+:root[data-theme='macos'][data-appearance='dark'] .thread-terminal-panel,
+:root[data-theme='macos'][data-appearance='light'] .thread-terminal-header,
+:root[data-theme='macos'][data-appearance='dark'] .thread-terminal-header {
+  border-radius: var(--theme-macos-panel-radius);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .thread-terminal-panel,
+:root[data-theme='macos'][data-appearance='dark'] .thread-terminal-panel {
+  border-color: color-mix(in srgb, var(--theme-border) 74%, transparent);
+  background: color-mix(in srgb, var(--theme-floating-panel-bg) 96%, var(--theme-code-bg));
+  box-shadow:
+    inset 0 1px 0 var(--theme-border-soft),
+    var(--theme-shadow-md);
+  backdrop-filter: blur(calc(var(--theme-backdrop-blur) * 0.5)) saturate(155%);
+  -webkit-backdrop-filter: blur(calc(var(--theme-backdrop-blur) * 0.5)) saturate(155%);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .thread-terminal-header,
+:root[data-theme='macos'][data-appearance='dark'] .thread-terminal-header,
+:root[data-theme='macos'][data-appearance='light'] .thread-terminal-tab,
+:root[data-theme='macos'][data-appearance='dark'] .thread-terminal-tab,
+:root[data-theme='macos'][data-appearance='light'] .thread-terminal-quick-command,
+:root[data-theme='macos'][data-appearance='dark'] .thread-terminal-quick-command,
+:root[data-theme='macos'][data-appearance='light'] .thread-terminal-action,
+:root[data-theme='macos'][data-appearance='dark'] .thread-terminal-action {
+  border-radius: var(--theme-macos-control-radius);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .sidebar-scrollable,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-scrollable,
+:root[data-theme='macos'][data-appearance='light'] .thread-composer-file-mentions,
+:root[data-theme='macos'][data-appearance='dark'] .thread-composer-file-mentions,
+:root[data-theme='macos'][data-appearance='light'] .review-pane-file-list,
+:root[data-theme='macos'][data-appearance='dark'] .review-pane-file-list,
+:root[data-theme='macos'][data-appearance='light'] .file-change-list,
+:root[data-theme='macos'][data-appearance='dark'] .file-change-list,
+:root[data-theme='macos'][data-appearance='light'] .composer-dropdown-menu,
+:root[data-theme='macos'][data-appearance='dark'] .composer-dropdown-menu,
+:root[data-theme='macos'][data-appearance='light'] .search-dropdown-menu-wrap-up,
+:root[data-theme='macos'][data-appearance='dark'] .search-dropdown-menu-wrap-up,
+:root[data-theme='macos'][data-appearance='light'] .search-dropdown-menu-wrap-down,
+:root[data-theme='macos'][data-appearance='dark'] .search-dropdown-menu-wrap-down,
+:root[data-theme='macos'][data-appearance='light'] .skill-picker,
+:root[data-theme='macos'][data-appearance='dark'] .skill-picker {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--theme-text-muted) 42%, transparent) transparent;
+}
+
+:root[data-theme='macos'][data-appearance='light'] .sidebar-scrollable::-webkit-scrollbar,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-scrollable::-webkit-scrollbar,
+:root[data-theme='macos'][data-appearance='light'] .thread-composer-file-mentions::-webkit-scrollbar,
+:root[data-theme='macos'][data-appearance='dark'] .thread-composer-file-mentions::-webkit-scrollbar,
+:root[data-theme='macos'][data-appearance='light'] .review-pane-file-list::-webkit-scrollbar,
+:root[data-theme='macos'][data-appearance='dark'] .review-pane-file-list::-webkit-scrollbar,
+:root[data-theme='macos'][data-appearance='light'] .file-change-list::-webkit-scrollbar,
+:root[data-theme='macos'][data-appearance='dark'] .file-change-list::-webkit-scrollbar,
+:root[data-theme='macos'][data-appearance='light'] .composer-dropdown-menu::-webkit-scrollbar,
+:root[data-theme='macos'][data-appearance='dark'] .composer-dropdown-menu::-webkit-scrollbar,
+:root[data-theme='macos'][data-appearance='light'] .search-dropdown-menu-wrap-up::-webkit-scrollbar,
+:root[data-theme='macos'][data-appearance='dark'] .search-dropdown-menu-wrap-up::-webkit-scrollbar,
+:root[data-theme='macos'][data-appearance='light'] .search-dropdown-menu-wrap-down::-webkit-scrollbar,
+:root[data-theme='macos'][data-appearance='dark'] .search-dropdown-menu-wrap-down::-webkit-scrollbar,
+:root[data-theme='macos'][data-appearance='light'] .skill-picker::-webkit-scrollbar,
+:root[data-theme='macos'][data-appearance='dark'] .skill-picker::-webkit-scrollbar {
+  width: 0.625rem;
+  height: 0.625rem;
+}
+
+:root[data-theme='macos'][data-appearance='light'] .sidebar-scrollable::-webkit-scrollbar-thumb,
+:root[data-theme='macos'][data-appearance='dark'] .sidebar-scrollable::-webkit-scrollbar-thumb,
+:root[data-theme='macos'][data-appearance='light'] .thread-composer-file-mentions::-webkit-scrollbar-thumb,
+:root[data-theme='macos'][data-appearance='dark'] .thread-composer-file-mentions::-webkit-scrollbar-thumb,
+:root[data-theme='macos'][data-appearance='light'] .review-pane-file-list::-webkit-scrollbar-thumb,
+:root[data-theme='macos'][data-appearance='dark'] .review-pane-file-list::-webkit-scrollbar-thumb,
+:root[data-theme='macos'][data-appearance='light'] .file-change-list::-webkit-scrollbar-thumb,
+:root[data-theme='macos'][data-appearance='dark'] .file-change-list::-webkit-scrollbar-thumb,
+:root[data-theme='macos'][data-appearance='light'] .composer-dropdown-menu::-webkit-scrollbar-thumb,
+:root[data-theme='macos'][data-appearance='dark'] .composer-dropdown-menu::-webkit-scrollbar-thumb,
+:root[data-theme='macos'][data-appearance='light'] .search-dropdown-menu-wrap-up::-webkit-scrollbar-thumb,
+:root[data-theme='macos'][data-appearance='dark'] .search-dropdown-menu-wrap-up::-webkit-scrollbar-thumb,
+:root[data-theme='macos'][data-appearance='light'] .search-dropdown-menu-wrap-down::-webkit-scrollbar-thumb,
+:root[data-theme='macos'][data-appearance='dark'] .search-dropdown-menu-wrap-down::-webkit-scrollbar-thumb,
+:root[data-theme='macos'][data-appearance='light'] .skill-picker::-webkit-scrollbar-thumb,
+:root[data-theme='macos'][data-appearance='dark'] .skill-picker::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--theme-text-muted) 36%, transparent);
+  background-clip: padding-box;
+}
+
+:root[data-theme='macos'][data-appearance='light'] .review-pane-segmented,
+:root[data-theme='macos'][data-appearance='dark'] .review-pane-segmented,
+:root[data-theme='macos'][data-appearance='light'] .runtime-toggle,
+:root[data-theme='macos'][data-appearance='dark'] .runtime-toggle,
+:root[data-theme='macos'][data-appearance='light'] .review-pane-branch-select-wrap,
+:root[data-theme='macos'][data-appearance='dark'] .review-pane-branch-select-wrap {
+  background: color-mix(in srgb, var(--theme-control-bg) 84%, var(--theme-main-bg));
+  border: 1px solid color-mix(in srgb, var(--theme-border) 88%, transparent);
+  box-shadow:
+    inset 0 1px 0 var(--theme-border-soft),
+    inset 0 -1px 0 color-mix(in srgb, var(--theme-border) 32%, transparent);
+  backdrop-filter: blur(calc(var(--theme-backdrop-blur) * 0.35)) saturate(150%);
+  -webkit-backdrop-filter: blur(calc(var(--theme-backdrop-blur) * 0.35)) saturate(150%);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .review-pane-segmented-button,
+:root[data-theme='macos'][data-appearance='dark'] .review-pane-segmented-button,
+:root[data-theme='macos'][data-appearance='light'] .runtime-toggle-option,
+:root[data-theme='macos'][data-appearance='dark'] .runtime-toggle-option {
+  min-height: 26px;
+  color: var(--theme-text-secondary);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .review-pane-segmented-button:hover,
+:root[data-theme='macos'][data-appearance='dark'] .review-pane-segmented-button:hover,
+:root[data-theme='macos'][data-appearance='light'] .runtime-toggle-option:hover,
+:root[data-theme='macos'][data-appearance='dark'] .runtime-toggle-option:hover {
+  background: color-mix(in srgb, var(--theme-control-hover-bg) 90%, transparent);
+  color: var(--theme-text-primary);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .review-pane-segmented-button[data-active='true'] {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(243, 247, 252, 0.96) 100%);
+  border-color: color-mix(in srgb, var(--theme-selection-border) 76%, var(--theme-border));
+  color: var(--theme-selection-text);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 1px 2px rgba(29, 29, 31, 0.08);
+}
+
+:root[data-theme='macos'][data-appearance='dark'] .review-pane-segmented-button[data-active='true'] {
+  background: linear-gradient(180deg, rgba(76, 80, 92, 0.92) 0%, rgba(52, 56, 66, 0.96) 100%);
+  border-color: color-mix(in srgb, var(--theme-selection-border) 82%, var(--theme-border));
+  color: var(--theme-selection-text);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 1px 2px rgba(0, 0, 0, 0.18);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme='macos'][data-appearance='light'] .sidebar-search-toggle,
+  :root[data-theme='macos'][data-appearance='dark'] .sidebar-search-toggle,
+  :root[data-theme='macos'][data-appearance='light'] .sidebar-thread-controls-button,
+  :root[data-theme='macos'][data-appearance='dark'] .sidebar-thread-controls-button,
+  :root[data-theme='macos'][data-appearance='light'] .thread-menu-trigger,
+  :root[data-theme='macos'][data-appearance='dark'] .thread-menu-trigger,
+  :root[data-theme='macos'][data-appearance='light'] .project-menu-trigger,
+  :root[data-theme='macos'][data-appearance='dark'] .project-menu-trigger,
+  :root[data-theme='macos'][data-appearance='light'] .organize-menu-trigger,
+  :root[data-theme='macos'][data-appearance='dark'] .organize-menu-trigger,
+  :root[data-theme='macos'][data-appearance='light'] .thread-start-button,
+  :root[data-theme='macos'][data-appearance='dark'] .thread-start-button,
+  :root[data-theme='macos'][data-appearance='light'] .content-header-branch-dropdown .composer-dropdown-trigger,
+  :root[data-theme='macos'][data-appearance='dark'] .content-header-branch-dropdown .composer-dropdown-trigger,
+  :root[data-theme='macos'][data-appearance='light'] .thread-composer-stop,
+  :root[data-theme='macos'][data-appearance='dark'] .thread-composer-stop,
+  :root[data-theme='macos'][data-appearance='light'] .composer-dropdown-menu,
+  :root[data-theme='macos'][data-appearance='dark'] .composer-dropdown-menu,
+  :root[data-theme='macos'][data-appearance='light'] .search-dropdown-menu-wrap-up,
+  :root[data-theme='macos'][data-appearance='dark'] .search-dropdown-menu-wrap-up,
+  :root[data-theme='macos'][data-appearance='light'] .search-dropdown-menu-wrap-down,
+  :root[data-theme='macos'][data-appearance='dark'] .search-dropdown-menu-wrap-down,
+  :root[data-theme='macos'][data-appearance='light'] .thread-composer-attach-menu,
+  :root[data-theme='macos'][data-appearance='dark'] .thread-composer-attach-menu,
+  :root[data-theme='macos'][data-appearance='light'] .composer-search-dropdown-menu,
+  :root[data-theme='macos'][data-appearance='dark'] .composer-search-dropdown-menu,
+  :root[data-theme='macos'][data-appearance='light'] .account-menu-panel,
+  :root[data-theme='macos'][data-appearance='dark'] .account-menu-panel,
+  :root[data-theme='macos'][data-appearance='light'] .skill-picker,
+  :root[data-theme='macos'][data-appearance='dark'] .skill-picker,
+  :root[data-theme='macos'][data-appearance='light'] .organize-menu-panel,
+  :root[data-theme='macos'][data-appearance='dark'] .organize-menu-panel,
+  :root[data-theme='macos'][data-appearance='light'] .project-menu-panel,
+  :root[data-theme='macos'][data-appearance='dark'] .project-menu-panel,
+  :root[data-theme='macos'][data-appearance='light'] .thread-menu-panel,
+  :root[data-theme='macos'][data-appearance='dark'] .thread-menu-panel,
+  :root[data-theme='macos'][data-appearance='light'] .rename-thread-panel,
+  :root[data-theme='macos'][data-appearance='dark'] .rename-thread-panel,
+  :root[data-theme='macos'][data-appearance='light'] .file-link-context-menu,
+  :root[data-theme='macos'][data-appearance='dark'] .file-link-context-menu,
+  :root[data-theme='macos'][data-appearance='light'] .thread-composer-file-mentions,
+  :root[data-theme='macos'][data-appearance='dark'] .thread-composer-file-mentions {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+:root[data-theme='macos'][data-appearance='light'] .request-card,
+:root[data-theme='macos'][data-appearance='light'] .message-card,
+:root[data-theme='macos'][data-appearance='light'] .plan-card {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--theme-floating-panel-bg) 94%, transparent) 0%,
+      color-mix(in srgb, var(--theme-elevated-bg) 86%, transparent) 100%
+    );
+}
+
+:root[data-theme='macos'][data-appearance='dark'] .request-card,
+:root[data-theme='macos'][data-appearance='dark'] .message-card,
+:root[data-theme='macos'][data-appearance='dark'] .plan-card {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--theme-floating-panel-bg) 92%, transparent) 0%,
+      color-mix(in srgb, var(--theme-elevated-bg) 88%, transparent) 100%
+    );
+}
+
+:root[data-theme='macos'][data-appearance='light'] .message-card,
+:root[data-theme='macos'][data-appearance='dark'] .message-card,
+:root[data-theme='macos'][data-appearance='light'] .plan-card,
+:root[data-theme='macos'][data-appearance='dark'] .plan-card,
+:root[data-theme='macos'][data-appearance='light'] .request-card,
+:root[data-theme='macos'][data-appearance='dark'] .request-card {
+  border-radius: var(--theme-macos-panel-radius);
+  border: 1px solid color-mix(in srgb, var(--theme-border) 74%, transparent);
+  box-shadow:
+    inset 0 1px 0 var(--theme-border-soft),
+    var(--theme-shadow-sm);
+  backdrop-filter: blur(calc(var(--theme-backdrop-blur) * 0.5)) saturate(160%);
+  -webkit-backdrop-filter: blur(calc(var(--theme-backdrop-blur) * 0.5)) saturate(160%);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .message-card:has(> .plan-card),
+:root[data-theme='macos'][data-appearance='dark'] .message-card:has(> .plan-card) {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+:root[data-theme='macos'][data-appearance='light'] .message-body[data-role='user'] .message-card,
+:root[data-theme='macos'][data-appearance='dark'] .message-body[data-role='user'] .message-card {
+  background: color-mix(in srgb, var(--theme-user-bubble-bg) 94%, transparent);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .cmd-row,
+:root[data-theme='macos'][data-appearance='dark'] .cmd-row {
+  border-radius: calc(var(--theme-macos-panel-radius) - 2px);
+  border: 1px solid color-mix(in srgb, var(--theme-border) 68%, transparent);
+  background: color-mix(in srgb, var(--theme-control-bg) 80%, var(--theme-floating-panel-bg));
+  box-shadow:
+    inset 0 1px 0 var(--theme-border-soft),
+    var(--theme-shadow-sm);
+  backdrop-filter: blur(calc(var(--theme-backdrop-blur) * 0.35)) saturate(150%);
+  -webkit-backdrop-filter: blur(calc(var(--theme-backdrop-blur) * 0.35)) saturate(150%);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .cmd-row.cmd-expanded,
+:root[data-theme='macos'][data-appearance='dark'] .cmd-row.cmd-expanded {
+  border-bottom-color: transparent;
+  box-shadow: inset 0 1px 0 var(--theme-border-soft);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .cmd-output-wrap,
+:root[data-theme='macos'][data-appearance='dark'] .cmd-output-wrap {
+  background: transparent;
+}
+
+:root[data-theme='macos'][data-appearance='light'] .cmd-output-wrap.cmd-output-visible,
+:root[data-theme='macos'][data-appearance='dark'] .cmd-output-wrap.cmd-output-visible {
+  border-color: color-mix(in srgb, var(--theme-border) 62%, transparent);
+  background: color-mix(in srgb, var(--theme-code-bg) 96%, var(--theme-floating-panel-bg));
+}
+
+:root[data-theme='macos'][data-appearance='light'] .message-inline-code,
+:root[data-theme='macos'][data-appearance='dark'] .message-inline-code,
+:root[data-theme='macos'][data-appearance='light'] .message-copy-button,
+:root[data-theme='macos'][data-appearance='dark'] .message-copy-button,
+:root[data-theme='macos'][data-appearance='light'] .message-image-button,
+:root[data-theme='macos'][data-appearance='dark'] .message-image-button,
+:root[data-theme='macos'][data-appearance='light'] .jump-to-latest-button,
+:root[data-theme='macos'][data-appearance='dark'] .jump-to-latest-button,
+:root[data-theme='macos'][data-appearance='light'] .message-file-chip,
+:root[data-theme='macos'][data-appearance='dark'] .message-file-chip {
+  border-radius: var(--theme-macos-control-radius);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .message-inline-code,
+:root[data-theme='macos'][data-appearance='dark'] .message-inline-code,
+:root[data-theme='macos'][data-appearance='light'] .message-file-chip,
+:root[data-theme='macos'][data-appearance='dark'] .message-file-chip {
+  background: color-mix(in srgb, var(--theme-control-bg) 84%, var(--theme-main-bg));
+  border-color: color-mix(in srgb, var(--theme-border) 88%, transparent);
+  box-shadow: inset 0 1px 0 var(--theme-border-soft);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .message-code-block,
+:root[data-theme='macos'][data-appearance='dark'] .message-code-block {
+  border-radius: calc(var(--theme-macos-panel-radius) - 2px);
+  border-color: color-mix(in srgb, var(--theme-border) 82%, transparent);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--theme-border-soft) 70%, transparent),
+    var(--theme-shadow-md);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .message-code-language,
+:root[data-theme='macos'][data-appearance='dark'] .message-code-language {
+  background: color-mix(in srgb, var(--theme-code-header-bg) 86%, transparent);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .message-blockquote,
+:root[data-theme='macos'][data-appearance='dark'] .message-blockquote,
+:root[data-theme='macos'][data-appearance='light'] .message-table,
+:root[data-theme='macos'][data-appearance='dark'] .message-table {
+  border-radius: calc(var(--theme-macos-panel-radius) - 4px);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .jump-to-latest-button,
+:root[data-theme='macos'][data-appearance='dark'] .jump-to-latest-button,
+:root[data-theme='macos'][data-appearance='light'] .message-copy-button,
+:root[data-theme='macos'][data-appearance='dark'] .message-copy-button,
+:root[data-theme='macos'][data-appearance='light'] .message-image-button,
+:root[data-theme='macos'][data-appearance='dark'] .message-image-button {
+  background: color-mix(in srgb, var(--theme-control-bg) 92%, var(--theme-main-bg));
+  border-color: color-mix(in srgb, var(--theme-border) 88%, transparent);
+  box-shadow:
+    inset 0 1px 0 var(--theme-border-soft),
+    var(--theme-shadow-sm);
+  backdrop-filter: blur(calc(var(--theme-backdrop-blur) * 0.4)) saturate(155%);
+  -webkit-backdrop-filter: blur(calc(var(--theme-backdrop-blur) * 0.4)) saturate(155%);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .message-copy-button:hover,
+:root[data-theme='macos'][data-appearance='dark'] .message-copy-button:hover,
+:root[data-theme='macos'][data-appearance='light'] .message-image-button:hover,
+:root[data-theme='macos'][data-appearance='dark'] .message-image-button:hover,
+:root[data-theme='macos'][data-appearance='light'] .jump-to-latest-button:hover,
+:root[data-theme='macos'][data-appearance='dark'] .jump-to-latest-button:hover {
+  background: color-mix(in srgb, var(--theme-control-hover-bg) 88%, var(--theme-floating-panel-bg));
+}
+
+:root[data-theme='macos'][data-appearance='light'] .composer-dropdown-menu,
+:root[data-theme='macos'][data-appearance='dark'] .composer-dropdown-menu,
+:root[data-theme='macos'][data-appearance='light'] .search-dropdown-menu-wrap-up,
+:root[data-theme='macos'][data-appearance='dark'] .search-dropdown-menu-wrap-up,
+:root[data-theme='macos'][data-appearance='light'] .search-dropdown-menu-wrap-down,
+:root[data-theme='macos'][data-appearance='dark'] .search-dropdown-menu-wrap-down,
+:root[data-theme='macos'][data-appearance='light'] .account-menu-panel,
+:root[data-theme='macos'][data-appearance='dark'] .account-menu-panel,
+:root[data-theme='macos'][data-appearance='light'] .thread-composer-attach-menu,
+:root[data-theme='macos'][data-appearance='dark'] .thread-composer-attach-menu,
+:root[data-theme='macos'][data-appearance='light'] .composer-search-dropdown-menu,
+:root[data-theme='macos'][data-appearance='dark'] .composer-search-dropdown-menu,
+:root[data-theme='macos'][data-appearance='light'] .skill-picker,
+:root[data-theme='macos'][data-appearance='dark'] .skill-picker {
+  backdrop-filter: blur(calc(var(--theme-backdrop-blur) * 0.9)) saturate(160%);
+  -webkit-backdrop-filter: blur(calc(var(--theme-backdrop-blur) * 0.9)) saturate(160%);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .search-dropdown-menu,
+:root[data-theme='macos'][data-appearance='dark'] .search-dropdown-menu {
+  background: var(--theme-floating-panel-bg);
+  border-color: var(--theme-border);
+  box-shadow:
+    inset 0 1px 0 var(--theme-border-soft),
+    var(--theme-shadow-lg);
+  backdrop-filter: blur(calc(var(--theme-backdrop-blur) * 0.9)) saturate(160%);
+  -webkit-backdrop-filter: blur(calc(var(--theme-backdrop-blur) * 0.9)) saturate(160%);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .organize-menu-panel,
+:root[data-theme='macos'][data-appearance='dark'] .organize-menu-panel,
+:root[data-theme='macos'][data-appearance='light'] .project-menu-panel,
+:root[data-theme='macos'][data-appearance='dark'] .project-menu-panel,
+:root[data-theme='macos'][data-appearance='light'] .thread-menu-panel,
+:root[data-theme='macos'][data-appearance='dark'] .thread-menu-panel,
+:root[data-theme='macos'][data-appearance='light'] .rename-thread-panel,
+:root[data-theme='macos'][data-appearance='dark'] .rename-thread-panel,
+:root[data-theme='macos'][data-appearance='light'] .file-link-context-menu,
+:root[data-theme='macos'][data-appearance='dark'] .file-link-context-menu {
+  border-radius: calc(var(--theme-macos-panel-radius) - 2px);
+  backdrop-filter: blur(calc(var(--theme-backdrop-blur) * 0.82)) saturate(165%);
+  -webkit-backdrop-filter: blur(calc(var(--theme-backdrop-blur) * 0.82)) saturate(165%);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .thread-type-menu-panel,
+:root[data-theme='macos'][data-appearance='dark'] .thread-type-menu-panel {
+  border-radius: calc(var(--theme-macos-panel-radius) - 2px);
+  border-color: color-mix(in srgb, var(--theme-border) 72%, transparent);
+  background: color-mix(in srgb, var(--theme-floating-panel-bg) 99.4%, var(--theme-main-bg));
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--theme-border-soft) 90%, transparent),
+    0 16px 40px rgba(15, 23, 42, 0.18);
+  backdrop-filter: blur(calc(var(--theme-backdrop-blur) * 0.2)) saturate(114%);
+  -webkit-backdrop-filter: blur(calc(var(--theme-backdrop-blur) * 0.2)) saturate(114%);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .thread-type-menu-actions,
+:root[data-theme='macos'][data-appearance='dark'] .thread-type-menu-actions {
+  border-bottom-color: color-mix(in srgb, var(--theme-border) 58%, transparent);
+  background: color-mix(in srgb, var(--theme-floating-panel-bg) 97%, var(--theme-main-bg));
+  backdrop-filter: blur(calc(var(--theme-backdrop-blur) * 0.14)) saturate(110%);
+  -webkit-backdrop-filter: blur(calc(var(--theme-backdrop-blur) * 0.14)) saturate(110%);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .api-panel-root,
+:root[data-theme='macos'][data-appearance='dark'] .api-panel-root {
+  border-radius: var(--theme-macos-panel-radius);
+  border-color: color-mix(in srgb, var(--theme-border) 70%, transparent);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--theme-floating-panel-bg) 96%, transparent) 0%,
+      color-mix(in srgb, var(--theme-elevated-bg) 90%, transparent) 100%
+    );
+  box-shadow:
+    inset 0 1px 0 var(--theme-border-soft),
+    var(--theme-shadow-md);
+  backdrop-filter: blur(calc(var(--theme-backdrop-blur) * 0.5)) saturate(155%);
+  -webkit-backdrop-filter: blur(calc(var(--theme-backdrop-blur) * 0.5)) saturate(155%);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .api-panel-header,
+:root[data-theme='macos'][data-appearance='dark'] .api-panel-header {
+  border-bottom-color: color-mix(in srgb, var(--theme-border) 56%, transparent);
+  background: color-mix(in srgb, var(--theme-control-bg) 34%, transparent);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .api-method-code,
+:root[data-theme='macos'][data-appearance='dark'] .api-method-code {
+  border: 1px solid color-mix(in srgb, var(--theme-border) 76%, transparent);
+  border-radius: var(--theme-macos-control-radius);
+  background: color-mix(in srgb, var(--theme-control-bg) 84%, var(--theme-main-bg));
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--theme-border-soft) 82%, transparent);
+}
+
+:root[data-theme][data-appearance] .account-menu-trigger,
+:root[data-theme][data-appearance] .account-menu-switch,
+:root[data-theme][data-appearance] .thread-type-menu-trigger {
+  border-color: var(--theme-border);
+  background: var(--theme-control-bg);
+  color: var(--theme-text-secondary);
+}
+
+:root[data-theme][data-appearance] .account-menu-trigger:hover,
+:root[data-theme][data-appearance] .account-menu-switch:hover,
+:root[data-theme][data-appearance] .thread-type-menu-trigger:hover {
+  background: var(--theme-control-hover-bg);
+  color: var(--theme-text-primary);
+}
+
+:root[data-theme][data-appearance] .account-menu-trigger-chevron,
+:root[data-theme][data-appearance] .account-menu-empty,
+:root[data-theme][data-appearance] .account-menu-item-meta,
+:root[data-theme][data-appearance] .project-menu-label,
+:root[data-theme][data-appearance] .project-empty,
+:root[data-theme][data-appearance] .thread-tree-loading,
+:root[data-theme][data-appearance] .thread-tree-no-results,
+:root[data-theme][data-appearance] .thread-type-menu-empty,
+:root[data-theme][data-appearance] .thread-type-menu-count,
+:root[data-theme][data-appearance] .search-dropdown-option-desc,
+:root[data-theme][data-appearance] .search-dropdown-empty,
+:root[data-theme][data-appearance] .skill-picker-empty,
+:root[data-theme][data-appearance] .skill-picker-desc,
+:root[data-theme][data-appearance] .api-panel-count,
+:root[data-theme][data-appearance] .api-panel-loading {
+  color: var(--theme-text-muted);
+}
+
+:root[data-theme][data-appearance] .account-menu-panel,
+:root[data-theme][data-appearance] .thread-type-menu-panel,
+:root[data-theme][data-appearance] .thread-type-menu-actions,
+:root[data-theme][data-appearance] .skill-picker,
+:root[data-theme][data-appearance] .skill-picker-header,
+:root[data-theme][data-appearance] .api-panel-root,
+:root[data-theme][data-appearance] .api-panel-header {
+  border-color: var(--theme-border);
+  background: var(--theme-panel-bg);
+}
+
+:root[data-theme][data-appearance] .account-menu-title,
+:root[data-theme][data-appearance] .account-menu-item-email,
+:root[data-theme][data-appearance] .thread-type-menu-label,
+:root[data-theme][data-appearance] .search-dropdown-option.is-selected,
+:root[data-theme][data-appearance] .skill-picker-name,
+:root[data-theme][data-appearance] .api-panel-title {
+  color: var(--theme-text-primary);
+}
+
+:root[data-theme][data-appearance] .account-menu-item {
+  border-color: var(--theme-border);
+  background: var(--theme-panel-subtle-bg);
+}
+
+:root[data-theme][data-appearance] .account-menu-item.is-active {
+  border-color: var(--theme-success-border);
+  background: var(--theme-success-soft-bg);
+}
+
+:root[data-theme][data-appearance] .account-menu-error {
+  background: var(--theme-danger-soft-bg);
+  color: var(--theme-danger-text);
+}
+
+:root[data-theme][data-appearance] .project-menu-trigger,
+:root[data-theme][data-appearance] .organize-menu-trigger,
+:root[data-theme][data-appearance] .thread-start-button {
+  color: var(--theme-text-muted);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .thread-type-menu-trigger,
+:root[data-theme='macos'][data-appearance='dark'] .thread-type-menu-trigger {
+  border-color: color-mix(in srgb, var(--theme-border) 44%, transparent);
+  background: color-mix(in srgb, var(--theme-control-bg) 58%, transparent);
+  color: var(--theme-text-secondary);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .thread-type-menu-trigger:hover,
+:root[data-theme='macos'][data-appearance='dark'] .thread-type-menu-trigger:hover {
+  background: color-mix(in srgb, var(--theme-control-hover-bg) 78%, var(--theme-floating-panel-bg));
+  border-color: color-mix(in srgb, var(--theme-border) 62%, transparent);
+  color: var(--theme-text-primary);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .thread-type-menu-panel,
+:root[data-theme='macos'][data-appearance='dark'] .thread-type-menu-panel,
+:root[data-theme='macos'][data-appearance='light'] .thread-type-menu-actions,
+:root[data-theme='macos'][data-appearance='dark'] .thread-type-menu-actions,
+:root[data-theme='macos'][data-appearance='light'] .api-panel-root,
+:root[data-theme='macos'][data-appearance='dark'] .api-panel-root,
+:root[data-theme='macos'][data-appearance='light'] .api-panel-header,
+:root[data-theme='macos'][data-appearance='dark'] .api-panel-header {
+  border-color: color-mix(in srgb, var(--theme-border) 64%, transparent);
+}
+
+:root[data-theme][data-appearance] .project-menu-trigger:hover,
+:root[data-theme][data-appearance] .organize-menu-trigger:hover,
+:root[data-theme][data-appearance] .thread-start-button:hover {
+  background: var(--theme-control-hover-bg);
+  color: var(--theme-text-primary);
+}
+
+:root[data-theme][data-appearance] .project-menu-input,
+:root[data-theme][data-appearance] .search-dropdown-search,
+:root[data-theme][data-appearance] .skill-picker-search {
+  border-color: var(--theme-border);
+  background: var(--theme-control-bg);
+  color: var(--theme-text-primary);
+}
+
+:root[data-theme][data-appearance] .search-dropdown-search::placeholder,
+:root[data-theme][data-appearance] .skill-picker-search::placeholder {
+  color: var(--theme-text-muted);
+}
+
+:root[data-theme][data-appearance] .search-dropdown-menu-wrap-up,
+:root[data-theme][data-appearance] .search-dropdown-menu-wrap-down {
+  border-color: var(--theme-border);
+  background: var(--theme-panel-bg);
+  box-shadow: var(--theme-shadow-lg);
+}
+
+:root[data-theme][data-appearance] .search-dropdown-search-wrap {
+  border-color: var(--theme-border);
+}
+
+:root[data-theme][data-appearance] .search-dropdown-option,
+:root[data-theme][data-appearance] .skill-picker-item,
+:root[data-theme][data-appearance] .thread-type-menu-option,
+:root[data-theme][data-appearance] .thread-type-menu-action-button {
+  color: var(--theme-text-secondary);
+}
+
+:root[data-theme][data-appearance] .search-dropdown-option:hover,
+:root[data-theme][data-appearance] .search-dropdown-option.is-highlighted,
+:root[data-theme][data-appearance] .skill-picker-item:hover,
+:root[data-theme][data-appearance] .skill-picker-item.is-highlighted,
+:root[data-theme][data-appearance] .thread-type-menu-option:hover,
+:root[data-theme][data-appearance] .thread-type-menu-action-button:hover {
+  background: var(--theme-control-hover-bg);
+  color: var(--theme-text-primary);
+}
+
+:root[data-theme][data-appearance] .search-dropdown-option-check {
+  color: var(--theme-success-text);
+}
+
+:root[data-theme][data-appearance] .thread-tree-header,
+:root[data-theme][data-appearance] .project-icon-stack,
+:root[data-theme][data-appearance] .project-empty,
+:root[data-theme][data-appearance] .api-method-code {
+  color: var(--theme-text-secondary);
+}
+
+:root[data-theme][data-appearance] .api-method-code {
+  background: var(--theme-control-bg);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .thread-type-menu-option,
+:root[data-theme='macos'][data-appearance='dark'] .thread-type-menu-option,
+:root[data-theme='macos'][data-appearance='light'] .thread-type-menu-action-button,
+:root[data-theme='macos'][data-appearance='dark'] .thread-type-menu-action-button {
+  color: var(--theme-text-secondary);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .thread-type-menu-option:hover,
+:root[data-theme='macos'][data-appearance='dark'] .thread-type-menu-option:hover,
+:root[data-theme='macos'][data-appearance='light'] .thread-type-menu-action-button:hover,
+:root[data-theme='macos'][data-appearance='dark'] .thread-type-menu-action-button:hover {
+  background: color-mix(in srgb, var(--theme-control-hover-bg) 72%, transparent);
+  color: var(--theme-text-primary);
+}
+
+:root[data-theme='macos'][data-appearance='light'] .api-method-code,
+:root[data-theme='macos'][data-appearance='dark'] .api-method-code {
+  background: color-mix(in srgb, var(--theme-control-bg) 84%, var(--theme-main-bg));
+}
+
+:root[data-theme][data-appearance] .conversation-loading,
+:root[data-theme][data-appearance] .conversation-empty {
+  color: var(--theme-text-muted);
 }
 
 @media (max-width: 768px) {
+  :root[data-theme='macos'][data-appearance='light'] .sidebar-settings-panel,
+  :root[data-theme='macos'][data-appearance='dark'] .sidebar-settings-panel,
+  :root[data-theme='macos'][data-appearance='light'] .sidebar-settings-account-section,
+  :root[data-theme='macos'][data-appearance='dark'] .sidebar-settings-account-section,
+  :root[data-theme='macos'][data-appearance='light'] .sidebar-settings-telegram-panel,
+  :root[data-theme='macos'][data-appearance='dark'] .sidebar-settings-telegram-panel {
+    border-radius: calc(var(--theme-macos-panel-radius) - 3px);
+  }
+
+  :root[data-theme='macos'][data-appearance='light'] .content-header,
+  :root[data-theme='macos'][data-appearance='dark'] .content-header,
+  :root[data-theme='macos'][data-appearance='light'] .thread-composer-shell,
+  :root[data-theme='macos'][data-appearance='dark'] .thread-composer-shell {
+    background: color-mix(in srgb, var(--theme-floating-panel-bg) 97%, var(--theme-main-bg));
+    box-shadow:
+      inset 0 1px 0 color-mix(in srgb, var(--theme-border-soft) 90%, transparent),
+      0 10px 24px rgba(15, 23, 42, 0.08);
+    backdrop-filter: blur(calc(var(--theme-backdrop-blur) * 0.34)) saturate(118%);
+    -webkit-backdrop-filter: blur(calc(var(--theme-backdrop-blur) * 0.34)) saturate(118%);
+  }
+
+  :root[data-theme='macos'][data-appearance='light'] .mobile-drawer,
+  :root[data-theme='macos'][data-appearance='dark'] .mobile-drawer {
+    border-right: 1px solid color-mix(in srgb, var(--theme-border) 66%, transparent);
+    border-top-right-radius: calc(var(--theme-macos-panel-radius) + 4px);
+    border-bottom-right-radius: calc(var(--theme-macos-panel-radius) + 4px);
+    background: color-mix(in srgb, var(--theme-sidebar-bg) 96%, var(--theme-main-bg));
+    box-shadow:
+      inset -1px 0 0 color-mix(in srgb, var(--theme-border-soft) 88%, transparent),
+      16px 0 36px rgba(15, 23, 42, 0.16);
+    backdrop-filter: blur(calc(var(--theme-backdrop-blur) * 0.28)) saturate(114%);
+    -webkit-backdrop-filter: blur(calc(var(--theme-backdrop-blur) * 0.28)) saturate(114%);
+    overflow: clip;
+  }
+
+  :root[data-theme='macos'][data-appearance='light'] .content-header,
+  :root[data-theme='macos'][data-appearance='dark'] .content-header {
+    gap: 0.5rem;
+    min-height: 3rem;
+    padding: 0.75rem 0.75rem 0.5rem;
+    border-bottom: 1px solid color-mix(in srgb, var(--theme-border) 60%, transparent);
+  }
+
+  :root[data-theme='macos'][data-appearance='light'] .content-header .content-leading,
+  :root[data-theme='macos'][data-appearance='dark'] .content-header .content-leading,
+  :root[data-theme='macos'][data-appearance='light'] .content-header .content-actions,
+  :root[data-theme='macos'][data-appearance='dark'] .content-header .content-actions {
+    gap: 0.375rem;
+  }
+
+  :root[data-theme='macos'][data-appearance='light'] .content-header .content-title,
+  :root[data-theme='macos'][data-appearance='dark'] .content-header .content-title {
+    font-size: 0.9375rem;
+    line-height: 1.25rem;
+    letter-spacing: -0.015em;
+  }
+
+  :root[data-theme='macos'][data-appearance='light'] .thread-composer-shell,
+  :root[data-theme='macos'][data-appearance='dark'] .thread-composer-shell {
+    border-radius: calc(var(--theme-macos-panel-radius) - 1px);
+    border-color: color-mix(in srgb, var(--theme-border) 62%, transparent);
+    background: color-mix(in srgb, var(--theme-elevated-bg) 98%, var(--theme-main-bg));
+    padding: 0.6875rem;
+  }
+
+  :root[data-theme='macos'][data-appearance='light'] .thread-composer-input-wrap,
+  :root[data-theme='macos'][data-appearance='dark'] .thread-composer-input-wrap {
+    border-radius: calc(var(--theme-macos-panel-radius) - 8px);
+    background: color-mix(in srgb, var(--theme-control-bg) 88%, var(--theme-main-bg));
+    box-shadow:
+      inset 0 0 0 1px color-mix(in srgb, var(--theme-border) 54%, transparent),
+      inset 0 1px 0 color-mix(in srgb, var(--theme-border-soft) 90%, transparent);
+    padding-inline: 0.25rem;
+  }
+
+  :root[data-theme='macos'][data-appearance='light'] .thread-composer-controls,
+  :root[data-theme='macos'][data-appearance='dark'] .thread-composer-controls {
+    gap: 0.5rem;
+    margin-top: 0.625rem;
+  }
+
+  :root[data-theme='macos'][data-appearance='light'] .sidebar-settings-row--provider,
+  :root[data-theme='macos'][data-appearance='dark'] .sidebar-settings-row--provider,
+  :root[data-theme='macos'][data-appearance='light'] .sidebar-settings-row--language,
+  :root[data-theme='macos'][data-appearance='dark'] .sidebar-settings-row--language {
+    padding-inline: 0.625rem;
+    gap: 0.5rem;
+  }
+
+  :root[data-theme='macos'][data-appearance='light'] .sidebar-settings-row--provider .sidebar-settings-provider-select,
+  :root[data-theme='macos'][data-appearance='dark'] .sidebar-settings-row--provider .sidebar-settings-provider-select {
+    max-width: 8rem;
+  }
+
+  :root[data-theme='macos'][data-appearance='light'] .sidebar-settings-row--language .sidebar-settings-language-dropdown,
+  :root[data-theme='macos'][data-appearance='dark'] .sidebar-settings-row--language .sidebar-settings-language-dropdown {
+    max-width: 6.25rem;
+  }
+
+  :root[data-theme='macos'][data-appearance='light'] .sidebar-settings-row--language .sidebar-settings-language-dropdown .composer-dropdown-trigger,
+  :root[data-theme='macos'][data-appearance='dark'] .sidebar-settings-row--language .sidebar-settings-language-dropdown .composer-dropdown-trigger {
+    padding-inline: 0.5rem;
+  }
+
+  :root[data-theme='macos'][data-appearance='light'] .sidebar-settings-row--language .sidebar-settings-language-dropdown .composer-dropdown-value,
+  :root[data-theme='macos'][data-appearance='dark'] .sidebar-settings-row--language .sidebar-settings-language-dropdown .composer-dropdown-value {
+    max-width: 3.5rem;
+  }
+
+  :root[data-theme='macos'][data-appearance='light'] .thread-composer-attach-trigger,
+  :root[data-theme='macos'][data-appearance='dark'] .thread-composer-attach-trigger,
+  :root[data-theme='macos'][data-appearance='light'] .thread-composer-submit,
+  :root[data-theme='macos'][data-appearance='dark'] .thread-composer-submit,
+  :root[data-theme='macos'][data-appearance='light'] .thread-composer-stop,
+  :root[data-theme='macos'][data-appearance='dark'] .thread-composer-stop,
+  :root[data-theme='macos'][data-appearance='light'] .thread-composer-mic,
+  :root[data-theme='macos'][data-appearance='dark'] .thread-composer-mic {
+    height: 2.5rem;
+    width: 2.5rem;
+    border-radius: 999px;
+  }
+
+  :root[data-theme='macos'][data-appearance='light'] .content-header-branch-dropdown .composer-dropdown-trigger,
+  :root[data-theme='macos'][data-appearance='dark'] .content-header-branch-dropdown .composer-dropdown-trigger {
+    min-height: 2.25rem;
+    padding-inline: 0.75rem;
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--theme-border) 52%, transparent);
+    background: color-mix(in srgb, var(--theme-control-bg) 86%, var(--theme-main-bg));
+    box-shadow:
+      inset 0 1px 0 color-mix(in srgb, var(--theme-border-soft) 88%, transparent),
+      0 1px 2px rgba(15, 23, 42, 0.06);
+    backdrop-filter: blur(calc(var(--theme-backdrop-blur) * 0.18)) saturate(118%);
+    -webkit-backdrop-filter: blur(calc(var(--theme-backdrop-blur) * 0.18)) saturate(118%);
+  }
+
+  :root[data-theme='macos'][data-appearance='light'] .message-card,
+  :root[data-theme='macos'][data-appearance='dark'] .message-card,
+  :root[data-theme='macos'][data-appearance='light'] .plan-card,
+  :root[data-theme='macos'][data-appearance='dark'] .plan-card,
+  :root[data-theme='macos'][data-appearance='light'] .request-card,
+  :root[data-theme='macos'][data-appearance='dark'] .request-card,
+  :root[data-theme='macos'][data-appearance='light'] .cmd-row,
+  :root[data-theme='macos'][data-appearance='dark'] .cmd-row {
+    border-radius: calc(var(--theme-macos-panel-radius) - 5px);
+    box-shadow:
+      inset 0 1px 0 color-mix(in srgb, var(--theme-border-soft) 86%, transparent),
+      0 1px 0 rgba(15, 23, 42, 0.04);
+    backdrop-filter: blur(calc(var(--theme-backdrop-blur) * 0.12)) saturate(108%);
+    -webkit-backdrop-filter: blur(calc(var(--theme-backdrop-blur) * 0.12)) saturate(108%);
+  }
+
+  :root[data-theme='macos'][data-appearance='light'] .message-card,
+  :root[data-theme='macos'][data-appearance='dark'] .message-card,
+  :root[data-theme='macos'][data-appearance='light'] .plan-card,
+  :root[data-theme='macos'][data-appearance='dark'] .plan-card {
+    border-color: color-mix(in srgb, var(--theme-border) 68%, transparent);
+    background: color-mix(in srgb, var(--theme-floating-panel-bg) 99%, var(--theme-main-bg));
+    padding: 0.875rem 1rem;
+  }
+
+:root[data-theme='macos'][data-appearance='light'] .message-body[data-role='assistant'] .message-card,
+:root[data-theme='macos'][data-appearance='dark'] .message-body[data-role='assistant'] .message-card,
+:root[data-theme='macos'][data-appearance='light'] .message-body[data-role='system'] .message-card,
+:root[data-theme='macos'][data-appearance='dark'] .message-body[data-role='system'] .message-card {
+  width: 100%;
+  max-width: 100%;
+  padding: 0.875rem 1rem;
+}
+
+  :root[data-theme='macos'][data-appearance='light'] .plan-card,
+  :root[data-theme='macos'][data-appearance='dark'] .plan-card,
+  :root[data-theme='macos'][data-appearance='light'] .request-card,
+  :root[data-theme='macos'][data-appearance='dark'] .request-card {
+    gap: 0.75rem;
+  }
+
+  :root[data-theme='macos'][data-appearance='light'] .request-card,
+  :root[data-theme='macos'][data-appearance='dark'] .request-card {
+    border-color: color-mix(in srgb, var(--theme-warning-border) 86%, transparent);
+    background: color-mix(in srgb, var(--theme-warning-soft-bg) 97%, var(--theme-main-bg));
+    padding: 0.875rem 1rem;
+  }
+
+  :root[data-theme='macos'][data-appearance='light'] .message-body[data-role='user'] .message-card,
+  :root[data-theme='macos'][data-appearance='dark'] .message-body[data-role='user'] .message-card {
+    background: color-mix(in srgb, var(--theme-user-bubble-bg) 97%, var(--theme-main-bg));
+  }
+
+  :root[data-theme='macos'][data-appearance='light'] .message-card:has(> .plan-card),
+  :root[data-theme='macos'][data-appearance='dark'] .message-card:has(> .plan-card) {
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    padding: 0;
+  }
+
+  :root[data-theme='macos'][data-appearance='light'] .cmd-row,
+  :root[data-theme='macos'][data-appearance='dark'] .cmd-row {
+    border-color: color-mix(in srgb, var(--theme-border) 62%, transparent);
+    background: color-mix(in srgb, var(--theme-control-bg) 96%, var(--theme-main-bg));
+    gap: 0.625rem;
+    padding: 0.625rem 0.75rem;
+  }
+
+  :root[data-theme='macos'][data-appearance='light'] .composer-dropdown-menu,
+  :root[data-theme='macos'][data-appearance='dark'] .composer-dropdown-menu,
+  :root[data-theme='macos'][data-appearance='light'] .search-dropdown-menu-wrap-up,
+  :root[data-theme='macos'][data-appearance='dark'] .search-dropdown-menu-wrap-up,
+  :root[data-theme='macos'][data-appearance='light'] .search-dropdown-menu-wrap-down,
+  :root[data-theme='macos'][data-appearance='dark'] .search-dropdown-menu-wrap-down,
+  :root[data-theme='macos'][data-appearance='light'] .account-menu-panel,
+  :root[data-theme='macos'][data-appearance='dark'] .account-menu-panel,
+  :root[data-theme='macos'][data-appearance='light'] .thread-composer-attach-menu,
+  :root[data-theme='macos'][data-appearance='dark'] .thread-composer-attach-menu,
+  :root[data-theme='macos'][data-appearance='light'] .skill-picker,
+  :root[data-theme='macos'][data-appearance='dark'] .skill-picker {
+    border-radius: calc(var(--theme-macos-panel-radius) - 2px);
+    border-color: color-mix(in srgb, var(--theme-border) 72%, transparent);
+    background: color-mix(in srgb, var(--theme-floating-panel-bg) 99.4%, var(--theme-main-bg));
+    box-shadow:
+      inset 0 1px 0 color-mix(in srgb, var(--theme-border-soft) 90%, transparent),
+      0 16px 40px rgba(15, 23, 42, 0.18);
+    backdrop-filter: blur(calc(var(--theme-backdrop-blur) * 0.2)) saturate(114%);
+    -webkit-backdrop-filter: blur(calc(var(--theme-backdrop-blur) * 0.2)) saturate(114%);
+  }
+
+  :root[data-theme='macos'][data-appearance='light'] .diff-viewer-mobile-sheet,
+  :root[data-theme='macos'][data-appearance='dark'] .diff-viewer-mobile-sheet {
+    border-top-left-radius: calc(var(--theme-macos-panel-radius) + 2px);
+    border-top-right-radius: calc(var(--theme-macos-panel-radius) + 2px);
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    border-color: color-mix(in srgb, var(--theme-border) 72%, transparent);
+    background: color-mix(in srgb, var(--theme-floating-panel-bg) 99.5%, var(--theme-main-bg));
+    box-shadow:
+      inset 0 1px 0 color-mix(in srgb, var(--theme-border-soft) 90%, transparent),
+      0 -12px 32px rgba(15, 23, 42, 0.18);
+    backdrop-filter: blur(calc(var(--theme-backdrop-blur) * 0.18)) saturate(112%);
+    -webkit-backdrop-filter: blur(calc(var(--theme-backdrop-blur) * 0.18)) saturate(112%);
+  }
+
+  :root[data-theme='macos'][data-appearance='light'] .diff-viewer-mobile-sheet-handle,
+  :root[data-theme='macos'][data-appearance='dark'] .diff-viewer-mobile-sheet-handle {
+    width: 2.5rem;
+    height: 0.3125rem;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--theme-text-muted) 30%, transparent);
+  }
+
+  :root[data-theme='macos'][data-appearance='light'] .composer-dropdown-option,
+  :root[data-theme='macos'][data-appearance='dark'] .composer-dropdown-option,
+  :root[data-theme='macos'][data-appearance='light'] .search-dropdown-option,
+  :root[data-theme='macos'][data-appearance='dark'] .search-dropdown-option,
+  :root[data-theme='macos'][data-appearance='light'] .skill-picker-item,
+  :root[data-theme='macos'][data-appearance='dark'] .skill-picker-item,
+  :root[data-theme='macos'][data-appearance='light'] .thread-composer-attach-item,
+  :root[data-theme='macos'][data-appearance='dark'] .thread-composer-attach-item,
+  :root[data-theme='macos'][data-appearance='light'] .thread-composer-attach-setting,
+  :root[data-theme='macos'][data-appearance='dark'] .thread-composer-attach-setting,
+  :root[data-theme='macos'][data-appearance='light'] .account-menu-item,
+  :root[data-theme='macos'][data-appearance='dark'] .account-menu-item {
+    min-height: 2.5rem;
+    border-radius: 1rem;
+    padding-inline: 0.75rem;
+  }
+
+  :root[data-theme='macos'][data-appearance='light'] .thread-composer-attach-mode-button,
+  :root[data-theme='macos'][data-appearance='dark'] .thread-composer-attach-mode-button,
+  :root[data-theme='macos'][data-appearance='light'] .account-menu-switch,
+  :root[data-theme='macos'][data-appearance='dark'] .account-menu-switch {
+    min-height: 2rem;
+    padding-inline: 0.75rem;
+  }
+
+  :root[data-theme='macos'][data-appearance='light'] .search-dropdown-menu-wrap-up .search-dropdown-menu,
+  :root[data-theme='macos'][data-appearance='dark'] .search-dropdown-menu-wrap-up .search-dropdown-menu,
+  :root[data-theme='macos'][data-appearance='light'] .search-dropdown-menu-wrap-down .search-dropdown-menu,
+  :root[data-theme='macos'][data-appearance='dark'] .search-dropdown-menu-wrap-down .search-dropdown-menu {
+    border-color: transparent;
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  :root[data-theme='macos'][data-appearance='light'] .search-dropdown-menu-wrap-up,
+  :root[data-theme='macos'][data-appearance='dark'] .search-dropdown-menu-wrap-up,
+  :root[data-theme='macos'][data-appearance='light'] .search-dropdown-menu-wrap-down,
+  :root[data-theme='macos'][data-appearance='dark'] .search-dropdown-menu-wrap-down {
+    padding-inline: 0.125rem;
+  }
+
   .thread-composer-input,
   .composer-dropdown-search-input,
   .search-dropdown-search,
+  .skill-picker-search,
   .sidebar-search-input,
   .project-menu-input,
   .rename-thread-input,
