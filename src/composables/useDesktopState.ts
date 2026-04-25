@@ -1860,6 +1860,12 @@ export function useDesktopState() {
     clearInterruptPersistenceGate(threadId)
   }
 
+  function maybeUnblockInterruptForActiveTurn(threadId: string, turnId: string): void {
+    if (!threadId || !turnId) return
+    if (interruptBlockedUntilPersistedByThreadId.value[threadId] !== true) return
+    clearInterruptPersistenceGate(threadId)
+  }
+
   function markServerListedThreads(serverThreadIds: Set<string>): void {
     const pendingThreadIds = Object.keys(interruptBlockedUntilPersistedByThreadId.value)
     if (pendingThreadIds.length === 0) return
@@ -3260,6 +3266,7 @@ export function useDesktopState() {
         ...activeTurnIdByThreadId.value,
         [startedTurn.threadId]: startedTurn.turnId,
       }
+      maybeUnblockInterruptForActiveTurn(startedTurn.threadId, startedTurn.turnId)
       clearLivePlansForThread(startedTurn.threadId)
       clearLiveFileChangesForThread(startedTurn.threadId)
       setTurnSummaryForThread(startedTurn.threadId, null)
@@ -4371,6 +4378,7 @@ export function useDesktopState() {
           ...activeTurnIdByThreadId.value,
           [threadId]: startedTurnId,
         }
+        maybeUnblockInterruptForActiveTurn(threadId, startedTurnId)
       }
 
       resumedThreadById.value = {
