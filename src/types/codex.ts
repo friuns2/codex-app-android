@@ -4,6 +4,22 @@ export type RpcEnvelope<T> = {
 
 export type ReasoningEffort = 'none' | 'minimal' | 'low' | 'medium' | 'high' | 'xhigh'
 export type CollaborationModeKind = 'default' | 'plan'
+export type UiCodexModelReasoningOption = {
+  value: ReasoningEffort
+  label: string
+  description: string
+}
+
+export type UiCodexModel = {
+  id: string
+  model: string
+  displayName: string
+  description: string
+  hidden: boolean
+  defaultReasoningEffort: ReasoningEffort
+  supportedReasoningEfforts: UiCodexModelReasoningOption[]
+  isDefault: boolean
+}
 
 export type RpcMethodCatalog = {
   data: string[]

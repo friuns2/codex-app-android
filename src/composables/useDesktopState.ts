@@ -4,8 +4,8 @@ import {
   forkThread as forkThreadRpc,
   getAvailableCollaborationModes,
   getAccountRateLimits,
+  getAvailableModels,
   renameThread,
-  getAvailableModelIds,
   getCurrentModelConfig,
   getPendingServerRequests,
   getSkillsList,
@@ -30,6 +30,11 @@ import {
   type MentionParam,
 } from '../api/codexGateway'
 import { normalizeFileChangeStatus, toUiFileChanges } from '../api/normalizers/v2'
+import {
+  getModelDisplayName,
+  resolveFallbackModelId,
+  resolveReasoningEffortForModel,
+} from '../utils/codexModels'
 import type {
   CollaborationModeKind,
   CollaborationModeOption,
@@ -41,6 +46,7 @@ import type {
   UiMessage,
   UiPlanData,
   UiPlanStep,
+  UiCodexModel,
   UiProjectGroup,
   UiRateLimitSnapshot,
   UiServerRequest,
@@ -65,7 +71,6 @@ const NEW_THREAD_COLLABORATION_MODE_CONTEXT = '__new-thread__'
 const EVENT_SYNC_DEBOUNCE_MS = 220
 const REASONING_EFFORT_OPTIONS: ReasoningEffort[] = ['none', 'minimal', 'low', 'medium', 'high', 'xhigh']
 const GLOBAL_SERVER_REQUEST_SCOPE = '__global__'
-const MODEL_FALLBACK_ID = 'gpt-5.2-codex'
 
 function loadReadStateMap(): Record<string, string> {
   if (typeof window === 'undefined') return {}
@@ -783,7 +788,7 @@ export function useDesktopState() {
   }
   const queuedMessagesByThreadId = ref<Record<string, QueuedMessage[]>>({})
   const eventUnreadByThreadId = ref<Record<string, boolean>>({})
-  const availableModelIds = ref<string[]>([])
+  const availableModels = ref<UiCodexModel[]>([])
   const availableCollaborationModes = ref<CollaborationModeOption[]>([
     { value: 'default', label: 'Default' },
     { value: 'plan', label: 'Plan' },
@@ -869,6 +874,7 @@ export function useDesktopState() {
     }
   })
   const codexQuota = computed<UiRateLimitSnapshot | null>(() => codexRateLimit.value)
+  const availableModelIds = computed(() => availableModels.value.map((model) => model.id))
   const selectedThreadTokenUsage = computed<UiThreadTokenUsage | null>(() => {
     const threadId = selectedThreadId.value
     if (!threadId) return null
@@ -904,6 +910,11 @@ export function useDesktopState() {
 
   function setSelectedModelId(modelId: string): void {
     selectedModelId.value = modelId.trim()
+    selectedReasoningEffort.value = resolveReasoningEffortForModel(
+      availableModels.value,
+      selectedModelId.value,
+      selectedReasoningEffort.value,
+    )
   }
 
   function setSelectedCollaborationMode(mode: CollaborationModeKind): void {
@@ -925,13 +936,37 @@ export function useDesktopState() {
     codexRateLimit.value = nextSnapshot
   }
 
+  function getFallbackModelId(): string {
+    return resolveFallbackModelId(availableModels.value)
+  }
+
+  function canRetryWithFallbackModel(): boolean {
+    const fallbackModelId = getFallbackModelId()
+    return fallbackModelId.length > 0 && selectedModelId.value !== fallbackModelId
+  }
+
   async function applyFallbackModelSelection(): Promise<void> {
-    selectedModelId.value = MODEL_FALLBACK_ID
-    if (!availableModelIds.value.includes(MODEL_FALLBACK_ID)) {
-      availableModelIds.value = [...availableModelIds.value, MODEL_FALLBACK_ID]
+    let fallbackModelId = getFallbackModelId()
+    if (!fallbackModelId) {
+      try {
+        availableModels.value = await getAvailableModels()
+        fallbackModelId = getFallbackModelId()
+      } catch {
+        fallbackModelId = ''
+      }
     }
+
+    if (!fallbackModelId) return
+
+    selectedModelId.value = fallbackModelId
+    selectedReasoningEffort.value = resolveReasoningEffortForModel(
+      availableModels.value,
+      fallbackModelId,
+      selectedReasoningEffort.value,
+    )
+
     try {
-      await setDefaultModel(MODEL_FALLBACK_ID)
+      await setDefaultModel(fallbackModelId)
     } catch {
       // Keep local selection even when persisting default model fails.
     }
@@ -962,6 +997,10 @@ export function useDesktopState() {
 
     try {
       await applyFallbackModelSelection()
+      const fallbackModelId = getFallbackModelId()
+      if (!fallbackModelId) {
+        throw new Error('No fallback model is available for retry.')
+      }
       // Remove the failed user turn before replaying on fallback model to avoid duplicated user messages.
       try {
         const rolledBackMessages = await rollbackThread(threadId, 1)
@@ -980,7 +1019,7 @@ export function useDesktopState() {
       setTurnSummaryForThread(threadId, null)
       setTurnActivityForThread(threadId, {
         label: 'Thinking',
-        details: buildPendingTurnDetails(MODEL_FALLBACK_ID, pending.effort, pending.collaborationMode),
+        details: buildPendingTurnDetails(fallbackModelId, pending.effort, pending.collaborationMode),
       })
       setThreadInProgress(threadId, true)
 
@@ -992,7 +1031,7 @@ export function useDesktopState() {
         threadId,
         pending.text,
         pending.imageUrls,
-        MODEL_FALLBACK_ID,
+        fallbackModelId,
         pending.effort || undefined,
         pending.skills.length > 0 ? pending.skills : undefined,
         pending.mentions.length > 0 ? pending.mentions : undefined,
@@ -1044,7 +1083,7 @@ export function useDesktopState() {
     effort: ReasoningEffort | '',
     collaborationMode: CollaborationModeKind = selectedCollaborationMode.value,
   ): string[] {
-    const modelLabel = modelId.trim() || 'default'
+    const modelLabel = modelId.trim() ? getModelDisplayName(availableModels.value, modelId) : 'default'
     const effortLabel = effort || 'default'
     const modeLabel = collaborationMode === 'plan' ? 'Plan' : 'Default'
     return [`Mode: ${modeLabel}`, `Model: ${modelLabel}`, `Thinking: ${effortLabel}`]
@@ -1052,30 +1091,32 @@ export function useDesktopState() {
 
   async function refreshModelPreferences(): Promise<void> {
     try {
-      const [modelIds, currentConfig] = await Promise.all([
-        getAvailableModelIds(),
+      const [models, currentConfig] = await Promise.all([
+        getAvailableModels(),
         getCurrentModelConfig(),
       ])
 
-      availableModelIds.value = modelIds
+      availableModels.value = models
+      const modelIds = models.map((model) => model.id)
 
       const hasSelectedModel = selectedModelId.value.length > 0 && modelIds.includes(selectedModelId.value)
       if (!hasSelectedModel) {
         if (currentConfig.model && modelIds.includes(currentConfig.model)) {
           selectedModelId.value = currentConfig.model
         } else if (modelIds.length > 0) {
-          selectedModelId.value = modelIds[0]
+          selectedModelId.value = resolveFallbackModelId(models)
         } else {
           selectedModelId.value = ''
         }
       }
 
-      if (
-        currentConfig.reasoningEffort &&
-        REASONING_EFFORT_OPTIONS.includes(currentConfig.reasoningEffort)
-      ) {
-        selectedReasoningEffort.value = currentConfig.reasoningEffort
-      }
+      selectedReasoningEffort.value = resolveReasoningEffortForModel(
+        models,
+        selectedModelId.value,
+        currentConfig.reasoningEffort && REASONING_EFFORT_OPTIONS.includes(currentConfig.reasoningEffort)
+          ? currentConfig.reasoningEffort
+          : selectedReasoningEffort.value,
+      )
     } catch {
       // Keep chat UI usable even if model metadata is temporarily unavailable.
     }
@@ -2341,7 +2382,7 @@ export function useDesktopState() {
     const shouldRetryWithFallback =
       Boolean(completedThreadId) &&
       Boolean(turnErrorMessage) &&
-      selectedModelId.value !== MODEL_FALLBACK_ID &&
+      canRetryWithFallbackModel() &&
       isUnsupportedChatGptModelError(new Error(turnErrorMessage))
     if (completedTurn) {
       const startedTurnState = pendingTurnStartsById.get(completedTurn.turnId)
@@ -2395,7 +2436,7 @@ export function useDesktopState() {
         })
       }
       error.value = notificationErrorState.message
-      if (selectedModelId.value !== MODEL_FALLBACK_ID && isUnsupportedChatGptModelError(new Error(notificationErrorState.message))) {
+      if (canRetryWithFallbackModel() && isUnsupportedChatGptModelError(new Error(notificationErrorState.message))) {
         if (errorThreadId) {
           void retryPendingTurnWithFallback(errorThreadId)
         } else {
@@ -3019,9 +3060,14 @@ export function useDesktopState() {
       try {
         threadId = await startThread(targetCwd || undefined, selectedModel || undefined)
       } catch (unknownError) {
-        if (selectedModel && selectedModel !== MODEL_FALLBACK_ID && isUnsupportedChatGptModelError(unknownError)) {
+        if (selectedModel && isUnsupportedChatGptModelError(unknownError)) {
           await applyFallbackModelSelection()
-          threadId = await startThread(targetCwd || undefined, MODEL_FALLBACK_ID)
+          const fallbackModelId = getFallbackModelId()
+          if (fallbackModelId && selectedModel !== fallbackModelId) {
+            threadId = await startThread(targetCwd || undefined, fallbackModelId)
+          } else {
+            throw unknownError
+          }
         } else {
           throw unknownError
         }
@@ -3132,8 +3178,12 @@ export function useDesktopState() {
         )
         registerActiveTurn(threadId, startedTurnId)
       } catch (unknownError) {
-        if (modelId && modelId !== MODEL_FALLBACK_ID && isUnsupportedChatGptModelError(unknownError)) {
+        if (modelId && isUnsupportedChatGptModelError(unknownError)) {
           await applyFallbackModelSelection()
+          const fallbackModelId = getFallbackModelId()
+          if (!fallbackModelId || modelId === fallbackModelId) {
+            throw unknownError
+          }
           setPendingTurnRequest(threadId, {
             text: normalizedText,
             imageUrls: [...imageUrls],
@@ -3148,7 +3198,7 @@ export function useDesktopState() {
             threadId,
             nextText,
             imageUrls,
-            MODEL_FALLBACK_ID,
+            fallbackModelId,
             reasoningEffort || undefined,
             skills.length > 0 ? skills : undefined,
             mentions.length > 0 ? mentions : undefined,
@@ -3617,6 +3667,7 @@ export function useDesktopState() {
     selectedThreadTokenUsage,
     selectedThreadId,
     availableCollaborationModes,
+    availableModels,
     availableModelIds,
     selectedCollaborationMode,
     selectedModelId,

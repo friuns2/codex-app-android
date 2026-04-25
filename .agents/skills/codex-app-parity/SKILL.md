@@ -579,3 +579,11 @@ If a finding conflicts with current official docs or current official code, trea
 - In Codex CLI `0.120.0`, `codex app-server generate-ts --experimental` exposes a stable read-only filesystem baseline for UI work: `fs/readDirectory`, `fs/getMetadata`, and `fs/readFile`, plus write/watch methods that can be layered later.
 - The generated protocol is enough to implement an in-app file browser even when official public docs or official repo UI references do not provide a concrete desktop/web file-explorer spec.
 - `fs/watch` is explicitly connection-scoped via `watchId`; for web clients that use stateless HTTP RPC plus a separate notification transport, treating watch support as a later phase is safer than coupling it into an MVP explorer.
+
+## Findings: Model Catalog Metadata (2026-04-25)
+
+- In Codex CLI `0.125.0`, `model/list` returns structured model metadata for the default picker, not just ids. Visible entries include fields such as `displayName`, `description`, `supportedReasoningEfforts`, `defaultReasoningEffort`, and `isDefault`.
+- The visible default-picker set observed in this environment includes `gpt-5.4`, `gpt-5.4-mini`, `gpt-5.3-codex`, `gpt-5.3-codex-spark`, `gpt-5.2`, `gpt-5.2-codex`, `gpt-5.1-codex-max`, and `gpt-5.1-codex-mini`.
+- `gpt-5.4` is currently marked `isDefault: true` here, so web fallback/retry logic should prefer the app-server default model instead of hardcoding an older fallback such as `gpt-5.2-codex`.
+- Some models expose narrower reasoning sets than the full global enum. For example, `gpt-5.1-codex-mini` only advertises `medium` and `high`, while `gpt-5.3-codex-spark` defaults to `high`.
+- For codexui parity, model pickers should render `displayName`, and Thinking controls should be derived from the selected model's `supportedReasoningEfforts` plus `defaultReasoningEffort`.

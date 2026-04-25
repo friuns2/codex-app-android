@@ -304,6 +304,7 @@ import type {
   CollaborationModeKind,
   CollaborationModeOption,
   ReasoningEffort,
+  UiCodexModel,
   UiRateLimitSnapshot,
   UiRateLimitWindow,
   UiThreadTokenUsage,
@@ -312,6 +313,7 @@ import type {
 import { useDictation } from '../../composables/useDictation'
 import { useMobile } from '../../composables/useMobile'
 import { searchComposerFiles, uploadFile, type ComposerFileSuggestion } from '../../api/codexGateway'
+import { buildReasoningEffortOptions } from '../../utils/codexModels'
 import IconTablerArrowUp from '../icons/IconTablerArrowUp.vue'
 import IconTablerFilePencil from '../icons/IconTablerFilePencil.vue'
 import IconTablerFolder from '../icons/IconTablerFolder.vue'
@@ -333,7 +335,7 @@ const props = defineProps<{
   cwd?: string
   collaborationModes?: CollaborationModeOption[]
   selectedCollaborationMode: CollaborationModeKind
-  models: string[]
+  models: UiCodexModel[]
   selectedModel: string
   selectedReasoningEffort: ReasoningEffort | ''
   skills?: SkillItem[]
@@ -434,16 +436,11 @@ let fileMentionDebounceTimer: ReturnType<typeof setTimeout> | null = null
 let isHoldPressActive = false
 const CONTEXT_WINDOW_BASELINE_TOKENS = 12000
 
-const reasoningOptions: Array<{ value: ReasoningEffort; label: string }> = [
-  { value: 'none', label: 'None' },
-  { value: 'minimal', label: 'Minimal' },
-  { value: 'low', label: 'Low' },
-  { value: 'medium', label: 'Medium' },
-  { value: 'high', label: 'High' },
-  { value: 'xhigh', label: 'Extra high' },
-]
+const reasoningOptions = computed<Array<{ value: ReasoningEffort; label: string }>>(() =>
+  buildReasoningEffortOptions(props.models, props.selectedModel, false) as Array<{ value: ReasoningEffort; label: string }>,
+)
 const modelOptions = computed(() =>
-  props.models.map((modelId) => ({ value: modelId, label: modelId })),
+  props.models.map((model) => ({ value: model.id, label: model.displayName })),
 )
 const isPlanModeSelected = computed(() => props.selectedCollaborationMode === 'plan')
 

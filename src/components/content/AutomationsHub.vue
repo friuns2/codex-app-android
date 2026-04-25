@@ -259,7 +259,7 @@
                 :model-value="form.model"
                 :options="modelOptions"
                 placeholder="Default model"
-                @update:model-value="(value) => form.model = value"
+                @update:model-value="onModelSelect"
               />
             </label>
 
@@ -331,7 +331,7 @@ import {
   createAutomation,
   deleteAutomation,
   getAutomationsState,
-  getAvailableModelIds,
+  getAvailableModels,
   getSkillsList,
   getWorkspaceRootsState,
   markAutomationRunRead,
@@ -343,7 +343,8 @@ import {
   type UiAutomationRun,
   updateAutomation,
 } from '../../api/codexGateway'
-import type { ReasoningEffort } from '../../types/codex'
+import type { ReasoningEffort, UiCodexModel } from '../../types/codex'
+import { buildReasoningEffortOptions, isReasoningEffortSupported } from '../../utils/codexModels'
 import { buildFilesRouteLocation } from '../../utils/fileExplorer'
 
 const tabs = [
@@ -370,7 +371,7 @@ const toast = ref<{ text: string; type: 'success' | 'error' } | null>(null)
 const automations = ref<UiAutomation[]>([])
 const runs = ref<UiAutomationRun[]>([])
 const defaults = ref<UiAutomationDefaults>({ model: '', reasoningEffort: '', sandboxMode: '' })
-const models = ref<string[]>([])
+const models = ref<UiCodexModel[]>([])
 const skills = ref<Array<{ name: string; description: string; path: string; scope?: string; projectName?: string }>>([])
 const projects = ref<Array<{ path: string; label: string }>>([])
 const selectedRunId = ref('')
@@ -411,18 +412,15 @@ const sandboxOptions = [
   { value: 'danger-full-access', label: 'Danger full access' },
 ]
 
-const reasoningOptions = [
-  { value: '', label: 'Use defaults' },
-  { value: 'minimal', label: 'Minimal' },
-  { value: 'low', label: 'Low' },
-  { value: 'medium', label: 'Medium' },
-  { value: 'high', label: 'High' },
-  { value: 'xhigh', label: 'Extra high' },
-]
+const effectiveModelId = computed(() => form.model || defaults.value.model || '')
+
+const reasoningOptions = computed(() =>
+  buildReasoningEffortOptions(models.value, effectiveModelId.value, true),
+)
 
 const modelOptions = computed(() => [
   { value: '', label: 'Use defaults' },
-  ...models.value.map((model) => ({ value: model, label: model })),
+  ...models.value.map((model) => ({ value: model.id, label: model.displayName })),
 ])
 
 const projectDropdownOptions = computed(() =>
@@ -506,17 +504,17 @@ function hydrateForm(automation: UiAutomation): void {
 async function refreshAll(): Promise<void> {
   loading.value = true
   try {
-    const [automationState, workspaceState, modelIds, installedSkills] = await Promise.all([
+    const [automationState, workspaceState, availableModels, installedSkills] = await Promise.all([
       getAutomationsState(),
       getWorkspaceRootsState(),
-      getAvailableModelIds().catch(() => []),
+      getAvailableModels().catch(() => []),
       getSkillsList().catch(() => []),
     ])
 
     automations.value = automationState.automations
     runs.value = automationState.runs
     defaults.value = automationState.defaults
-    models.value = modelIds
+    models.value = availableModels
     skills.value = installedSkills
     projects.value = workspaceState.order.map((path) => ({
       path,
@@ -562,6 +560,13 @@ function onReasoningEffortSelect(value: string): void {
     return
   }
   form.reasoningEffort = ''
+}
+
+function onModelSelect(value: string): void {
+  form.model = value
+  if (!isReasoningEffortSupported(models.value, effectiveModelId.value, form.reasoningEffort)) {
+    form.reasoningEffort = ''
+  }
 }
 
 function onProjectToggle(value: string, checked: boolean): void {

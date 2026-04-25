@@ -22,12 +22,17 @@ import {
   normalizeThreadMessagesV2,
   readThreadInProgressFromResponse,
 } from './normalizers/v2'
+import {
+  normalizeCodexModels,
+  resolveFallbackModelId,
+} from '../utils/codexModels'
 import type {
   UiAccountEntry,
   UiAccountQuotaStatus,
   UiAccountUnavailableReason,
   CollaborationModeKind,
   CollaborationModeOption,
+  UiCodexModel,
   UiCreditsSnapshot,
   UiFileChange,
   UiMessage,
@@ -911,14 +916,14 @@ async function resolveCollaborationModeSettings(
     }
   }
 
-  let availableModelIds: string[] = []
+  let availableModels: UiCodexModel[] = []
   try {
-    availableModelIds = await getAvailableModelIds()
+    availableModels = await getAvailableModels()
   } catch {
-    availableModelIds = []
+    availableModels = []
   }
 
-  const fallbackModel = availableModelIds.find((candidate) => candidate.trim().length > 0)?.trim() ?? ''
+  const fallbackModel = resolveFallbackModelId(availableModels)
   if (fallbackModel) {
     return {
       model: fallbackModel,
@@ -1016,15 +1021,14 @@ export async function setDefaultModel(model: string): Promise<void> {
   await callRpc('setDefaultModel', { model })
 }
 
-export async function getAvailableModelIds(): Promise<string[]> {
+export async function getAvailableModels(): Promise<UiCodexModel[]> {
   const payload = await callRpc<ModelListResponse>('model/list', {})
-  const ids: string[] = []
-  for (const row of payload.data) {
-    const candidate = row.id || row.model
-    if (!candidate || ids.includes(candidate)) continue
-    ids.push(candidate)
-  }
-  return ids
+  return normalizeCodexModels(payload.data)
+}
+
+export async function getAvailableModelIds(): Promise<string[]> {
+  const models = await getAvailableModels()
+  return models.map((model) => model.id)
 }
 
 export async function getCurrentModelConfig(): Promise<CurrentModelConfig> {
