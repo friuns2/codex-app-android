@@ -266,6 +266,20 @@ function readSelectedCollaborationMode(
   return normalizeCollaborationMode(state[contextId])
 }
 
+function writeSelectedCollaborationModeForContext(
+  state: Record<string, CollaborationModeKind>,
+  threadId: string,
+  mode: CollaborationModeKind,
+): Record<string, CollaborationModeKind> {
+  const contextId = toThreadContextId(threadId)
+  if (mode === 'plan') {
+    const next = cloneStringKeyedRecord(state)
+    next[contextId] = 'plan'
+    return next
+  }
+  return omitStringKeyedRecordKey(state, contextId)
+}
+
 function saveSelectedCollaborationModeMap(state: Record<string, CollaborationModeKind>): void {
   if (typeof window === 'undefined') return
   try {
@@ -1333,15 +1347,23 @@ export function useDesktopState() {
     const currentMode = readSelectedCollaborationMode(selectedCollaborationModeByContext.value, selectedThreadId.value)
     if (currentMode === nextMode && selectedCollaborationMode.value === nextMode) return
     selectedCollaborationMode.value = nextMode
-    if (nextMode === 'plan') {
-      const nextModeMap = cloneStringKeyedRecord(selectedCollaborationModeByContext.value)
-      nextModeMap[contextId] = nextMode
-      selectedCollaborationModeByContext.value = nextModeMap
-    } else {
-      selectedCollaborationModeByContext.value = omitStringKeyedRecordKey(
-        selectedCollaborationModeByContext.value,
-        contextId,
-      )
+    selectedCollaborationModeByContext.value = writeSelectedCollaborationModeForContext(
+      selectedCollaborationModeByContext.value,
+      contextId,
+      nextMode,
+    )
+    saveSelectedCollaborationModeMap(selectedCollaborationModeByContext.value)
+  }
+
+  function setSelectedCollaborationModeForThread(threadId: string, mode: CollaborationModeKind): void {
+    const nextMode = mode === 'plan' ? 'plan' : 'default'
+    selectedCollaborationModeByContext.value = writeSelectedCollaborationModeForContext(
+      selectedCollaborationModeByContext.value,
+      threadId,
+      nextMode,
+    )
+    if (threadId.trim() === selectedThreadId.value) {
+      selectedCollaborationMode.value = nextMode
     }
     saveSelectedCollaborationModeMap(selectedCollaborationModeByContext.value)
   }
@@ -4216,6 +4238,10 @@ export function useDesktopState() {
     const nextText = text.trim()
     const targetCwd = cwd.trim()
     const selectedModel = readModelIdForThread(NEW_THREAD_COLLABORATION_MODE_CONTEXT).trim()
+    const selectedMode = readSelectedCollaborationMode(
+      selectedCollaborationModeByContext.value,
+      NEW_THREAD_COLLABORATION_MODE_CONTEXT,
+    )
     if (!nextText && imageUrls.length === 0 && fileAttachments.length === 0) return ''
 
     isSendingMessage.value = true
@@ -4227,12 +4253,14 @@ export function useDesktopState() {
         const startedThread = await startThread(targetCwd || undefined, selectedModel || undefined)
         threadId = startedThread.threadId
         setThreadModelId(threadId, startedThread.model)
+        setSelectedCollaborationModeForThread(threadId, selectedMode)
       } catch (unknownError) {
         if (selectedModel && selectedModel !== MODEL_FALLBACK_ID && isUnsupportedChatGptModelError(unknownError)) {
           await applyFallbackModelSelection()
           const fallbackThread = await startThread(targetCwd || undefined, MODEL_FALLBACK_ID)
           threadId = fallbackThread.threadId
           setThreadModelId(threadId, fallbackThread.model)
+          setSelectedCollaborationModeForThread(threadId, selectedMode)
         } else {
           throw unknownError
         }
@@ -4255,7 +4283,7 @@ export function useDesktopState() {
           details: buildPendingTurnDetails(
             readModelIdForThread(threadId),
             selectedReasoningEffort.value,
-            selectedCollaborationMode.value,
+            selectedMode,
           ),
         },
       )
@@ -4264,7 +4292,7 @@ export function useDesktopState() {
       const capturedThreadId = threadId
       const capturedCwd = targetCwd || null
       const capturedPrompt = nextText
-      void startTurnForThread(threadId, nextText, imageUrls, skills, fileAttachments)
+      void startTurnForThread(threadId, nextText, imageUrls, skills, fileAttachments, selectedMode)
         .catch((unknownError) => {
           shouldAutoScrollOnNextAgentEvent = false
           setThreadInProgress(threadId, false)
@@ -4300,9 +4328,12 @@ export function useDesktopState() {
     imageUrls: string[] = [],
     skills: Array<{ name: string; path: string }> = [],
     fileAttachments: FileAttachment[] = [],
+    collaborationModeOverride?: CollaborationModeKind,
   ): Promise<void> {
     const reasoningEffort = selectedReasoningEffort.value
-    const collaborationMode = selectedCollaborationMode.value
+    const collaborationMode = collaborationModeOverride === 'plan' ? 'plan' : collaborationModeOverride === 'default'
+      ? 'default'
+      : selectedCollaborationMode.value
     const normalizedText = nextText.trim()
     const normalizedImageUrls = [...imageUrls]
     if (
