@@ -951,13 +951,13 @@ function showImplementPlanButton(message: UiMessage): boolean {
     && message.messageType !== 'plan.live'
     && message.role === 'assistant'
     && Boolean(message.turnId)
-    && readPlanSteps(message).length > 0
 }
 
 function implementPlan(message: UiMessage): void {
   const turnId = message.turnId?.trim() ?? ''
   if (!turnId) return
-  const planText = buildPlanMessageText(readPlanExplanation(message), readPlanSteps(message))
+  const parsedPlanText = buildPlanMessageText(readPlanExplanation(message), readPlanSteps(message))
+  const planText = parsedPlanText || message.text.trim()
   if (!planText) return
   emit('implementPlan', {
     turnId,
