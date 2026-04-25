@@ -3369,7 +3369,7 @@ Completed plan cards show an `Implement plan` button that turns plan mode off an
 
 #### Expected Results
 - Completed plan cards render the `Implement plan` action even when the plan body is structured as headings/lists instead of checkbox steps
-- Clicking the button sends an implementation prompt based on the plan text
+- Clicking the button sends a simple implementation follow-up message instead of copying the whole plan body into chat
 - The next turn runs in default mode rather than plan mode
 
 #### Rollback/Cleanup

@@ -4151,6 +4151,7 @@ export function useDesktopState() {
     mode: 'steer' | 'queue' = 'steer',
     fileAttachments: FileAttachment[] = [],
     queueInsertIndex?: number,
+    collaborationModeOverride?: CollaborationModeKind,
   ): Promise<void> {
     if (isUpdatingSpeedMode.value) return
 
@@ -4177,7 +4178,11 @@ export function useDesktopState() {
         imageUrls,
         skills,
         fileAttachments,
-        collaborationMode: selectedCollaborationMode.value,
+        collaborationMode: collaborationModeOverride === 'plan'
+          ? 'plan'
+          : collaborationModeOverride === 'default'
+            ? 'default'
+            : selectedCollaborationMode.value,
       })
       queuedMessagesByThreadId.value = {
         ...queuedMessagesByThreadId.value,
@@ -4188,7 +4193,14 @@ export function useDesktopState() {
 
     if (isInProgress) {
       shouldAutoScrollOnNextAgentEvent = true
-      void startTurnForThread(threadId, nextText, imageUrls, skills, fileAttachments).catch((unknownError) => {
+      void startTurnForThread(
+        threadId,
+        nextText,
+        imageUrls,
+        skills,
+        fileAttachments,
+        collaborationModeOverride,
+      ).catch((unknownError) => {
         const errorMessage = unknownError instanceof Error ? unknownError.message : 'Unknown application error'
         setTurnErrorForThread(threadId, errorMessage)
         error.value = errorMessage
@@ -4206,7 +4218,11 @@ export function useDesktopState() {
         details: buildPendingTurnDetails(
           readModelIdForThread(threadId),
           selectedReasoningEffort.value,
-          selectedCollaborationMode.value,
+          collaborationModeOverride === 'plan'
+            ? 'plan'
+            : collaborationModeOverride === 'default'
+              ? 'default'
+              : selectedCollaborationMode.value,
         ),
       },
     )
@@ -4214,7 +4230,14 @@ export function useDesktopState() {
     setThreadInProgress(threadId, true)
 
     try {
-      await startTurnForThread(threadId, nextText, imageUrls, skills, fileAttachments)
+      await startTurnForThread(
+        threadId,
+        nextText,
+        imageUrls,
+        skills,
+        fileAttachments,
+        collaborationModeOverride,
+      )
     } catch (unknownError) {
       shouldAutoScrollOnNextAgentEvent = false
       setThreadInProgress(threadId, false)

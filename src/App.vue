@@ -2789,13 +2789,11 @@ function onRollback(payload: { turnId: string }): void {
   void rollbackSelectedThread(payload.turnId)
 }
 
-function onImplementPlan(payload: { turnId: string; text: string }): void {
+function onImplementPlan(payload: { turnId: string }): void {
   if (isHomeRoute.value || !selectedThreadId.value) return
-  const text = payload.text.trim()
-  if (!text) return
   setSelectedCollaborationMode('default')
   scheduleMobileConversationJumpToLatest()
-  void sendMessageToSelectedThread(text, [], [], 'steer', [])
+  void sendMessageToSelectedThread('Implement', [], [], 'steer', [], undefined, 'default')
 }
 
 

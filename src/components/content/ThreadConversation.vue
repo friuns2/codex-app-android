@@ -956,13 +956,7 @@ function showImplementPlanButton(message: UiMessage): boolean {
 function implementPlan(message: UiMessage): void {
   const turnId = message.turnId?.trim() ?? ''
   if (!turnId) return
-  const parsedPlanText = buildPlanMessageText(readPlanExplanation(message), readPlanSteps(message))
-  const planText = parsedPlanText || message.text.trim()
-  if (!planText) return
-  emit('implementPlan', {
-    turnId,
-    text: `Implement this plan:\n\n${planText}`,
-  })
+  emit('implementPlan', { turnId })
 }
 
 function isFileChangeMessage(message: UiMessage): boolean {
@@ -1234,7 +1228,7 @@ const emit = defineEmits<{
   updateScrollState: [payload: { threadId: string; state: ThreadScrollState }]
   forkThread: [payload: { threadId: string; turnIndex: number }]
   rollback: [payload: { turnId: string }]
-  implementPlan: [payload: { turnId: string; text: string }]
+  implementPlan: [payload: { turnId: string }]
   respondServerRequest: [payload: { id: number; result?: unknown; error?: { code?: number; message: string } }]
 }>()
 
