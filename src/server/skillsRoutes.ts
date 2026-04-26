@@ -249,113 +249,32 @@ type SkillHubEntry = {
   enabled?: boolean
 }
 
-type SkillsTreeEntry = {
-  name: string
-  owner: string
-  url: string
-}
-
-type SkillsTreeCache = {
-  entries: SkillsTreeEntry[]
-  fetchedAt: number
-}
-
-type MetaJson = {
-  displayName?: string
-  owner?: string
-  slug?: string
-  latest?: { publishedAt?: number }
-}
-
-const TREE_CACHE_TTL_MS = 5 * 60 * 1000
-let skillsTreeCache: SkillsTreeCache | null = null
-const metaCache = new Map<string, { description: string; displayName: string; publishedAt: number }>()
-
-async function getGhToken(): Promise<string | null> {
+async function runGitFetchWithRefLockRetry(repoDir: string, args: string[] = ['fetch', 'origin']): Promise<void> {
   try {
-    const proc = spawn('gh', ['auth', 'token'], { stdio: ['ignore', 'pipe', 'ignore'] })
-    let out = ''
-    proc.stdout.on('data', (d: Buffer) => { out += d.toString() })
-    return new Promise((resolve) => {
-      proc.on('close', (code) => resolve(code === 0 ? out.trim() : null))
-      proc.on('error', () => resolve(null))
-    })
-  } catch {
-    return null
+    await runCommand('git', args, { cwd: repoDir })
+  } catch (error) {
+    const message = getErrorMessage(error, '')
+    if (!message.includes("cannot lock ref 'refs/remotes/origin/")) throw error
+    const branchMatch = message.match(/refs\/remotes\/origin\/([^\s':]+)/)
+    if (!branchMatch?.[1]) throw error
+    const refPath = join(repoDir, '.git', 'refs', 'remotes', 'origin', branchMatch[1])
+    try { await rm(refPath, { force: true }) } catch {}
+    await runCommand('git', args, { cwd: repoDir })
   }
 }
 
-async function ghFetch(url: string): Promise<Response> {
-  const token = await getGhToken()
-  const headers: Record<string, string> = {
-    Accept: 'application/vnd.github+json',
-    'User-Agent': 'codex-web-local',
-  }
-  if (token) headers.Authorization = `Bearer ${token}`
-  return fetch(url, { headers })
-}
-
-async function fetchSkillsTree(): Promise<SkillsTreeEntry[]> {
-  if (skillsTreeCache && Date.now() - skillsTreeCache.fetchedAt < TREE_CACHE_TTL_MS) {
-    return skillsTreeCache.entries
-  }
-
-  const resp = await ghFetch(`https://api.github.com/repos/${HUB_SKILLS_OWNER}/${HUB_SKILLS_REPO}/git/trees/main?recursive=1`)
-  if (!resp.ok) throw new Error(`GitHub tree API returned ${resp.status}`)
-  const data = (await resp.json()) as { tree?: Array<{ path: string; type: string }> }
-
-  const metaPattern = /^skills\/([^/]+)\/([^/]+)\/_meta\.json$/
-  const seen = new Set<string>()
-  const entries: SkillsTreeEntry[] = []
-
-  for (const node of data.tree ?? []) {
-    const match = metaPattern.exec(node.path)
-    if (!match) continue
-    const [, owner, skillName] = match
-    const key = `${owner}/${skillName}`
-    if (seen.has(key)) continue
-    seen.add(key)
-    entries.push({
-      name: skillName,
-      owner,
-      url: `https://github.com/${HUB_SKILLS_OWNER}/${HUB_SKILLS_REPO}/tree/main/skills/${owner}/${skillName}`,
-    })
-  }
-
-  skillsTreeCache = { entries, fetchedAt: Date.now() }
-  return entries
-}
-
-async function fetchMetaBatch(entries: SkillsTreeEntry[]): Promise<void> {
-  const toFetch = entries.filter((e) => !metaCache.has(`${e.owner}/${e.name}`))
-  if (toFetch.length === 0) return
-  const batch = toFetch.slice(0, 50)
-  await Promise.allSettled(
-    batch.map(async (e) => {
-      const rawUrl = `https://raw.githubusercontent.com/${HUB_SKILLS_OWNER}/${HUB_SKILLS_REPO}/main/skills/${e.owner}/${e.name}/_meta.json`
-      const resp = await fetch(rawUrl)
-      if (!resp.ok) return
-      const meta = (await resp.json()) as MetaJson
-      metaCache.set(`${e.owner}/${e.name}`, {
-        displayName: typeof meta.displayName === 'string' ? meta.displayName : '',
-        description: typeof meta.displayName === 'string' ? meta.displayName : '',
-        publishedAt: meta.latest?.publishedAt ?? 0,
-      })
-    }),
-  )
-}
-
-function buildHubEntry(e: SkillsTreeEntry): SkillHubEntry {
-  const cached = metaCache.get(`${e.owner}/${e.name}`)
+function buildLocalHubEntry(info: InstalledSkillInfo): SkillHubEntry {
   return {
-    name: e.name,
-    owner: e.owner,
-    description: cached?.description ?? '',
-    displayName: cached?.displayName ?? '',
-    publishedAt: cached?.publishedAt ?? 0,
-    avatarUrl: `https://github.com/${e.owner}.png?size=40`,
-    url: e.url,
-    installed: false,
+    name: info.name,
+    owner: 'local',
+    description: '',
+    displayName: '',
+    publishedAt: 0,
+    avatarUrl: '',
+    url: '',
+    installed: true,
+    path: info.path,
+    enabled: info.enabled,
   }
 }
 
@@ -465,8 +384,6 @@ const SYNC_UPSTREAM_SKILLS_REPO = 'skills'
 const PRIVATE_SYNC_BRANCH = 'main'
 const PUBLIC_UPSTREAM_BRANCH_ANDROID = 'android'
 const PUBLIC_UPSTREAM_BRANCH_DEFAULT = 'main'
-const HUB_SKILLS_OWNER = 'openclaw'
-const HUB_SKILLS_REPO = 'skills'
 let startupSkillsSyncInitialized = false
 
 type StartupSyncStatus = {
@@ -763,7 +680,7 @@ async function ensureSkillsWorkingTreeRepo(repoUrl: string, branch: string): Pro
     try { await runCommand('git', ['remote', 'add', 'origin', repoUrl], { cwd: localDir }) } catch {
       await runCommand('git', ['remote', 'set-url', 'origin', repoUrl], { cwd: localDir })
     }
-    await runCommand('git', ['fetch', 'origin'], { cwd: localDir })
+    await runGitFetchWithRefLockRetry(localDir)
     try {
       await runCommand('git', ['merge', '--allow-unrelated-histories', '--no-edit', `origin/${branch}`], { cwd: localDir })
     } catch {}
@@ -771,7 +688,7 @@ async function ensureSkillsWorkingTreeRepo(repoUrl: string, branch: string): Pro
   }
 
   await runCommand('git', ['remote', 'set-url', 'origin', repoUrl], { cwd: localDir })
-  await runCommand('git', ['fetch', 'origin'], { cwd: localDir })
+  await runGitFetchWithRefLockRetry(localDir)
   const hasLocalChangesBeforeSync = await hasLocalUncommittedChanges(localDir)
   const localMtimesBeforeSync = hasLocalChangesBeforeSync ? await snapshotFileMtimes(localDir) : new Map<string, number>()
   await resolveMergeConflictsByNewerCommit(localDir, branch, localMtimesBeforeSync)
@@ -790,7 +707,7 @@ async function ensureSkillsWorkingTreeRepo(repoUrl: string, branch: string): Pro
     createdAutostash = !stashOutput.includes('No local changes to save')
   } catch {}
   let pulledMtimes = new Map<string, number>()
-  await runCommand('git', ['fetch', 'origin', branch], { cwd: localDir })
+  await runGitFetchWithRefLockRetry(localDir, ['fetch', 'origin', branch])
   await runCommand('git', ['reset', '--hard', `origin/${branch}`], { cwd: localDir })
   pulledMtimes = await snapshotFileMtimes(localDir)
   if (createdAutostash) {
@@ -981,6 +898,12 @@ async function syncInstalledSkillsFolderToRepo(
       }
       await runCommand('git', ['checkout', `origin/${branch}`, '--', filePath], { cwd: repoDir })
     }
+    try {
+      await runCommand('git', ['cat-file', '-e', `origin/${branch}:shared_skills`], { cwd: repoDir })
+      await runCommand('git', ['checkout', `origin/${branch}`, '--', 'shared_skills'], { cwd: repoDir })
+    } catch {
+      // Ignore when the branch does not track the nested shared_skills gitlink.
+    }
   }
 
   function isNonFastForwardPushError(error: unknown): boolean {
@@ -995,7 +918,7 @@ async function syncInstalledSkillsFolderToRepo(
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       const hasLocalChangesBeforeReconcile = await hasLocalUncommittedChanges(repoDir)
       const localMtimesBeforeReconcile = hasLocalChangesBeforeReconcile ? await snapshotFileMtimes(repoDir) : new Map<string, number>()
-      await runCommand('git', ['fetch', 'origin'], { cwd: repoDir })
+      await runGitFetchWithRefLockRetry(repoDir)
       try {
         await runCommand('git', ['rebase', `origin/${branch}`], { cwd: repoDir })
       } catch {
@@ -1008,7 +931,7 @@ async function syncInstalledSkillsFolderToRepo(
         }
       }
       try {
-        await runCommand('git', ['push', 'origin', `HEAD:${branch}`], { cwd: repoDir })
+        await runCommand('git', ['push', '--no-recurse-submodules', 'origin', `HEAD:${branch}`], { cwd: repoDir })
         const state = await readSkillsSyncState()
         const pushedHead = await runCommandWithOutput('git', ['rev-parse', 'HEAD'], { cwd: repoDir })
         await writeSkillsSyncState({
@@ -1064,22 +987,6 @@ async function bootstrapSkillsFromUpstreamIntoLocal(): Promise<void> {
 async function collectLocalSyncedSkills(appServer: AppServerLike): Promise<SyncedSkill[]> {
   const state = await readSkillsSyncState()
   const owners = { ...(state.installedOwners ?? {}) }
-  const tree = await fetchSkillsTree()
-  const uniqueOwnerByName = new Map<string, string>()
-  const ambiguousNames = new Set<string>()
-  for (const entry of tree) {
-    if (ambiguousNames.has(entry.name)) continue
-    const existingOwner = uniqueOwnerByName.get(entry.name)
-    if (!existingOwner) {
-      uniqueOwnerByName.set(entry.name, entry.owner)
-      continue
-    }
-    if (existingOwner !== entry.owner) {
-      uniqueOwnerByName.delete(entry.name)
-      ambiguousNames.add(entry.name)
-    }
-  }
-
   const skills = (await appServer.rpc('skills/list', {})) as {
     data?: Array<{ skills?: Array<{ name?: string; enabled?: boolean; path?: string; scope?: string }> }>
   }
@@ -1091,14 +998,7 @@ async function collectLocalSyncedSkills(appServer: AppServerLike): Promise<Synce
       const name = typeof skill.name === 'string' ? skill.name : ''
       if (!name || skill.scope !== 'user' || seen.has(name)) continue
       seen.add(name)
-      let owner = owners[name]
-      if (!owner) {
-        owner = uniqueOwnerByName.get(name) ?? ''
-        if (owner) {
-          owners[name] = owner
-          ownersChanged = true
-        }
-      }
+      const owner = owners[name] ?? ''
       synced.push({ ...(owner ? { owner } : {}), name, enabled: skill.enabled !== false })
     }
   }
@@ -1231,40 +1131,6 @@ async function finalizeGithubLoginAndSync(token: string, username: string, appSe
   await autoPushSyncedSkills(appServer)
 }
 
-async function searchSkillsHub(
-  allEntries: SkillsTreeEntry[],
-  query: string,
-  limit: number,
-  sort: string,
-  installedMap: Map<string, InstalledSkillInfo>,
-): Promise<SkillHubEntry[]> {
-  const q = query.toLowerCase().trim()
-  const filtered = q
-    ? allEntries.filter((s) => {
-      if (s.name.toLowerCase().includes(q) || s.owner.toLowerCase().includes(q)) return true
-      const cached = metaCache.get(`${s.owner}/${s.name}`)
-      return Boolean(cached?.displayName?.toLowerCase().includes(q))
-    })
-    : allEntries
-  const page = filtered.slice(0, Math.min(limit * 2, 200))
-  await fetchMetaBatch(page)
-  let results = page.map(buildHubEntry)
-  if (sort === 'date') {
-    results.sort((a, b) => b.publishedAt - a.publishedAt)
-  } else if (q) {
-    results.sort((a, b) => {
-      const aExact = a.name.toLowerCase() === q ? 1 : 0
-      const bExact = b.name.toLowerCase() === q ? 1 : 0
-      if (aExact !== bExact) return bExact - aExact
-      return b.publishedAt - a.publishedAt
-    })
-  }
-  return results.slice(0, limit).map((s) => {
-    const local = installedMap.get(s.name)
-    return local ? { ...s, installed: true, path: local.path, enabled: local.enabled } : s
-  })
-}
-
 export async function handleSkillsRoutes(
   req: IncomingMessage,
   res: ServerResponse,
@@ -1274,11 +1140,6 @@ export async function handleSkillsRoutes(
   const { appServer, readJsonBody } = context
   if (req.method === 'GET' && url.pathname === '/codex-api/skills-hub') {
     try {
-      const q = url.searchParams.get('q') || ''
-      const limit = Math.min(Math.max(parseInt(url.searchParams.get('limit') || '50', 10) || 50, 1), 200)
-      const sort = url.searchParams.get('sort') || 'date'
-      const allEntries = await fetchSkillsTree()
-
       const installedMap = await scanInstalledSkillsFromDisk()
       try {
         const result = (await appServer.rpc('skills/list', {})) as {
@@ -1293,20 +1154,12 @@ export async function handleSkillsRoutes(
         }
       } catch {}
 
-      const installedHubEntries = allEntries.filter((e) => installedMap.has(e.name))
-      await fetchMetaBatch(installedHubEntries)
-
       const installed: SkillHubEntry[] = []
       for (const [, info] of installedMap) {
-        const hubEntry = allEntries.find((e) => e.name === info.name)
-        const base = hubEntry ? buildHubEntry(hubEntry) : {
-          name: info.name, owner: 'local', description: '', displayName: '', publishedAt: 0, avatarUrl: '', url: '', installed: false,
-        }
-        installed.push({ ...base, installed: true, path: info.path, enabled: info.enabled })
+        installed.push(buildLocalHubEntry(info))
       }
-
-      const results = await searchSkillsHub(allEntries, q, limit, sort, installedMap)
-      setJson(res, 200, { data: results, installed, total: allEntries.length })
+      installed.sort((a, b) => a.name.localeCompare(b.name))
+      setJson(res, 200, { installed })
     } catch (error) {
       setJson(res, 502, { error: getErrorMessage(error, 'Failed to fetch skills hub') })
     }
@@ -1452,27 +1305,12 @@ export async function handleSkillsRoutes(
         return true
       }
       const remote = await readRemoteSkillsManifest(state.githubToken, state.repoOwner, state.repoName)
-      const tree = await fetchSkillsTree()
-      const uniqueOwnerByName = new Map<string, string>()
-      const ambiguousNames = new Set<string>()
-      for (const entry of tree) {
-        if (ambiguousNames.has(entry.name)) continue
-        const existingOwner = uniqueOwnerByName.get(entry.name)
-        if (!existingOwner) {
-          uniqueOwnerByName.set(entry.name, entry.owner)
-          continue
-        }
-        if (existingOwner !== entry.owner) {
-          uniqueOwnerByName.delete(entry.name)
-          ambiguousNames.add(entry.name)
-        }
-      }
       const localDir = await detectUserSkillsDir(appServer)
       await pullInstalledSkillsFolderFromRepo(state.githubToken, state.repoOwner, state.repoName)
       const localSkills = await scanInstalledSkillsFromDisk()
       const missingAfterPull: string[] = []
       for (const skill of remote) {
-        const owner = skill.owner || uniqueOwnerByName.get(skill.name) || ''
+        const owner = skill.owner || ''
         if (!owner) continue
         if (!localSkills.has(skill.name)) {
           missingAfterPull.push(`${owner}/${skill.name}`)
@@ -1492,7 +1330,7 @@ export async function handleSkillsRoutes(
       }
       const nextOwners: Record<string, string> = {}
       for (const item of remote) {
-        const owner = item.owner || uniqueOwnerByName.get(item.name) || ''
+        const owner = item.owner || ''
         if (owner) nextOwners[item.name] = owner
       }
       const pulledHead = await runCommandWithOutput('git', ['rev-parse', 'HEAD'], { cwd: getSkillsInstallDir() }).catch(() => '')
@@ -1534,12 +1372,7 @@ export async function handleSkillsRoutes(
           return true
         }
       }
-      const rawUrl = `https://raw.githubusercontent.com/${HUB_SKILLS_OWNER}/${HUB_SKILLS_REPO}/main/skills/${owner}/${name}/SKILL.md`
-      const resp = await fetch(rawUrl)
-      if (!resp.ok) throw new Error(`Failed to fetch SKILL.md: ${resp.status}`)
-      const content = await resp.text()
-      const description = extractSkillDescriptionFromMarkdown(content)
-      setJson(res, 200, { content, description, source: 'remote' })
+      setJson(res, 404, { error: 'Only installed local skills are available in Skills Hub.' })
     } catch (error) {
       setJson(res, 502, { error: getErrorMessage(error, 'Failed to fetch SKILL.md') })
     }
@@ -1547,48 +1380,7 @@ export async function handleSkillsRoutes(
   }
 
   if (req.method === 'POST' && url.pathname === '/codex-api/skills-hub/install') {
-    try {
-      const payload = asRecord(await readJsonBody(req))
-      const owner = typeof payload?.owner === 'string' ? payload.owner : ''
-      const name = typeof payload?.name === 'string' ? payload.name : ''
-      if (!owner || !name) {
-        setJson(res, 400, { error: 'Missing owner or name' })
-        return true
-      }
-      const installerScript = resolveSkillInstallerScriptPath(getCodexHomeDir())
-      if (!installerScript) {
-        throw new Error('Skill installer script not found')
-      }
-      const pythonCommand = resolvePythonCommand()
-      if (!pythonCommand) {
-        throw new Error('Python 3 is required to install skills')
-      }
-      const installDest = await withTimeout(
-        detectUserSkillsDir(appServer),
-        10_000,
-        'detectUserSkillsDir',
-      ).catch(() => getSkillsInstallDir())
-      const skillDir = join(installDest, name)
-      if (existsSync(skillDir)) {
-        await rm(skillDir, { recursive: true, force: true })
-      }
-      await runCommand(pythonCommand.command, [
-        ...pythonCommand.args,
-        installerScript,
-        '--repo', `${HUB_SKILLS_OWNER}/${HUB_SKILLS_REPO}`,
-        '--path', `skills/${owner}/${name}`,
-        '--dest', installDest,
-        '--method', 'git',
-      ], { timeoutMs: 90_000 })
-      try { await withTimeout(ensureInstalledSkillIsValid(appServer, skillDir), 10_000, 'ensureInstalledSkillIsValid') } catch {}
-      const syncState = await readSkillsSyncState()
-      const nextOwners = { ...(syncState.installedOwners ?? {}), [name]: owner }
-      await writeSkillsSyncState({ ...syncState, installedOwners: nextOwners })
-      autoPushSyncedSkills(appServer).catch(() => {})
-      setJson(res, 200, { ok: true, path: skillDir })
-    } catch (error) {
-      setJson(res, 502, { error: getErrorMessage(error, 'Failed to install skill') })
-    }
+    setJson(res, 410, { error: 'Remote Skills Hub installation is disabled.' })
     return true
   }
 

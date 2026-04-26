@@ -1132,38 +1132,6 @@
   @apply text-zinc-200;
 }
 
-:root.dark .new-thread-trending-title {
-  @apply text-zinc-400;
-}
-
-:root.dark .new-thread-trending-scope-dropdown .composer-dropdown-trigger {
-  @apply border-zinc-600 bg-zinc-800 text-zinc-200;
-}
-
-:root.dark .new-thread-trending-scope-dropdown .composer-dropdown-trigger:hover {
-  @apply bg-zinc-700;
-}
-
-:root.dark .new-thread-trending-empty {
-  @apply text-zinc-400;
-}
-
-:root.dark .new-thread-trending-tip {
-  @apply border-zinc-700 bg-zinc-800 hover:border-zinc-600 hover:bg-zinc-700;
-}
-
-:root.dark .new-thread-trending-tip-name {
-  @apply text-zinc-100;
-}
-
-:root.dark .new-thread-trending-tip-meta {
-  @apply text-zinc-400;
-}
-
-:root.dark .new-thread-trending-tip-description {
-  @apply text-zinc-300;
-}
-
 :root.dark .runtime-toggle {
   @apply border-zinc-700 bg-zinc-900;
 }

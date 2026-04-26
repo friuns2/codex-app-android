@@ -129,51 +129,46 @@ This file tracks manual regression and feature verification steps.
 #### Rollback/Cleanup
 - Remove the selected skill chip(s) before leaving the thread, if needed.
 
-### Feature: Skills Hub manual search trigger
+### Feature: Skills Hub local-only installed skills
 
 #### Prerequisites
 - App is running from this repository.
 - Open the `Skills Hub` view.
 
 #### Steps
-1. Type a unique query value in the Skills Hub search input (for example: `docker`), but do not press Enter or click Search yet.
-2. Confirm the browse results do not refresh immediately while typing.
-3. Click the `Search` button.
-4. Change the query text to another value and press Enter in the input.
-5. Clear the query, then click `Search` to reload the default browse list.
+1. Open `Skills Hub`.
+2. Confirm the page shows only locally installed skills.
+3. Confirm there is no remote skill count such as `6818 skills`.
+4. Confirm there are no remote browse cards from the OpenClaw catalog.
 
 #### Expected Results
-- Typing alone does not trigger remote Skills Hub search requests.
-- Results refresh only after explicit submit via the `Search` button or Enter key.
-- Empty-state text (if shown) references the last submitted query.
-- Submitting an empty query returns the default skills listing.
+- Skills Hub does not fetch or display the OpenClaw remote skills catalog.
+- Only locally installed skills are shown.
+- No remote total-count badge is rendered.
 
 #### Rollback/Cleanup
-- Clear the search input and run a blank search to return to default listing.
+- None.
 
-### Feature: Dark theme for trending GitHub projects and local project dropdown
+### Feature: Remove GitHub trending projects from the new-thread screen
 
 #### Prerequisites
 - App is running from this repository.
 - Home/new-thread screen is open.
-- Appearance is set to `Dark` in Settings.
-- `GitHub trending projects` setting is enabled.
+- Any previously saved local storage value for `codex-web-local.github-trending-projects.v1` may still exist from older builds.
 
 #### Steps
-1. On the home/new-thread screen, inspect the `Choose folder` dropdown trigger.
-2. Open the `Choose folder` dropdown and confirm menu/option contrast remains readable in dark mode.
-3. Inspect the `Trending GitHub projects` section title, scope dropdown, and project cards.
-4. Hover a trending project card and the scope dropdown trigger.
-5. Toggle appearance back to `Light`, then return to `Dark`.
+1. Open Settings and inspect the available rows.
+2. Confirm there is no `GitHub trending projects` toggle.
+3. Return to the home/new-thread screen and confirm no trending cards or scope dropdown are shown.
+4. Refresh the page and confirm the UI stays unchanged even if the old local storage key exists.
 
 #### Expected Results
-- Local project dropdown trigger/value uses dark theme colors with readable contrast.
-- Trending section title, empty/loading text, scope dropdown, and cards use dark backgrounds/borders/text.
-- Hover states in dark mode stay visible and do not switch to light backgrounds.
-- Theme switch back/forth preserves correct styling for both controls.
+- Settings no longer offers any GitHub trending projects preference.
+- The home/new-thread screen no longer renders a trending projects section.
+- Refreshing does not restore the removed feature from stale local storage.
 
 #### Rollback/Cleanup
-- Reset appearance to the previous user preference.
+- None.
 
 ### Feature: Dark theme for worktree runtime selector and Skills Hub
 
@@ -2015,27 +2010,6 @@ stays at `source: "NoValues"` permanently. Feature gate `505458` (worktree) retu
 #### Rollback/Cleanup
 - Quit and relaunch Codex.app normally (without `--remote-debugging-port`) to remove CDP access.
 - The injected gate value persists only in memory for the current app session; restarting Codex.app resets it.
-
-### Feature: GitHub trending projects disabled by default on new chat
-
-#### Prerequisites
-- App is running from this repository.
-- Browser local storage key `codex-web-local.github-trending-projects.v1` is unset (fresh profile or manually removed).
-
-#### Steps
-1. Open the app to the new chat/home screen.
-2. Verify the `Trending GitHub projects` section is not shown.
-3. Open Settings and enable `GitHub trending projects`.
-4. Return to new chat/home and verify the trending section appears.
-5. Refresh the page and verify enabled state persists.
-
-#### Expected Results
-- With no saved preference, trending section is hidden by default.
-- Enabling the setting immediately shows trending projects.
-- Saved preference persists across refresh.
-
-#### Rollback/Cleanup
-- Reset `GitHub trending projects` setting to your preferred state.
 
 ### Feature: Lazy message rendering (windowed conversation)
 

@@ -198,10 +198,6 @@
                 <span class="sidebar-settings-toggle" :class="{ 'is-on': dictationAutoSend }" />
               </button>
 
-              <button class="sidebar-settings-row" type="button" :title="SETTINGS_HELP.githubTrendingProjects" @click="toggleGithubTrendingProjects">
-                <span class="sidebar-settings-label">{{ t('GitHub trending projects') }}</span>
-                <span class="sidebar-settings-toggle" :class="{ 'is-on': showGithubTrendingProjects }" />
-              </button>
               <div class="sidebar-settings-row sidebar-settings-row--select" :title="t('Choose the API provider for the Codex backend')">
                 <span class="sidebar-settings-label">{{ t('Provider') }}</span>
                 <select
@@ -679,45 +675,6 @@
                   <strong class="worktree-init-status-title">{{ worktreeInitStatus.title }}</strong>
                   <span class="worktree-init-status-message">{{ worktreeInitStatus.message }}</span>
                 </div>
-                <div v-if="showGithubTrendingProjects" class="new-thread-trending">
-                  <div class="new-thread-trending-header">
-                    <p class="new-thread-trending-title">{{ t('Trending GitHub projects') }}</p>
-                    <ComposerDropdown
-                      class="new-thread-trending-scope-dropdown"
-                      :model-value="githubTipsScope"
-                      :options="githubTipsScopeOptions"
-                      @update:model-value="onGithubTipsScopeChange"
-                    />
-                  </div>
-                  <p v-if="isTrendingProjectsLoading" class="new-thread-trending-empty">{{ t('Loading trending projects...') }}</p>
-                  <p v-else-if="trendingProjects.length === 0" class="new-thread-trending-empty">
-                    {{ t('Trending repos are unavailable right now.') }}
-                  </p>
-                  <div v-else class="new-thread-trending-list">
-                    <button
-                      v-for="project in trendingProjects"
-                      :key="project.id"
-                      type="button"
-                      class="new-thread-trending-tip"
-                      @click="onSelectTrendingProjectTip(project)"
-                    >
-                      <span class="new-thread-trending-tip-name" :title="project.fullName">
-                        <template v-if="project.owner && project.repo">
-                          <span class="new-thread-trending-tip-name-owner">{{ project.owner }}</span>
-                          <span class="new-thread-trending-tip-name-slash">/</span>
-                          <span class="new-thread-trending-tip-name-repo">{{ project.repo }}</span>
-                        </template>
-                        <template v-else>
-                          <span class="new-thread-trending-tip-name-repo">{{ project.fullName }}</span>
-                        </template>
-                      </span>
-                      <span class="new-thread-trending-tip-meta">{{ formatTrendingTipMeta(project) }}</span>
-                      <span class="new-thread-trending-tip-description">
-                        {{ project.description || t('No description available.') }}
-                      </span>
-                    </button>
-                  </div>
-                </div>
               </div>
 
               <div class="composer-with-queue">
@@ -861,7 +818,6 @@ import {
   createWorktree,
   getGitBranchState,
   getWorktreeBranchOptions,
-  getGithubProjectsForScope,
   getAccounts,
   createLocalDirectory,
   getHomeDirectory,
@@ -879,7 +835,7 @@ import {
 } from './api/codexGateway'
 import type { ReasoningEffort, SpeedMode, ThreadScrollState, UiAccountEntry, UiRateLimitWindow, UiServerRequest, UiServerRequestReply, UiThreadTokenUsage } from './types/codex'
 import type { ComposerDraftPayload, ThreadComposerExposed } from './components/content/ThreadComposer.vue'
-import type { GithubTipsScope, GithubTrendingProject, LocalDirectoryEntry, TelegramStatus, WorktreeBranchOption } from './api/codexGateway'
+import type { LocalDirectoryEntry, TelegramStatus, WorktreeBranchOption } from './api/codexGateway'
 import { getFreeModeStatus, setFreeMode, setFreeModeCustomKey, setCustomProvider } from './api/codexGateway'
 import { getPathLeafName, getPathParent, normalizePathForUi } from './pathUtils.js'
 
@@ -900,7 +856,6 @@ const SETTINGS_HELP = {
   chatWidth: t('Choose how wide the conversation column and composer can grow on desktop screens.'),
   dictationClickToToggle: t('Use click-to-start and click-to-stop dictation instead of hold-to-talk.'),
   dictationAutoSend: t('Automatically send transcribed dictation when recording stops.'),
-  githubTrendingProjects: t('Show or hide GitHub trending project cards on the new thread screen.'),
   dictationLanguage: t('Choose transcription language or keep auto-detect.'),
 } as const
 
@@ -1112,9 +1067,6 @@ const homeTerminalOpen = ref(false)
 const isTerminalInputFocused = ref(false)
 const isTerminalKeyboardFocusFallbackActive = ref(false)
 const isThreadTerminalAvailable = ref(true)
-const trendingProjects = ref<GithubTrendingProject[]>([])
-const isTrendingProjectsLoading = ref(false)
-const githubTipsScope = ref<GithubTipsScope>('trending-daily')
 const editingQueuedMessageState = ref<{ threadId: string; queueIndex: number } | null>(null)
 const isRouteSyncInProgress = ref(false)
 const directoryTryInFlightKey = ref('')
@@ -1165,7 +1117,6 @@ const DICTATION_CLICK_TO_TOGGLE_KEY = 'codex-web-local.dictation-click-to-toggle
 const DICTATION_AUTO_SEND_KEY = 'codex-web-local.dictation-auto-send.v1'
 const DICTATION_LANGUAGE_KEY = 'codex-web-local.dictation-language.v1'
 
-const GITHUB_TRENDING_PROJECTS_KEY = 'codex-web-local.github-trending-projects.v1'
 const CHAT_WIDTH_KEY = 'codex-web-local.chat-width.v1'
 const MOBILE_RESUME_RELOAD_MIN_HIDDEN_MS = 400
 const sendWithEnter = ref(loadBoolPref(SEND_WITH_ENTER_KEY, true))
@@ -1177,7 +1128,6 @@ const dictationAutoSend = ref(loadBoolPref(DICTATION_AUTO_SEND_KEY, true))
 const dictationLanguage = ref(loadDictationLanguagePref())
 const dictationLanguageOptions = computed(() => buildDictationLanguageOptions())
 
-const showGithubTrendingProjects = ref(loadBoolPref(GITHUB_TRENDING_PROJECTS_KEY, false))
 const freeModeEnabled = ref(false)
 const freeModeLoading = ref(false)
 const freeModeCustomKey = ref('')
@@ -1479,14 +1429,6 @@ const existingFolderFilteredEntries = computed(() => {
   )
 })
 const darkModeMediaQuery = typeof window !== 'undefined' ? window.matchMedia('(prefers-color-scheme: dark)') : null
-const githubTipsScopeOptions = computed<Array<{ value: GithubTipsScope; label: string }>>(() => [
-  { value: 'search-daily', label: t('Search daily') },
-  { value: 'search-weekly', label: t('Search weekly') },
-  { value: 'search-monthly', label: t('Search monthly') },
-  { value: 'trending-daily', label: t('Trending daily') },
-  { value: 'trending-weekly', label: t('Trending weekly') },
-  { value: 'trending-monthly', label: t('Trending monthly') },
-])
 const chatWidthLabel = computed(() => t(CHAT_WIDTH_PRESETS[chatWidth.value].label))
 const terminalShortcutLabel = computed(() => {
   if (typeof navigator !== 'undefined' && /mac|iphone|ipad|ipod/i.test(navigator.platform)) {
@@ -1539,9 +1481,6 @@ onMounted(() => {
   void refreshTelegramStatus()
   void loadFreeModeStatus()
   void refreshThreadTerminalStatus()
-  if (showGithubTrendingProjects.value) {
-    void loadTrendingProjects()
-  }
 })
 
 onUnmounted(() => {
@@ -2280,37 +2219,6 @@ function onSubmitThreadMessage(payload: { text: string; imageUrls: string[]; fil
   void sendMessageToSelectedThread(text, payload.imageUrls, payload.skills, payload.mode, payload.fileAttachments, queueInsertIndex)
 }
 
-function formatTrendingTipMeta(project: GithubTrendingProject): string {
-  const stars = new Intl.NumberFormat().format(project.stars)
-  if (project.language) return `${project.language} · ★ ${stars}`
-  return `★ ${stars}`
-}
-
-function onGithubTipsScopeChange(nextValue: string): void {
-  const allowed = new Set<GithubTipsScope>([
-    'search-daily',
-    'search-weekly',
-    'search-monthly',
-    'trending-daily',
-    'trending-weekly',
-    'trending-monthly',
-  ])
-  const scope = allowed.has(nextValue as GithubTipsScope) ? (nextValue as GithubTipsScope) : 'trending-daily'
-  if (githubTipsScope.value === scope) return
-  githubTipsScope.value = scope
-}
-
-function onSelectTrendingProjectTip(project: GithubTrendingProject): void {
-  const composer = homeThreadComposerRef.value
-  if (!composer) return
-  composer.hydrateDraft({
-    text: `Clone this GitHub project and run it: ${project.url}\nThen explain what this project does in very simple words a 5th grader can understand.`,
-    imageUrls: [],
-    fileAttachments: [],
-    skills: [],
-  })
-}
-
 function onEditQueuedMessage(messageId: string): void {
   const queueIndex = selectedThreadQueuedMessages.value.findIndex((item) => item.id === messageId)
   const message = queueIndex >= 0 ? selectedThreadQueuedMessages.value[queueIndex] : undefined
@@ -2687,16 +2595,6 @@ async function loadExistingFolderListing(path: string): Promise<void> {
   }
 }
 
-async function loadTrendingProjects(): Promise<void> {
-  isTrendingProjectsLoading.value = true
-  try {
-    trendingProjects.value = await getGithubProjectsForScope(githubTipsScope.value, 6)
-  } catch {
-    trendingProjects.value = []
-  } finally {
-    isTrendingProjectsLoading.value = false
-  }
-}
 function joinPath(parent: string, child: string): string {
   const rawParent = normalizePathForUi(parent).trim()
   const normalizedChild = normalizePathForUi(child).trim().replace(/^[\\/]+/u, '')
@@ -2948,11 +2846,6 @@ function toggleDictationAutoSend(): void {
   window.localStorage.setItem(DICTATION_AUTO_SEND_KEY, dictationAutoSend.value ? '1' : '0')
 }
 
-
-function toggleGithubTrendingProjects(): void {
-  showGithubTrendingProjects.value = !showGithubTrendingProjects.value
-  window.localStorage.setItem(GITHUB_TRENDING_PROJECTS_KEY, showGithubTrendingProjects.value ? '1' : '0')
-}
 
 async function onProviderChange(provider: string): Promise<void> {
   if (freeModeLoading.value) return
@@ -3309,25 +3202,6 @@ watch(
 
     if (route.name === 'thread' && routeThreadId.value === threadId) return
     await router.replace({ name: 'thread', params: { threadId } })
-  },
-)
-
-watch(
-  () => githubTipsScope.value,
-  () => {
-    if (!showGithubTrendingProjects.value) return
-    void loadTrendingProjects()
-  },
-)
-
-watch(
-  () => showGithubTrendingProjects.value,
-  (enabled) => {
-    if (!enabled) {
-      trendingProjects.value = []
-      return
-    }
-    void loadTrendingProjects()
   },
 )
 
@@ -3916,71 +3790,6 @@ async function loadWorktreeBranches(sourceCwd: string): Promise<void> {
 
 .new-thread-runtime-help {
   @apply mt-2 mb-0 max-w-3xl text-center text-xs text-zinc-500;
-}
-
-.new-thread-trending {
-  @apply mt-4 w-full max-w-3xl;
-}
-
-.new-thread-trending-header {
-  @apply mb-2 flex items-center justify-between gap-2;
-}
-
-.new-thread-trending-title {
-  @apply m-0 text-xs font-medium uppercase tracking-wide text-zinc-500;
-}
-
-.new-thread-trending-scope-dropdown {
-  @apply min-w-40;
-}
-
-.new-thread-trending-scope-dropdown :deep(.composer-dropdown-trigger) {
-  @apply h-8 rounded-md border border-zinc-200 bg-white px-2 py-1 text-xs text-zinc-700;
-}
-
-.new-thread-trending-empty {
-  @apply m-0 text-sm text-zinc-500;
-}
-
-.new-thread-trending-list {
-  @apply grid grid-cols-2 sm:grid-cols-3 gap-2;
-  grid-template-rows: repeat(2, minmax(0, 1fr));
-}
-
-.new-thread-trending-tip {
-  @apply flex cursor-pointer flex-col items-start gap-1 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-left transition hover:border-zinc-300 hover:bg-zinc-50;
-  container-type: inline-size;
-}
-
-.new-thread-trending-tip-name {
-  @apply w-full truncate text-sm font-medium text-zinc-900;
-}
-
-.new-thread-trending-tip-name-owner {
-  @apply inline;
-}
-
-.new-thread-trending-tip-name-slash {
-  @apply inline;
-}
-
-.new-thread-trending-tip-name-repo {
-  @apply inline;
-}
-
-@container (max-width: 220px) {
-  .new-thread-trending-tip-name-owner,
-  .new-thread-trending-tip-name-slash {
-    display: none;
-  }
-}
-
-.new-thread-trending-tip-meta {
-  @apply text-xs text-zinc-500;
-}
-
-.new-thread-trending-tip-description {
-  @apply line-clamp-2 text-xs text-zinc-600;
 }
 
 .worktree-init-status {

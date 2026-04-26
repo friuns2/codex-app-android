@@ -734,7 +734,7 @@ const tabs: Array<{ id: DirectoryTab; label: string; subtitle: string }> = [
   { id: 'apps', label: 'Apps', subtitle: 'Connect Codex to external apps and services.' },
   { id: 'composio', label: 'Composio', subtitle: 'Browse Composio connectors, auth state, and ready-to-try integrations.' },
   { id: 'mcps', label: 'MCPs', subtitle: 'Inspect configured MCP servers, tools, and resources.' },
-  { id: 'skills', label: 'Skills', subtitle: 'Browse and discover skills from the OpenClaw community.' },
+  { id: 'skills', label: 'Skills', subtitle: 'Manage installed skills and GitHub sync state.' },
 ]
 
 const activeTab = ref<DirectoryTab>('plugins')
