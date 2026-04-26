@@ -37,6 +37,22 @@ const threadConversationVue = readFileSync(resolve(process.cwd(), 'src/component
 const desktopLayoutVue = readFileSync(resolve(process.cwd(), 'src/components/layout/DesktopLayout.vue'), 'utf8')
 const sidebarThreadTreeVue = readFileSync(resolve(process.cwd(), 'src/components/sidebar/SidebarThreadTree.vue'), 'utf8')
 
+function getThemeTokenBlock(theme: string, appearance: string): Record<string, string> {
+  const escapedTheme = theme.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const escapedAppearance = appearance.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const match = styleCss.match(
+    new RegExp(`:root\\[data-theme='${escapedTheme}'\\]\\[data-appearance='${escapedAppearance}'\\]\\s*\\{([\\s\\S]*?)\\n\\}`)
+  )
+  assert.ok(match, `missing token block for ${theme}/${appearance}`)
+
+  return Object.fromEntries(
+    Array.from(match[1].matchAll(/--([a-z0-9-]+):\s*([^;]+);/g)).map((tokenMatch) => [
+      `--${tokenMatch[1]}`,
+      tokenMatch[2].trim(),
+    ])
+  )
+}
+
 test('appearance modes remain system, light, and dark', () => {
   assert.deepEqual(APPEARANCE_MODES, ['system', 'light', 'dark'])
   assert.equal(getEffectiveTheme('system', false), 'light')
@@ -126,6 +142,122 @@ test('shared stylesheet still defines token blocks and keeps macos styling scope
   )
 })
 
+test('default theme tokens resolve to the legacy light palette', () => {
+  const tokens = getThemeTokenBlock('default', 'light')
+
+  assert.equal(tokens['--theme-body-background'], '#f1f5f9')
+  assert.equal(tokens['--theme-shell-bg'], '#f1f5f9')
+  assert.equal(tokens['--theme-sidebar-bg'], '#f1f5f9')
+  assert.equal(tokens['--theme-main-bg'], '#ffffff')
+  assert.equal(tokens['--theme-panel-bg'], '#ffffff')
+  assert.equal(tokens['--theme-panel-subtle-bg'], '#fafafa')
+  assert.equal(tokens['--theme-control-bg'], '#ffffff')
+  assert.equal(tokens['--theme-control-hover-bg'], '#fafafa')
+  assert.equal(tokens['--theme-control-active-bg'], '#f4f4f5')
+  assert.equal(tokens['--theme-selection-bg'], '#e4e4e7')
+  assert.equal(tokens['--theme-text-primary'], '#0f172a')
+  assert.equal(tokens['--theme-text-secondary'], '#3f3f46')
+  assert.equal(tokens['--theme-text-subtle'], '#52525b')
+  assert.equal(tokens['--theme-text-muted'], '#71717a')
+  assert.equal(tokens['--theme-code-bg'], '#020617')
+  assert.equal(tokens['--theme-code-header-bg'], 'rgba(15, 23, 42, 0.94)')
+  assert.equal(tokens['--theme-code-text'], '#f1f5f9')
+  assert.equal(tokens['--theme-code-muted'], '#94a3b8')
+  assert.equal(tokens['--theme-message-text'], '#1e293b')
+  assert.equal(tokens['--theme-message-heading'], '#0f172a')
+  assert.equal(tokens['--theme-message-muted'], '#64748b')
+  assert.equal(tokens['--theme-message-blockquote-border'], '#cbd5e1')
+  assert.equal(tokens['--theme-message-blockquote-bg'], 'rgba(248, 250, 252, 0.7)')
+  assert.equal(tokens['--theme-message-blockquote-text'], '#334155')
+  assert.equal(tokens['--theme-message-inline-code-border'], '#e2e8f0')
+  assert.equal(tokens['--theme-message-inline-code-bg'], 'rgba(241, 245, 249, 0.6)')
+  assert.equal(tokens['--theme-message-inline-code-text'], '#0f172a')
+  assert.equal(tokens['--theme-message-table-bg'], '#ffffff')
+  assert.equal(tokens['--theme-message-table-head-bg'], '#f1f5f9')
+  assert.equal(tokens['--theme-message-divider-bg'], 'rgba(203, 213, 225, 0.8)')
+  assert.equal(tokens['--theme-plan-bg'], '#f0f9ff')
+  assert.equal(tokens['--theme-plan-border'], '#bae6fd')
+  assert.equal(tokens['--theme-plan-card-text'], '#0f172a')
+  assert.equal(tokens['--theme-plan-title'], '#0c4a6e')
+  assert.equal(tokens['--theme-plan-text'], '#334155')
+  assert.equal(tokens['--theme-plan-badge-bg'], '#bae6fd')
+  assert.equal(tokens['--theme-plan-badge-text'], '#0c4a6e')
+  assert.equal(tokens['--theme-plan-inline-code-bg'], 'rgba(226, 232, 240, 0.8)')
+  assert.equal(tokens['--theme-plan-inline-code-text'], '#0f172a')
+  assert.equal(tokens['--theme-plan-table-bg'], 'rgba(255, 255, 255, 0.9)')
+  assert.equal(tokens['--theme-plan-step-bg'], 'rgba(255, 255, 255, 0.8)')
+  assert.equal(tokens['--theme-plan-step-border'], 'rgba(255, 255, 255, 0.7)')
+  assert.equal(tokens['--theme-plan-step-text'], '#1e293b')
+  assert.equal(tokens['--theme-plan-step-status-bg'], '#e2e8f0')
+  assert.equal(tokens['--theme-plan-step-status-text'], '#334155')
+  assert.equal(tokens['--theme-plan-step-completed-bg'], 'rgba(236, 253, 245, 0.8)')
+  assert.equal(tokens['--theme-plan-step-completed-border'], '#a7f3d0')
+  assert.equal(tokens['--theme-plan-step-completed-status-bg'], '#a7f3d0')
+  assert.equal(tokens['--theme-plan-step-completed-status-text'], '#064e3b')
+  assert.equal(tokens['--theme-plan-step-in-progress-bg'], 'rgba(255, 251, 235, 0.8)')
+  assert.equal(tokens['--theme-plan-step-in-progress-border'], '#fde68a')
+  assert.equal(tokens['--theme-plan-step-in-progress-status-bg'], '#fde68a')
+  assert.equal(tokens['--theme-plan-step-in-progress-status-text'], '#78350f')
+})
+
+test('default theme tokens resolve to the legacy dark palette', () => {
+  const tokens = getThemeTokenBlock('default', 'dark')
+
+  assert.equal(tokens['--theme-body-background'], '#18181b')
+  assert.equal(tokens['--theme-shell-bg'], '#18181b')
+  assert.equal(tokens['--theme-sidebar-bg'], '#18181b')
+  assert.equal(tokens['--theme-main-bg'], '#09090b')
+  assert.equal(tokens['--theme-panel-bg'], '#27272a')
+  assert.equal(tokens['--theme-panel-subtle-bg'], '#27272a')
+  assert.equal(tokens['--theme-control-bg'], '#3f3f46')
+  assert.equal(tokens['--theme-control-hover-bg'], '#3f3f46')
+  assert.equal(tokens['--theme-control-active-bg'], '#3f3f46')
+  assert.equal(tokens['--theme-selection-bg'], '#27272a')
+  assert.equal(tokens['--theme-text-primary'], '#f4f4f5')
+  assert.equal(tokens['--theme-text-secondary'], '#d4d4d8')
+  assert.equal(tokens['--theme-text-subtle'], '#d4d4d8')
+  assert.equal(tokens['--theme-text-muted'], '#a1a1aa')
+  assert.equal(tokens['--theme-code-bg'], '#09090b')
+  assert.equal(tokens['--theme-code-header-bg'], '#18181b')
+  assert.equal(tokens['--theme-code-text'], '#f4f4f5')
+  assert.equal(tokens['--theme-code-muted'], '#a1a1aa')
+  assert.equal(tokens['--theme-message-text'], '#e4e4e7')
+  assert.equal(tokens['--theme-message-heading'], '#f4f4f5')
+  assert.equal(tokens['--theme-message-muted'], '#a1a1aa')
+  assert.equal(tokens['--theme-message-blockquote-border'], '#52525b')
+  assert.equal(tokens['--theme-message-blockquote-bg'], 'rgba(39, 39, 42, 0.7)')
+  assert.equal(tokens['--theme-message-blockquote-text'], '#d4d4d8')
+  assert.equal(tokens['--theme-message-inline-code-border'], '#52525b')
+  assert.equal(tokens['--theme-message-inline-code-bg'], 'rgba(63, 63, 70, 0.6)')
+  assert.equal(tokens['--theme-message-inline-code-text'], '#e4e4e7')
+  assert.equal(tokens['--theme-message-table-bg'], 'rgba(24, 24, 27, 0.9)')
+  assert.equal(tokens['--theme-message-table-head-bg'], '#27272a')
+  assert.equal(tokens['--theme-message-divider-bg'], 'rgba(63, 63, 70, 0.8)')
+  assert.equal(tokens['--theme-plan-bg'], 'rgba(8, 47, 73, 0.4)')
+  assert.equal(tokens['--theme-plan-border'], '#075985')
+  assert.equal(tokens['--theme-plan-card-text'], '#0f172a')
+  assert.equal(tokens['--theme-plan-title'], '#bae6fd')
+  assert.equal(tokens['--theme-plan-text'], '#d4d4d8')
+  assert.equal(tokens['--theme-plan-badge-bg'], '#075985')
+  assert.equal(tokens['--theme-plan-badge-text'], '#e0f2fe')
+  assert.equal(tokens['--theme-plan-inline-code-bg'], 'rgba(63, 63, 70, 0.6)')
+  assert.equal(tokens['--theme-plan-inline-code-text'], '#e4e4e7')
+  assert.equal(tokens['--theme-plan-table-bg'], 'rgba(24, 24, 27, 0.9)')
+  assert.equal(tokens['--theme-plan-step-bg'], 'rgba(24, 24, 27, 0.7)')
+  assert.equal(tokens['--theme-plan-step-border'], '#3f3f46')
+  assert.equal(tokens['--theme-plan-step-text'], '#e4e4e7')
+  assert.equal(tokens['--theme-plan-step-status-bg'], '#3f3f46')
+  assert.equal(tokens['--theme-plan-step-status-text'], '#e4e4e7')
+  assert.equal(tokens['--theme-plan-step-completed-bg'], 'rgba(2, 44, 34, 0.4)')
+  assert.equal(tokens['--theme-plan-step-completed-border'], '#064e3b')
+  assert.equal(tokens['--theme-plan-step-completed-status-bg'], '#064e3b')
+  assert.equal(tokens['--theme-plan-step-completed-status-text'], '#a7f3d0')
+  assert.equal(tokens['--theme-plan-step-in-progress-bg'], 'rgba(69, 26, 3, 0.4)')
+  assert.equal(tokens['--theme-plan-step-in-progress-border'], '#78350f')
+  assert.equal(tokens['--theme-plan-step-in-progress-status-bg'], '#78350f')
+  assert.equal(tokens['--theme-plan-step-in-progress-status-text'], '#fde68a')
+})
+
 test('legacy settings styling stays on the main branch base with explicit appearance overrides while skills hub stays tokenized', () => {
   assert.match(
     appVue,
@@ -173,11 +305,11 @@ test('legacy settings styling stays on the main branch base with explicit appear
   )
   assert.match(
     skillsHubVue,
-    /\.skills-hub-search-wrap\s*\{\s*@apply flex-1 flex items-center gap-2 rounded-xl border px-3 py-2 transition;\s*border-color: var\(--theme-border\);\s*background: var\(--theme-panel-bg\);/
+    /\.skills-hub-sort\s*\{\s*@apply shrink-0 rounded-lg border px-2\.5 py-1\.5 text-xs font-medium transition cursor-pointer;\s*border-color: var\(--theme-border\);\s*background: var\(--theme-control-bg\);\s*color: var\(--theme-text-secondary\);/
   )
   assert.match(
     skillsHubVue,
-    /\.skills-hub-search-btn\s*\{\s*@apply shrink-0 rounded-md border px-2 py-1 text-xs font-medium transition cursor-pointer;\s*border-color: var\(--theme-border\);\s*background: var\(--theme-control-bg\);\s*color: var\(--theme-text-secondary\);/
+    /\.skills-sync-badge\s*\{\s*@apply text-xs rounded-md border px-2 py-0\.5;\s*border-color: var\(--theme-border\);\s*background: var\(--theme-control-bg\);\s*color: var\(--theme-text-secondary\);/
   )
   assert.match(
     skillsHubVue,
@@ -231,11 +363,15 @@ test('legacy component styling remains the default base for non-macos themes', (
   )
   assert.match(
     threadConversationVue,
-    /\.plan-card\s*\{\s*@apply flex max-w-\[min\(var\(--chat-card-max,76ch\),100%\)\] flex-col gap-3 rounded-2xl border px-4 py-3;\s*border-color: var\(--theme-border\);\s*background: var\(--theme-panel-bg\);\s*color: var\(--theme-text-primary\);/
+    /\.plan-card\s*\{\s*@apply flex max-w-\[min\(var\(--chat-card-max,76ch\),100%\)\] flex-col gap-3 rounded-2xl border px-4 py-3;\s*border-color: var\(--theme-plan-border\);\s*background: var\(--theme-plan-bg\);\s*color: var\(--theme-plan-card-text\);/
   )
   assert.doesNotMatch(
     threadConversationVue,
     /\.plan-card\s*\{\s*@apply flex max-w-\[min\(var\(--chat-card-max,76ch\),100%\)\] flex-col gap-3 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-slate-900;/
+  )
+  assert.doesNotMatch(
+    threadConversationVue,
+    /\.message-card\[data-role='assistant'\],\s*\.message-card\[data-role='system'\]\s*\{[^}]*width: fit-content;/
   )
   assert.match(
     sidebarThreadTreeVue,

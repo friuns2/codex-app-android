@@ -27,27 +27,28 @@
   --theme-shell-bg: #f1f5f9;
   --theme-sidebar-bg: #f1f5f9;
   --theme-main-bg: #ffffff;
-  --theme-panel-bg: rgba(255, 255, 255, 0.94);
-  --theme-panel-subtle-bg: rgba(248, 250, 252, 0.9);
-  --theme-elevated-bg: rgba(255, 255, 255, 0.96);
+  --theme-panel-bg: #ffffff;
+  --theme-panel-subtle-bg: #fafafa;
+  --theme-elevated-bg: #ffffff;
   --theme-elevated-strong-bg: #ffffff;
   --theme-user-bubble-bg: #e2e8f0;
-  --theme-code-bg: #09090b;
-  --theme-code-header-bg: rgba(24, 24, 27, 0.92);
-  --theme-code-text: #f8fafc;
+  --theme-code-bg: #020617;
+  --theme-code-header-bg: rgba(15, 23, 42, 0.94);
+  --theme-code-text: #f1f5f9;
   --theme-code-muted: #94a3b8;
   --theme-border: #e4e4e7;
   --theme-border-strong: #d4d4d8;
   --theme-border-soft: rgba(228, 228, 231, 0.72);
   --theme-text-primary: #0f172a;
   --theme-text-secondary: #3f3f46;
+  --theme-text-subtle: #52525b;
   --theme-text-muted: #71717a;
   --theme-link: #0969da;
   --theme-link-hover: #1f6feb;
   --theme-link-decoration: rgba(9, 105, 218, 0.28);
-  --theme-control-bg: rgba(255, 255, 255, 0.94);
-  --theme-control-hover-bg: #f4f4f5;
-  --theme-control-active-bg: #e4e4e7;
+  --theme-control-bg: #ffffff;
+  --theme-control-hover-bg: #fafafa;
+  --theme-control-active-bg: #f4f4f5;
   --theme-accent: #18181b;
   --theme-accent-hover: #27272a;
   --theme-accent-contrast: #ffffff;
@@ -75,9 +76,44 @@
   --theme-info-soft-bg: rgba(14, 165, 233, 0.1);
   --theme-info-border: rgba(14, 165, 233, 0.35);
   --theme-info-text: #0369a1;
-  --theme-selection-bg: rgba(228, 228, 231, 0.88);
+  --theme-selection-bg: #e4e4e7;
   --theme-selection-border: rgba(212, 212, 216, 0.9);
   --theme-selection-text: #0f172a;
+  --theme-message-text: #1e293b;
+  --theme-message-heading: #0f172a;
+  --theme-message-muted: #64748b;
+  --theme-message-blockquote-border: #cbd5e1;
+  --theme-message-blockquote-bg: rgba(248, 250, 252, 0.7);
+  --theme-message-blockquote-text: #334155;
+  --theme-message-inline-code-border: #e2e8f0;
+  --theme-message-inline-code-bg: rgba(241, 245, 249, 0.6);
+  --theme-message-inline-code-text: #0f172a;
+  --theme-message-table-bg: #ffffff;
+  --theme-message-table-head-bg: #f1f5f9;
+  --theme-message-divider-bg: rgba(203, 213, 225, 0.8);
+  --theme-plan-bg: #f0f9ff;
+  --theme-plan-border: #bae6fd;
+  --theme-plan-card-text: #0f172a;
+  --theme-plan-title: #0c4a6e;
+  --theme-plan-text: #334155;
+  --theme-plan-badge-bg: #bae6fd;
+  --theme-plan-badge-text: #0c4a6e;
+  --theme-plan-inline-code-bg: rgba(226, 232, 240, 0.8);
+  --theme-plan-inline-code-text: #0f172a;
+  --theme-plan-table-bg: rgba(255, 255, 255, 0.9);
+  --theme-plan-step-bg: rgba(255, 255, 255, 0.8);
+  --theme-plan-step-border: rgba(255, 255, 255, 0.7);
+  --theme-plan-step-text: #1e293b;
+  --theme-plan-step-status-bg: #e2e8f0;
+  --theme-plan-step-status-text: #334155;
+  --theme-plan-step-completed-bg: rgba(236, 253, 245, 0.8);
+  --theme-plan-step-completed-border: #a7f3d0;
+  --theme-plan-step-completed-status-bg: #a7f3d0;
+  --theme-plan-step-completed-status-text: #064e3b;
+  --theme-plan-step-in-progress-bg: rgba(255, 251, 235, 0.8);
+  --theme-plan-step-in-progress-border: #fde68a;
+  --theme-plan-step-in-progress-status-bg: #fde68a;
+  --theme-plan-step-in-progress-status-text: #78350f;
   --theme-overlay: rgba(15, 23, 42, 0.4);
   --theme-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
   --theme-shadow-md: 0 14px 36px rgba(15, 23, 42, 0.1);
@@ -92,13 +128,13 @@
   --theme-shell-bg: #18181b;
   --theme-sidebar-bg: #18181b;
   --theme-main-bg: #09090b;
-  --theme-panel-bg: rgba(39, 39, 42, 0.96);
-  --theme-panel-subtle-bg: rgba(39, 39, 42, 0.84);
-  --theme-elevated-bg: rgba(39, 39, 42, 0.96);
+  --theme-panel-bg: #27272a;
+  --theme-panel-subtle-bg: #27272a;
+  --theme-elevated-bg: #27272a;
   --theme-elevated-strong-bg: #27272a;
   --theme-user-bubble-bg: #3f3f46;
   --theme-code-bg: #09090b;
-  --theme-code-header-bg: rgba(24, 24, 27, 0.96);
+  --theme-code-header-bg: #18181b;
   --theme-code-text: #f4f4f5;
   --theme-code-muted: #a1a1aa;
   --theme-border: #3f3f46;
@@ -106,13 +142,14 @@
   --theme-border-soft: rgba(63, 63, 70, 0.82);
   --theme-text-primary: #f4f4f5;
   --theme-text-secondary: #d4d4d8;
+  --theme-text-subtle: #d4d4d8;
   --theme-text-muted: #a1a1aa;
   --theme-link: #7dd3fc;
   --theme-link-hover: #bae6fd;
   --theme-link-decoration: rgba(125, 211, 252, 0.28);
-  --theme-control-bg: rgba(39, 39, 42, 0.94);
+  --theme-control-bg: #3f3f46;
   --theme-control-hover-bg: #3f3f46;
-  --theme-control-active-bg: #52525b;
+  --theme-control-active-bg: #3f3f46;
   --theme-accent: #3f3f46;
   --theme-accent-hover: #52525b;
   --theme-accent-contrast: #f4f4f5;
@@ -140,9 +177,44 @@
   --theme-info-soft-bg: rgba(14, 165, 233, 0.12);
   --theme-info-border: rgba(14, 165, 233, 0.35);
   --theme-info-text: #bae6fd;
-  --theme-selection-bg: rgba(63, 63, 70, 0.92);
+  --theme-selection-bg: #27272a;
   --theme-selection-border: rgba(82, 82, 91, 0.92);
   --theme-selection-text: #f4f4f5;
+  --theme-message-text: #e4e4e7;
+  --theme-message-heading: #f4f4f5;
+  --theme-message-muted: #a1a1aa;
+  --theme-message-blockquote-border: #52525b;
+  --theme-message-blockquote-bg: rgba(39, 39, 42, 0.7);
+  --theme-message-blockquote-text: #d4d4d8;
+  --theme-message-inline-code-border: #52525b;
+  --theme-message-inline-code-bg: rgba(63, 63, 70, 0.6);
+  --theme-message-inline-code-text: #e4e4e7;
+  --theme-message-table-bg: rgba(24, 24, 27, 0.9);
+  --theme-message-table-head-bg: #27272a;
+  --theme-message-divider-bg: rgba(63, 63, 70, 0.8);
+  --theme-plan-bg: rgba(8, 47, 73, 0.4);
+  --theme-plan-border: #075985;
+  --theme-plan-card-text: #0f172a;
+  --theme-plan-title: #bae6fd;
+  --theme-plan-text: #d4d4d8;
+  --theme-plan-badge-bg: #075985;
+  --theme-plan-badge-text: #e0f2fe;
+  --theme-plan-inline-code-bg: rgba(63, 63, 70, 0.6);
+  --theme-plan-inline-code-text: #e4e4e7;
+  --theme-plan-table-bg: rgba(24, 24, 27, 0.9);
+  --theme-plan-step-bg: rgba(24, 24, 27, 0.7);
+  --theme-plan-step-border: #3f3f46;
+  --theme-plan-step-text: #e4e4e7;
+  --theme-plan-step-status-bg: #3f3f46;
+  --theme-plan-step-status-text: #e4e4e7;
+  --theme-plan-step-completed-bg: rgba(2, 44, 34, 0.4);
+  --theme-plan-step-completed-border: #064e3b;
+  --theme-plan-step-completed-status-bg: #064e3b;
+  --theme-plan-step-completed-status-text: #a7f3d0;
+  --theme-plan-step-in-progress-bg: rgba(69, 26, 3, 0.4);
+  --theme-plan-step-in-progress-border: #78350f;
+  --theme-plan-step-in-progress-status-bg: #78350f;
+  --theme-plan-step-in-progress-status-text: #fde68a;
   --theme-overlay: rgba(0, 0, 0, 0.42);
   --theme-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
   --theme-shadow-md: 0 14px 36px rgba(0, 0, 0, 0.32);
@@ -171,6 +243,7 @@
   --theme-border-soft: rgba(213, 221, 232, 0.8);
   --theme-text-primary: #111827;
   --theme-text-secondary: #374151;
+  --theme-text-subtle: #4b5563;
   --theme-text-muted: #6b7280;
   --theme-link: #2563eb;
   --theme-link-hover: #1d4ed8;
@@ -208,6 +281,41 @@
   --theme-selection-bg: rgba(219, 228, 239, 0.9);
   --theme-selection-border: rgba(193, 204, 218, 0.9);
   --theme-selection-text: #111827;
+  --theme-message-text: #1f2937;
+  --theme-message-heading: #111827;
+  --theme-message-muted: #6b7280;
+  --theme-message-blockquote-border: #c1ccda;
+  --theme-message-blockquote-bg: rgba(239, 244, 250, 0.72);
+  --theme-message-blockquote-text: #374151;
+  --theme-message-inline-code-border: #d5dde8;
+  --theme-message-inline-code-bg: rgba(219, 228, 239, 0.6);
+  --theme-message-inline-code-text: #111827;
+  --theme-message-table-bg: #ffffff;
+  --theme-message-table-head-bg: #eef2f7;
+  --theme-message-divider-bg: rgba(193, 204, 218, 0.8);
+  --theme-plan-bg: rgba(219, 234, 254, 0.72);
+  --theme-plan-border: rgba(147, 197, 253, 0.72);
+  --theme-plan-card-text: #111827;
+  --theme-plan-title: #1e3a8a;
+  --theme-plan-text: #374151;
+  --theme-plan-badge-bg: rgba(191, 219, 254, 0.9);
+  --theme-plan-badge-text: #1e3a8a;
+  --theme-plan-inline-code-bg: rgba(213, 221, 232, 0.8);
+  --theme-plan-inline-code-text: #111827;
+  --theme-plan-table-bg: rgba(255, 255, 255, 0.9);
+  --theme-plan-step-bg: rgba(255, 255, 255, 0.78);
+  --theme-plan-step-border: rgba(255, 255, 255, 0.68);
+  --theme-plan-step-text: #1f2937;
+  --theme-plan-step-status-bg: #dbe4ef;
+  --theme-plan-step-status-text: #374151;
+  --theme-plan-step-completed-bg: rgba(16, 185, 129, 0.12);
+  --theme-plan-step-completed-border: rgba(16, 185, 129, 0.35);
+  --theme-plan-step-completed-status-bg: rgba(16, 185, 129, 0.32);
+  --theme-plan-step-completed-status-text: #047857;
+  --theme-plan-step-in-progress-bg: rgba(245, 158, 11, 0.12);
+  --theme-plan-step-in-progress-border: rgba(245, 158, 11, 0.35);
+  --theme-plan-step-in-progress-status-bg: rgba(245, 158, 11, 0.32);
+  --theme-plan-step-in-progress-status-text: #b45309;
   --theme-overlay: rgba(15, 23, 42, 0.42);
   --theme-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.07);
   --theme-shadow-md: 0 16px 36px rgba(15, 23, 42, 0.11);
@@ -236,6 +344,7 @@
   --theme-border-soft: rgba(55, 65, 81, 0.82);
   --theme-text-primary: #e5e7eb;
   --theme-text-secondary: #cbd5e1;
+  --theme-text-subtle: #cbd5e1;
   --theme-text-muted: #9ca3af;
   --theme-link: #93c5fd;
   --theme-link-hover: #bfdbfe;
@@ -273,6 +382,41 @@
   --theme-selection-bg: rgba(55, 65, 81, 0.92);
   --theme-selection-border: rgba(75, 85, 99, 0.92);
   --theme-selection-text: #e5e7eb;
+  --theme-message-text: #d1d5db;
+  --theme-message-heading: #f9fafb;
+  --theme-message-muted: #9ca3af;
+  --theme-message-blockquote-border: #4b5563;
+  --theme-message-blockquote-bg: rgba(31, 41, 55, 0.7);
+  --theme-message-blockquote-text: #cbd5e1;
+  --theme-message-inline-code-border: #4b5563;
+  --theme-message-inline-code-bg: rgba(55, 65, 81, 0.6);
+  --theme-message-inline-code-text: #e5e7eb;
+  --theme-message-table-bg: rgba(17, 24, 39, 0.9);
+  --theme-message-table-head-bg: #1f2937;
+  --theme-message-divider-bg: rgba(55, 65, 81, 0.8);
+  --theme-plan-bg: rgba(30, 58, 138, 0.28);
+  --theme-plan-border: rgba(59, 130, 246, 0.35);
+  --theme-plan-card-text: #111827;
+  --theme-plan-title: #bfdbfe;
+  --theme-plan-text: #dbeafe;
+  --theme-plan-badge-bg: rgba(59, 130, 246, 0.2);
+  --theme-plan-badge-text: #bfdbfe;
+  --theme-plan-inline-code-bg: rgba(55, 65, 81, 0.6);
+  --theme-plan-inline-code-text: #e5e7eb;
+  --theme-plan-table-bg: rgba(17, 24, 39, 0.9);
+  --theme-plan-step-bg: rgba(17, 24, 39, 0.7);
+  --theme-plan-step-border: #374151;
+  --theme-plan-step-text: #e5e7eb;
+  --theme-plan-step-status-bg: #374151;
+  --theme-plan-step-status-text: #e5e7eb;
+  --theme-plan-step-completed-bg: rgba(6, 78, 59, 0.38);
+  --theme-plan-step-completed-border: rgba(16, 185, 129, 0.35);
+  --theme-plan-step-completed-status-bg: #064e3b;
+  --theme-plan-step-completed-status-text: #a7f3d0;
+  --theme-plan-step-in-progress-bg: rgba(120, 53, 15, 0.32);
+  --theme-plan-step-in-progress-border: rgba(245, 158, 11, 0.35);
+  --theme-plan-step-in-progress-status-bg: #78350f;
+  --theme-plan-step-in-progress-status-text: #fde68a;
   --theme-overlay: rgba(0, 0, 0, 0.46);
   --theme-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
   --theme-shadow-md: 0 14px 36px rgba(0, 0, 0, 0.34);
@@ -319,6 +463,7 @@
   --theme-border-soft: rgb(var(--color-textQuinary-light));
   --theme-text-primary: rgb(var(--color-text-light));
   --theme-text-secondary: rgb(var(--color-textSecondary-light));
+  --theme-text-subtle: rgb(var(--color-textSecondary-light));
   --theme-text-muted: rgb(var(--color-textTertiary-light));
   --theme-link: rgb(var(--color-blue-light));
   --theme-link-hover: rgb(var(--color-blue-dark));
@@ -356,6 +501,41 @@
   --theme-selection-bg: rgb(var(--color-selectionFocused-light));
   --theme-selection-border: color-mix(in srgb, rgb(var(--color-selectionFocusedFill-light)) 32%, transparent);
   --theme-selection-text: #12304f;
+  --theme-message-text: rgb(var(--color-text-light));
+  --theme-message-heading: rgb(var(--color-text-light));
+  --theme-message-muted: rgb(var(--color-textTertiary-light));
+  --theme-message-blockquote-border: rgb(var(--color-fillSecondary-light));
+  --theme-message-blockquote-bg: rgb(var(--color-materialThin-light));
+  --theme-message-blockquote-text: rgb(var(--color-textSecondary-light));
+  --theme-message-inline-code-border: rgb(var(--color-fill-light));
+  --theme-message-inline-code-bg: rgb(var(--color-controlEnabled-light));
+  --theme-message-inline-code-text: rgb(var(--color-text-light));
+  --theme-message-table-bg: rgb(var(--color-materialThick-light));
+  --theme-message-table-head-bg: rgb(var(--color-materialMedium-light));
+  --theme-message-divider-bg: rgb(var(--color-fillSecondary-light));
+  --theme-plan-bg: rgb(var(--color-materialMedium-light));
+  --theme-plan-border: rgb(var(--color-fillSecondary-light));
+  --theme-plan-card-text: rgb(var(--color-text-light));
+  --theme-plan-title: rgb(var(--color-text-light));
+  --theme-plan-text: rgb(var(--color-textSecondary-light));
+  --theme-plan-badge-bg: rgb(var(--color-selectionUnfocusedFill-light));
+  --theme-plan-badge-text: rgb(var(--color-text-light));
+  --theme-plan-inline-code-bg: rgb(var(--color-controlEnabled-light));
+  --theme-plan-inline-code-text: rgb(var(--color-text-light));
+  --theme-plan-table-bg: rgb(var(--color-materialThick-light));
+  --theme-plan-step-bg: rgb(var(--color-materialThick-light));
+  --theme-plan-step-border: rgb(var(--color-fillSecondary-light));
+  --theme-plan-step-text: rgb(var(--color-text-light));
+  --theme-plan-step-status-bg: rgb(var(--color-selectionUnfocusedFill-light));
+  --theme-plan-step-status-text: rgb(var(--color-text-light));
+  --theme-plan-step-completed-bg: color-mix(in srgb, rgb(var(--color-green-light)) 12%, transparent);
+  --theme-plan-step-completed-border: color-mix(in srgb, rgb(var(--color-green-light)) 30%, transparent);
+  --theme-plan-step-completed-status-bg: color-mix(in srgb, rgb(var(--color-green-light)) 28%, transparent);
+  --theme-plan-step-completed-status-text: rgb(var(--color-green-dark));
+  --theme-plan-step-in-progress-bg: color-mix(in srgb, rgb(var(--color-orange-light)) 14%, transparent);
+  --theme-plan-step-in-progress-border: color-mix(in srgb, rgb(var(--color-orange-light)) 30%, transparent);
+  --theme-plan-step-in-progress-status-bg: color-mix(in srgb, rgb(var(--color-orange-light)) 30%, transparent);
+  --theme-plan-step-in-progress-status-text: rgb(var(--color-orange-dark));
   --theme-overlay: rgb(var(--color-popover-light));
   --theme-shadow-sm: 0 1px 3px rgba(29, 29, 31, 0.08);
   --theme-shadow-md: 0 12px 28px rgba(29, 29, 31, 0.09);
@@ -405,6 +585,7 @@
   --theme-border-soft: rgb(var(--color-textQuinary-dark));
   --theme-text-primary: rgb(var(--color-text-dark));
   --theme-text-secondary: rgb(var(--color-textSecondary-dark));
+  --theme-text-subtle: rgb(var(--color-textSecondary-dark));
   --theme-text-muted: rgb(var(--color-textTertiary-dark));
   --theme-link: rgb(var(--color-blue-dark));
   --theme-link-hover: rgb(var(--color-blue-light));
@@ -442,6 +623,41 @@
   --theme-selection-bg: rgb(var(--color-selectionFocused-dark));
   --theme-selection-border: color-mix(in srgb, rgb(var(--color-selectionFocusedFill-dark)) 32%, transparent);
   --theme-selection-text: #f5f5f7;
+  --theme-message-text: rgb(var(--color-text-dark));
+  --theme-message-heading: rgb(var(--color-text-dark));
+  --theme-message-muted: rgb(var(--color-textTertiary-dark));
+  --theme-message-blockquote-border: rgb(var(--color-fillSecondary-dark));
+  --theme-message-blockquote-bg: rgb(var(--color-materialThin-dark));
+  --theme-message-blockquote-text: rgb(var(--color-textSecondary-dark));
+  --theme-message-inline-code-border: rgb(var(--color-fill-dark));
+  --theme-message-inline-code-bg: color-mix(in srgb, rgb(var(--color-controlEnabled-dark)) 58%, rgb(var(--color-materialOpaque-dark)));
+  --theme-message-inline-code-text: rgb(var(--color-text-dark));
+  --theme-message-table-bg: rgb(var(--color-materialThick-dark));
+  --theme-message-table-head-bg: rgb(var(--color-materialMedium-dark));
+  --theme-message-divider-bg: rgb(var(--color-fillSecondary-dark));
+  --theme-plan-bg: rgb(var(--color-materialMedium-dark));
+  --theme-plan-border: rgb(var(--color-fillSecondary-dark));
+  --theme-plan-card-text: rgb(var(--color-text-dark));
+  --theme-plan-title: rgb(var(--color-text-dark));
+  --theme-plan-text: rgb(var(--color-textSecondary-dark));
+  --theme-plan-badge-bg: rgb(var(--color-selectionUnfocusedFill-dark));
+  --theme-plan-badge-text: rgb(var(--color-text-dark));
+  --theme-plan-inline-code-bg: color-mix(in srgb, rgb(var(--color-controlEnabled-dark)) 58%, rgb(var(--color-materialOpaque-dark)));
+  --theme-plan-inline-code-text: rgb(var(--color-text-dark));
+  --theme-plan-table-bg: rgb(var(--color-materialThick-dark));
+  --theme-plan-step-bg: rgb(var(--color-materialThick-dark));
+  --theme-plan-step-border: rgb(var(--color-fillSecondary-dark));
+  --theme-plan-step-text: rgb(var(--color-text-dark));
+  --theme-plan-step-status-bg: rgb(var(--color-selectionUnfocusedFill-dark));
+  --theme-plan-step-status-text: rgb(var(--color-text-dark));
+  --theme-plan-step-completed-bg: color-mix(in srgb, rgb(var(--color-green-dark)) 12%, transparent);
+  --theme-plan-step-completed-border: color-mix(in srgb, rgb(var(--color-green-dark)) 28%, transparent);
+  --theme-plan-step-completed-status-bg: color-mix(in srgb, rgb(var(--color-green-dark)) 28%, transparent);
+  --theme-plan-step-completed-status-text: rgb(var(--color-green-light));
+  --theme-plan-step-in-progress-bg: color-mix(in srgb, rgb(var(--color-orange-dark)) 14%, transparent);
+  --theme-plan-step-in-progress-border: color-mix(in srgb, rgb(var(--color-orange-dark)) 30%, transparent);
+  --theme-plan-step-in-progress-status-bg: color-mix(in srgb, rgb(var(--color-orange-dark)) 30%, transparent);
+  --theme-plan-step-in-progress-status-text: rgb(var(--color-orange-light));
   --theme-overlay: rgb(var(--color-popover-dark));
   --theme-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.22);
   --theme-shadow-md: 0 12px 28px rgba(0, 0, 0, 0.24);
@@ -506,27 +722,27 @@ body {
 }
 
 .message-text {
-  color: var(--theme-text-primary);
+  color: var(--theme-message-text);
 }
 
 .message-list,
 .message-italic-text {
-  color: var(--theme-text-primary);
+  color: var(--theme-message-text);
 }
 
 .message-heading,
 .message-bold-text {
-  color: var(--theme-text-primary);
+  color: var(--theme-message-heading);
 }
 
 .message-inline-code {
-  border-color: var(--theme-border);
-  background: var(--theme-control-bg);
-  color: var(--theme-text-primary);
+  border-color: var(--theme-message-inline-code-border);
+  background: var(--theme-message-inline-code-bg);
+  color: var(--theme-message-inline-code-text);
 }
 
 .message-code-block {
-  border-color: var(--theme-border);
+  border-color: var(--theme-message-inline-code-border);
   background: var(--theme-code-bg);
   color: var(--theme-code-text);
 }
@@ -1107,6 +1323,39 @@ body {
 :root[data-theme][data-appearance] .sidebar-settings-account-remove.is-confirming {
   background: var(--theme-warning-soft-bg);
   color: var(--theme-warning-text);
+}
+
+:root[data-theme][data-appearance] .plan-step-item {
+  border-color: var(--theme-plan-step-border);
+  background: var(--theme-plan-step-bg);
+  color: var(--theme-plan-step-text);
+}
+
+:root[data-theme][data-appearance] .plan-step-item[data-status='completed'] {
+  border-color: var(--theme-plan-step-completed-border);
+  background: var(--theme-plan-step-completed-bg);
+  color: var(--theme-plan-step-text);
+}
+
+:root[data-theme][data-appearance] .plan-step-item[data-status='inProgress'] {
+  border-color: var(--theme-plan-step-in-progress-border);
+  background: var(--theme-plan-step-in-progress-bg);
+  color: var(--theme-plan-step-text);
+}
+
+:root[data-theme][data-appearance] .plan-step-status {
+  background: var(--theme-plan-step-status-bg);
+  color: var(--theme-plan-step-status-text);
+}
+
+:root[data-theme][data-appearance] .plan-step-status[data-status='completed'] {
+  background: var(--theme-plan-step-completed-status-bg);
+  color: var(--theme-plan-step-completed-status-text);
+}
+
+:root[data-theme][data-appearance] .plan-step-status[data-status='inProgress'] {
+  background: var(--theme-plan-step-in-progress-status-bg);
+  color: var(--theme-plan-step-in-progress-status-text);
 }
 
 :root[data-theme][data-appearance] .review-pane-file-op[data-operation='rename'],

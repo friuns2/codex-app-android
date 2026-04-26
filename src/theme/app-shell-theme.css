@@ -111,25 +111,20 @@
 .new-thread-folder-selected,
 .new-thread-branch-select-label,
 .new-thread-branch-select-help,
-.new-thread-runtime-help,
-.new-thread-trending-title,
-.new-thread-trending-empty,
-.new-thread-trending-tip-meta {
+.new-thread-runtime-help {
   color: var(--theme-text-muted);
 }
 
 .new-thread-folder-action,
 .new-thread-open-folder-item-open,
-.new-thread-branch-dropdown .composer-dropdown-trigger,
-.new-thread-trending-scope-dropdown .composer-dropdown-trigger {
+.new-thread-branch-dropdown .composer-dropdown-trigger {
   border-color: var(--theme-border);
   background: var(--theme-control-bg);
   color: var(--theme-text-secondary);
 }
 
 .new-thread-folder-action:hover,
-.new-thread-open-folder-item-open:hover,
-.new-thread-trending-tip:hover {
+.new-thread-open-folder-item-open:hover {
   background: var(--theme-control-hover-bg);
   color: var(--theme-text-primary);
 }
@@ -163,7 +158,6 @@
 .new-thread-open-folder-path,
 .new-thread-open-folder-status,
 .new-thread-open-folder-item-main,
-.new-thread-trending-tip,
 .sidebar-settings-language-dropdown .composer-dropdown-trigger {
   border-color: var(--theme-border);
   background: var(--theme-panel-subtle-bg);
@@ -235,12 +229,10 @@
   background: var(--theme-control-hover-bg);
 }
 
-.new-thread-trending-tip-name,
 .worktree-init-status-title {
   color: var(--theme-text-primary);
 }
 
-.new-thread-trending-tip-description,
 .worktree-init-status-message {
   color: var(--theme-text-secondary);
 }
@@ -409,26 +401,20 @@
 }
 
 .new-thread-hero,
-.new-thread-open-folder-title,
-.new-thread-trending-tip-name {
+.new-thread-open-folder-title {
   color: var(--theme-text-primary);
 }
 
 .new-thread-folder-dropdown,
 .new-thread-branch-select-label,
 .new-thread-branch-select-help,
-.new-thread-runtime-help,
-.new-thread-trending-title,
-.new-thread-trending-empty,
-.new-thread-trending-tip-meta,
-.new-thread-trending-tip-description {
+.new-thread-runtime-help {
   color: var(--theme-text-muted);
 }
 
 .content-header-branch-dropdown .composer-dropdown-trigger,
 .new-thread-folder-action,
-.new-thread-branch-dropdown .composer-dropdown-trigger,
-.new-thread-trending-scope-dropdown .composer-dropdown-trigger {
+.new-thread-branch-dropdown .composer-dropdown-trigger {
   border-color: var(--theme-border);
   background: var(--theme-control-bg);
   color: var(--theme-text-secondary);
@@ -436,8 +422,7 @@
 
 .new-thread-folder-action:hover:not(:disabled),
 .content-header-branch-dropdown .composer-dropdown-trigger:hover,
-.new-thread-branch-dropdown .composer-dropdown-trigger:hover,
-.new-thread-trending-scope-dropdown .composer-dropdown-trigger:hover {
+.new-thread-branch-dropdown .composer-dropdown-trigger:hover {
   background: var(--theme-control-hover-bg);
   color: var(--theme-text-primary);
 }
@@ -466,8 +451,7 @@
 .new-thread-open-folder-path,
 .new-thread-open-folder-status,
 .new-thread-open-folder-item-main,
-.new-thread-open-folder-item-open,
-.new-thread-trending-tip {
+.new-thread-open-folder-item-open {
   border-color: var(--theme-border);
 }
 
@@ -478,8 +462,7 @@
   background: var(--theme-panel-subtle-bg);
 }
 
-.new-thread-open-folder-item-open,
-.new-thread-trending-tip {
+.new-thread-open-folder-item-open {
   background: var(--theme-control-bg);
 }
 
@@ -540,8 +523,7 @@
 }
 
 .new-thread-open-folder-item-main:hover:not(:disabled),
-.new-thread-open-folder-item-open:hover:not(:disabled),
-.new-thread-trending-tip:hover {
+.new-thread-open-folder-item-open:hover:not(:disabled) {
   border-color: var(--theme-border-strong);
   background: var(--theme-control-hover-bg);
   color: var(--theme-text-primary);

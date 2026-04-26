@@ -4512,9 +4512,9 @@ onBeforeUnmount(() => {
 
 .plan-card {
   @apply flex max-w-[min(var(--chat-card-max,76ch),100%)] flex-col gap-3 rounded-2xl border px-4 py-3;
-  border-color: var(--theme-border);
-  background: var(--theme-panel-bg);
-  color: var(--theme-text-primary);
+  border-color: var(--theme-plan-border);
+  background: var(--theme-plan-bg);
+  color: var(--theme-plan-card-text);
 }
 
 .plan-card-header {
@@ -4523,17 +4523,17 @@ onBeforeUnmount(() => {
 
 .plan-card-title {
   @apply m-0 text-sm font-semibold leading-5;
-  color: var(--theme-text-primary);
+  color: var(--theme-plan-title);
 }
 
 .plan-card-badge {
   @apply inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium leading-4;
-  background: var(--theme-control-active-bg);
-  color: var(--theme-text-primary);
+  background: var(--theme-plan-badge-bg);
+  color: var(--theme-plan-badge-text);
 }
 
 .plan-card-explanation {
-  color: var(--theme-text-secondary);
+  color: var(--theme-plan-text);
 }
 
 .plan-card-markdown {
@@ -4552,12 +4552,12 @@ onBeforeUnmount(() => {
 
 .plan-card-markdown :deep(.message-text) {
   @apply text-sm leading-relaxed whitespace-pre-wrap;
-  color: var(--theme-text-primary);
+  color: var(--theme-message-text);
 }
 
 .plan-card-markdown :deep(.message-heading) {
   @apply tracking-tight;
-  color: var(--theme-text-primary);
+  color: var(--theme-message-heading);
 }
 
 .plan-card-markdown :deep(.message-heading-h1) {
@@ -4582,19 +4582,19 @@ onBeforeUnmount(() => {
 
 .plan-card-markdown :deep(.message-heading-h6) {
   @apply text-xs font-semibold leading-snug uppercase tracking-[0.04em];
-  color: var(--theme-text-muted);
+  color: var(--theme-message-muted);
 }
 
 .plan-card-markdown :deep(.message-blockquote) {
   @apply border-l-4 pl-4 py-1 text-sm leading-relaxed whitespace-pre-wrap rounded-r-lg;
-  border-left-color: var(--theme-border-strong);
-  background: var(--theme-control-bg);
-  color: var(--theme-text-secondary);
+  border-left-color: var(--theme-message-blockquote-border);
+  background: var(--theme-message-blockquote-bg);
+  color: var(--theme-message-blockquote-text);
 }
 
 .plan-card-markdown :deep(.message-list) {
   @apply pl-5 text-sm leading-relaxed flex flex-col gap-1.5;
-  color: var(--theme-text-primary);
+  color: var(--theme-message-text);
 }
 
 .plan-card-markdown :deep(.message-list-unordered) {
@@ -4627,12 +4627,12 @@ onBeforeUnmount(() => {
 
 .plan-card-markdown :deep(.message-task-checkbox) {
   @apply mt-0.5 text-sm leading-none select-none;
-  color: var(--theme-text-muted);
+  color: var(--theme-message-muted);
 }
 
 .plan-card-markdown :deep(.message-code-block) {
   @apply overflow-hidden rounded-xl border;
-  border-color: var(--theme-border);
+  border-color: var(--theme-message-inline-code-border);
   background: var(--theme-code-bg);
   color: var(--theme-code-text);
 }
@@ -4650,8 +4650,8 @@ onBeforeUnmount(() => {
 
 .plan-card-markdown :deep(.message-inline-code) {
   @apply rounded-md px-1.5 py-0.5 font-mono text-[0.9em];
-  background: var(--theme-control-bg);
-  color: var(--theme-text-primary);
+  background: var(--theme-plan-inline-code-bg);
+  color: var(--theme-plan-inline-code-text);
 }
 
 .plan-card-markdown :deep(.message-file-link) {
@@ -4661,7 +4661,7 @@ onBeforeUnmount(() => {
 }
 
 .plan-card-markdown :deep(.message-table) {
-  background: var(--theme-elevated-bg);
+  background: var(--theme-plan-table-bg);
 }
 
 .plan-step-list {
@@ -4670,29 +4670,35 @@ onBeforeUnmount(() => {
 
 .plan-step-item {
   @apply flex items-start gap-2 rounded-xl border px-3 py-2 text-sm leading-relaxed;
-  border-color: var(--theme-border);
-  background: var(--theme-elevated-bg);
-  color: var(--theme-text-primary);
+  border-color: var(--theme-plan-step-border);
+  background: var(--theme-plan-step-bg);
+  color: var(--theme-plan-step-text);
 }
 
 .plan-step-item[data-status='completed'] {
-  @apply border-emerald-200 bg-emerald-50/80;
+  border-color: var(--theme-plan-step-completed-border);
+  background: var(--theme-plan-step-completed-bg);
 }
 
 .plan-step-item[data-status='inProgress'] {
-  @apply border-amber-200 bg-amber-50/80;
+  border-color: var(--theme-plan-step-in-progress-border);
+  background: var(--theme-plan-step-in-progress-bg);
 }
 
 .plan-step-status {
-  @apply mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xs font-semibold text-slate-700;
+  @apply mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs font-semibold;
+  background: var(--theme-plan-step-status-bg);
+  color: var(--theme-plan-step-status-text);
 }
 
 .plan-step-status[data-status='completed'] {
-  @apply bg-emerald-200 text-emerald-900;
+  background: var(--theme-plan-step-completed-status-bg);
+  color: var(--theme-plan-step-completed-status-text);
 }
 
 .plan-step-status[data-status='inProgress'] {
-  @apply bg-amber-200 text-amber-900;
+  background: var(--theme-plan-step-in-progress-status-bg);
+  color: var(--theme-plan-step-in-progress-status-text);
 }
 
 .plan-step-text {
@@ -4709,13 +4715,13 @@ onBeforeUnmount(() => {
 
 .message-text {
   @apply m-0 text-sm leading-relaxed whitespace-pre-wrap break-words;
-  color: var(--theme-text-primary);
+  color: var(--theme-message-text);
   overflow-wrap: anywhere;
 }
 
 .message-heading {
   @apply m-0 tracking-tight;
-  color: var(--theme-text-primary);
+  color: var(--theme-message-heading);
 }
 
 .message-heading-h1 {
@@ -4740,20 +4746,20 @@ onBeforeUnmount(() => {
 
 .message-heading-h6 {
   @apply text-xs font-semibold leading-snug uppercase tracking-[0.04em];
-  color: var(--theme-text-muted);
+  color: var(--theme-message-muted);
 }
 
 .message-blockquote {
   @apply m-0 border-l-4 pl-4 py-1 text-sm leading-relaxed whitespace-pre-wrap break-words rounded-r-lg;
-  border-left-color: var(--theme-border-strong);
-  background: var(--theme-control-bg);
-  color: var(--theme-text-secondary);
+  border-left-color: var(--theme-message-blockquote-border);
+  background: var(--theme-message-blockquote-bg);
+  color: var(--theme-message-blockquote-text);
   overflow-wrap: anywhere;
 }
 
 .message-list {
   @apply m-0 pl-5 text-sm leading-relaxed flex flex-col gap-1.5;
-  color: var(--theme-text-primary);
+  color: var(--theme-message-text);
 }
 
 .message-list-unordered {
@@ -4791,7 +4797,7 @@ onBeforeUnmount(() => {
 
 .message-task-checkbox {
   @apply mt-0.5 text-sm leading-none select-none;
-  color: var(--theme-text-muted);
+  color: var(--theme-message-muted);
 }
 
 .message-table-wrap {
@@ -4800,15 +4806,15 @@ onBeforeUnmount(() => {
 
 .message-table {
   @apply min-w-full border-separate border-spacing-0 overflow-hidden rounded-xl border text-sm;
-  border-color: var(--theme-border);
-  background: var(--theme-elevated-bg);
-  color: var(--theme-text-primary);
+  border-color: var(--theme-message-inline-code-border);
+  background: var(--theme-message-table-bg);
+  color: var(--theme-message-text);
 }
 
 .message-table-head-cell,
 .message-table-cell {
   @apply border-b border-l px-3 py-2 align-top whitespace-pre-wrap break-words;
-  border-color: var(--theme-border);
+  border-color: var(--theme-message-inline-code-border);
   overflow-wrap: anywhere;
 }
 
@@ -4819,8 +4825,8 @@ onBeforeUnmount(() => {
 
 .message-table-head-cell {
   @apply font-semibold;
-  background: var(--theme-elevated-strong-bg);
-  color: var(--theme-text-primary);
+  background: var(--theme-message-table-head-bg);
+  color: var(--theme-message-heading);
 }
 
 .message-table-body-row:last-child .message-table-cell {
@@ -4829,7 +4835,7 @@ onBeforeUnmount(() => {
 
 .message-bold-text {
   @apply font-semibold;
-  color: var(--theme-text-primary);
+  color: var(--theme-message-heading);
 }
 
 .message-italic-text {
@@ -4838,7 +4844,7 @@ onBeforeUnmount(() => {
 
 .message-strikethrough-text {
   @apply line-through;
-  color: var(--theme-text-muted);
+  color: var(--theme-message-muted);
 }
 
 .message-markdown-image {
@@ -4847,14 +4853,14 @@ onBeforeUnmount(() => {
 
 .message-inline-code {
   @apply rounded-md border px-1.5 py-0.5 text-[0.875em] leading-[1.4] font-mono;
-  border-color: var(--theme-border);
-  background: var(--theme-control-bg);
-  color: var(--theme-text-primary);
+  border-color: var(--theme-message-inline-code-border);
+  background: var(--theme-message-inline-code-bg);
+  color: var(--theme-message-inline-code-text);
 }
 
 .message-code-block {
   @apply overflow-hidden rounded-xl border;
-  border-color: var(--theme-border);
+  border-color: var(--theme-message-inline-code-border);
   background: var(--theme-code-bg);
   color: var(--theme-code-text);
 }
@@ -4903,7 +4909,7 @@ onBeforeUnmount(() => {
 
 .message-divider {
   @apply m-0 border-0 h-px;
-  background: var(--theme-border-soft);
+  background: var(--theme-message-divider-bg);
 }
 
 .message-stack[data-role='user'] {
@@ -4926,7 +4932,6 @@ onBeforeUnmount(() => {
 .message-card[data-role='assistant'],
 .message-card[data-role='system'] {
   @apply px-0 py-0 bg-transparent border-none rounded-none;
-  width: fit-content;
   align-self: flex-start;
 }
 
