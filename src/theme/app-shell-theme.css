@@ -1,6 +1,6 @@
 .content-root {
   background: var(--theme-main-bg);
-  color: var(--theme-text-primary);
+  color: var(--theme-shell-text, var(--theme-text-primary));
 }
 
 .sidebar-search-toggle {
@@ -104,7 +104,7 @@
 }
 
 .new-thread-hero {
-  color: var(--theme-text-primary);
+  color: var(--theme-heading-text, var(--theme-text-primary));
 }
 
 .new-thread-folder-dropdown,
@@ -402,7 +402,7 @@
 
 .new-thread-hero,
 .new-thread-open-folder-title {
-  color: var(--theme-text-primary);
+  color: var(--theme-heading-text, var(--theme-text-primary));
 }
 
 .new-thread-folder-dropdown,

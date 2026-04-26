@@ -159,6 +159,12 @@ test('default theme tokens resolve to the legacy light palette', () => {
   assert.equal(tokens['--theme-text-secondary'], '#3f3f46')
   assert.equal(tokens['--theme-text-subtle'], '#52525b')
   assert.equal(tokens['--theme-text-muted'], '#71717a')
+  assert.equal(tokens['--theme-shell-text'], '#0f172a')
+  assert.equal(tokens['--theme-heading-text'], '#18181b')
+  assert.equal(tokens['--theme-runtime-bg'], '#f4f4f5')
+  assert.equal(tokens['--theme-runtime-selected-bg'], '#ffffff')
+  assert.equal(tokens['--theme-runtime-selected-border'], '#e4e4e7')
+  assert.equal(tokens['--theme-runtime-selected-text'], '#18181b')
   assert.equal(tokens['--theme-code-bg'], '#020617')
   assert.equal(tokens['--theme-code-header-bg'], 'rgba(15, 23, 42, 0.94)')
   assert.equal(tokens['--theme-code-text'], '#f1f5f9')
@@ -217,6 +223,13 @@ test('default theme tokens resolve to the legacy dark palette', () => {
   assert.equal(tokens['--theme-text-secondary'], '#d4d4d8')
   assert.equal(tokens['--theme-text-subtle'], '#d4d4d8')
   assert.equal(tokens['--theme-text-muted'], '#a1a1aa')
+  assert.equal(tokens['--theme-shell-text'], '#f4f4f5')
+  assert.equal(tokens['--theme-heading-text'], '#f4f4f5')
+  assert.equal(tokens['--theme-settings-button-text'], '#a1a1aa')
+  assert.equal(tokens['--theme-runtime-bg'], '#18181b')
+  assert.equal(tokens['--theme-runtime-selected-bg'], '#27272a')
+  assert.equal(tokens['--theme-runtime-selected-text'], '#f4f4f5')
+  assert.equal(tokens['--theme-accent'], '#18181b')
   assert.equal(tokens['--theme-code-bg'], '#09090b')
   assert.equal(tokens['--theme-code-header-bg'], '#18181b')
   assert.equal(tokens['--theme-code-text'], '#f4f4f5')
@@ -332,15 +345,19 @@ test('legacy component styling remains the default base for non-macos themes', (
   )
   assert.match(
     composerRuntimeDropdownVue,
-    /\.runtime-toggle\s*\{\s*@apply inline-flex items-center gap-1 rounded-full border p-1;\s*border-color: var\(--theme-border\);\s*background: color-mix\(in srgb, var\(--theme-control-bg\) 84%, var\(--theme-main-bg\)\);/
+    /\.runtime-toggle\s*\{\s*@apply inline-flex items-center gap-1 rounded-full border p-1;\s*border-color: var\(--theme-border\);\s*background: var\(--theme-runtime-bg, color-mix\(in srgb, var\(--theme-control-bg\) 84%, var\(--theme-main-bg\)\)\);/
   )
   assert.match(
     composerRuntimeDropdownVue,
-    /\.runtime-toggle-option\.is-selected\s*\{\s*border-color: var\(--theme-selection-border\);\s*background: var\(--theme-selection-bg\);\s*color: var\(--theme-selection-text\);/
+    /\.runtime-toggle-option\.is-selected\s*\{\s*border-color: var\(--theme-runtime-selected-border, var\(--theme-selection-border\)\);\s*background: var\(--theme-runtime-selected-bg, var\(--theme-selection-bg\)\);\s*color: var\(--theme-runtime-selected-text, var\(--theme-selection-text\)\);/
   )
   assert.match(
     styleCss,
     /:root\[data-theme\]\[data-appearance\] \.runtime-toggle-option\.is-selected,\s*:root\[data-theme\]\[data-appearance\] \.composer-dropdown-option\.is-selected,\s*:root\[data-theme\]\[data-appearance\] \.organize-menu-item\[data-active='true'\],\s*:root\[data-theme\]\[data-appearance\] \.thread-row\[data-active='true'\],/
+  )
+  assert.match(
+    styleCss,
+    /:root\[data-theme\]\[data-appearance\] \.runtime-toggle-option\.is-selected\s*\{\s*border-color: var\(--theme-runtime-selected-border, var\(--theme-selection-border\)\);\s*background: var\(--theme-runtime-selected-bg, var\(--theme-selection-bg\)\);\s*color: var\(--theme-runtime-selected-text, var\(--theme-selection-text\)\);/
   )
   assert.doesNotMatch(styleCss, /^\.sidebar-settings-panel\s*\{/m)
   assert.doesNotMatch(styleCss, /^\.sidebar-settings-row\s*\{/m)

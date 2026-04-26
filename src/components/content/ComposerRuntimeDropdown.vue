@@ -48,7 +48,7 @@ function onSelect(value: RuntimeMode): void {
 .runtime-toggle {
   @apply inline-flex items-center gap-1 rounded-full border p-1;
   border-color: var(--theme-border);
-  background: color-mix(in srgb, var(--theme-control-bg) 84%, var(--theme-main-bg));
+  background: var(--theme-runtime-bg, color-mix(in srgb, var(--theme-control-bg) 84%, var(--theme-main-bg)));
 }
 
 .runtime-toggle-option {
@@ -62,9 +62,9 @@ function onSelect(value: RuntimeMode): void {
 }
 
 .runtime-toggle-option.is-selected {
-  border-color: var(--theme-selection-border);
-  background: var(--theme-selection-bg);
-  color: var(--theme-selection-text);
+  border-color: var(--theme-runtime-selected-border, var(--theme-selection-border));
+  background: var(--theme-runtime-selected-bg, var(--theme-selection-bg));
+  color: var(--theme-runtime-selected-text, var(--theme-selection-text));
   box-shadow: var(--theme-shadow-sm);
 }
 

@@ -43,6 +43,12 @@
   --theme-text-secondary: #3f3f46;
   --theme-text-subtle: #52525b;
   --theme-text-muted: #71717a;
+  --theme-shell-text: #0f172a;
+  --theme-heading-text: #18181b;
+  --theme-runtime-bg: #f4f4f5;
+  --theme-runtime-selected-bg: #ffffff;
+  --theme-runtime-selected-border: #e4e4e7;
+  --theme-runtime-selected-text: #18181b;
   --theme-link: #0969da;
   --theme-link-hover: #1f6feb;
   --theme-link-decoration: rgba(9, 105, 218, 0.28);
@@ -144,13 +150,20 @@
   --theme-text-secondary: #d4d4d8;
   --theme-text-subtle: #d4d4d8;
   --theme-text-muted: #a1a1aa;
+  --theme-shell-text: #f4f4f5;
+  --theme-heading-text: #f4f4f5;
+  --theme-settings-button-text: #a1a1aa;
+  --theme-runtime-bg: #18181b;
+  --theme-runtime-selected-bg: #27272a;
+  --theme-runtime-selected-border: #52525b;
+  --theme-runtime-selected-text: #f4f4f5;
   --theme-link: #7dd3fc;
   --theme-link-hover: #bae6fd;
   --theme-link-decoration: rgba(125, 211, 252, 0.28);
   --theme-control-bg: #3f3f46;
   --theme-control-hover-bg: #3f3f46;
   --theme-control-active-bg: #3f3f46;
-  --theme-accent: #3f3f46;
+  --theme-accent: #18181b;
   --theme-accent-hover: #52525b;
   --theme-accent-contrast: #f4f4f5;
   --theme-success-solid-bg: #10b981;
@@ -675,7 +688,7 @@ body {
 
 .desktop-layout {
   background: var(--theme-shell-bg);
-  color: var(--theme-text-primary);
+  color: var(--theme-shell-text, var(--theme-text-primary));
 }
 
 .desktop-sidebar {
@@ -689,12 +702,12 @@ body {
 
 .desktop-main {
   background: var(--theme-main-bg);
-  color: var(--theme-text-primary);
+  color: var(--theme-shell-text, var(--theme-text-primary));
 }
 
 .content-root {
   background: var(--theme-main-bg);
-  color: var(--theme-text-primary);
+  color: var(--theme-shell-text, var(--theme-text-primary));
 }
 
 .sidebar-settings-area {
@@ -783,7 +796,7 @@ body {
 }
 
 :root[data-appearance='dark']:not([data-theme='macos']) .sidebar-settings-button {
-  color: var(--theme-text-secondary);
+  color: var(--theme-settings-button-text, var(--theme-text-secondary));
 }
 
 :root[data-appearance='dark']:not([data-theme='macos']) .sidebar-settings-button:hover {
@@ -1074,6 +1087,10 @@ body {
 :root[data-theme][data-appearance] .request-title,
 :root[data-theme][data-appearance] .request-reason {
   color: var(--theme-text-primary);
+}
+
+:root[data-theme][data-appearance] .new-thread-hero {
+  color: var(--theme-heading-text, var(--theme-text-primary));
 }
 
 :root[data-theme][data-appearance] .rate-limit-card-plan,
@@ -1437,6 +1454,12 @@ body {
   border-color: var(--theme-selection-border);
   background: var(--theme-selection-bg);
   color: var(--theme-selection-text);
+}
+
+:root[data-theme][data-appearance] .runtime-toggle-option.is-selected {
+  border-color: var(--theme-runtime-selected-border, var(--theme-selection-border));
+  background: var(--theme-runtime-selected-bg, var(--theme-selection-bg));
+  color: var(--theme-runtime-selected-text, var(--theme-selection-text));
 }
 
 :root[data-theme][data-appearance] .thread-composer-attach-switch::after {
