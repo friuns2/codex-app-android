@@ -1,5 +1,11 @@
 # Log
 
+## [2026-04-26] ingest | skills route UI and first-launch plugins card
+- Added source: `raw/features/skills-route-ui-and-first-launch-card.md`.
+- Created wiki page: `concepts/skills-route-ui.md`.
+- Documents: Skills route rename, first-launch Plugins card persistence in global state, dark-theme regression/fix details, and `npm run dev` worktree reuse behavior.
+- Updated `overview.md`, `entities/codex-web-local.md`, and `index.md`.
+
 ## [2026-04-23] ingest | realtime chat rendering and inline media
 - Added source: `raw/features/realtime-chat-rendering-inline-media.md`.
 - Created wiki page: `concepts/realtime-chat-rendering.md`.

@@ -2772,6 +2772,7 @@ function getErrorMessageFromPayload(payload: unknown, fallback: string): string 
 
 export type ThreadTitleCache = { titles: Record<string, string>; order: string[] }
 export type ThreadPinnedState = { threadIds: string[] }
+export type FirstLaunchPluginsCardPreference = { dismissed: boolean }
 
 export async function getThreadTitleCache(): Promise<ThreadTitleCache> {
   try {
@@ -2813,6 +2814,29 @@ export async function persistPinnedThreadIds(threadIds: string[]): Promise<void>
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ threadIds }),
+    })
+  } catch {
+    // Best-effort persist
+  }
+}
+
+export async function getFirstLaunchPluginsCardPreference(): Promise<FirstLaunchPluginsCardPreference> {
+  try {
+    const response = await fetch('/codex-api/preferences/first-launch-plugins-card')
+    if (!response.ok) return { dismissed: false }
+    const envelope = (await response.json()) as { data?: FirstLaunchPluginsCardPreference }
+    return { dismissed: envelope.data?.dismissed === true }
+  } catch {
+    return { dismissed: false }
+  }
+}
+
+export async function persistFirstLaunchPluginsCardPreference(dismissed: boolean): Promise<void> {
+  try {
+    await fetch('/codex-api/preferences/first-launch-plugins-card', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ dismissed }),
     })
   } catch {
     // Best-effort persist

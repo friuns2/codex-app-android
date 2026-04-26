@@ -2615,6 +2615,32 @@ async function writePinnedThreadIds(threadIds: string[]): Promise<void> {
   await writeFile(statePath, JSON.stringify(payload), 'utf8')
 }
 
+const FIRST_LAUNCH_PLUGINS_CARD_DISMISSED_KEY = 'first-launch-plugins-card-dismissed'
+
+async function readFirstLaunchPluginsCardDismissed(): Promise<boolean> {
+  const statePath = getCodexGlobalStatePath()
+  try {
+    const raw = await readFile(statePath, 'utf8')
+    const payload = asRecord(JSON.parse(raw)) ?? {}
+    return payload[FIRST_LAUNCH_PLUGINS_CARD_DISMISSED_KEY] === true
+  } catch {
+    return false
+  }
+}
+
+async function writeFirstLaunchPluginsCardDismissed(dismissed: boolean): Promise<void> {
+  const statePath = getCodexGlobalStatePath()
+  let payload: Record<string, unknown> = {}
+  try {
+    const raw = await readFile(statePath, 'utf8')
+    payload = asRecord(JSON.parse(raw)) ?? {}
+  } catch {
+    payload = {}
+  }
+  payload[FIRST_LAUNCH_PLUGINS_CARD_DISMISSED_KEY] = dismissed === true
+  await writeFile(statePath, JSON.stringify(payload), 'utf8')
+}
+
 function getSessionIndexFileSignature(stats: { mtimeMs: number; size: number }): string {
   return `${String(stats.mtimeMs)}:${String(stats.size)}`
 }
@@ -5055,6 +5081,12 @@ export function createCodexBridgeMiddleware(): CodexBridgeMiddleware {
         return
       }
 
+      if (req.method === 'GET' && url.pathname === '/codex-api/preferences/first-launch-plugins-card') {
+        const dismissed = await readFirstLaunchPluginsCardDismissed()
+        setJson(res, 200, { data: { dismissed } })
+        return
+      }
+
       if (req.method === 'GET' && url.pathname === '/codex-api/thread-automations') {
         const automationsByThreadId = await listThreadHeartbeatAutomations()
         setJson(res, 200, { data: automationsByThreadId })
@@ -5111,6 +5143,14 @@ export function createCodexBridgeMiddleware(): CodexBridgeMiddleware {
         const payload = asRecord(await readJsonBody(req))
         const threadIds = normalizePinnedThreadIds(payload?.threadIds)
         await writePinnedThreadIds(threadIds)
+        setJson(res, 200, { ok: true })
+        return
+      }
+
+      if (req.method === 'PUT' && url.pathname === '/codex-api/preferences/first-launch-plugins-card') {
+        const payload = asRecord(await readJsonBody(req))
+        const dismissed = payload?.dismissed === true
+        await writeFirstLaunchPluginsCardDismissed(dismissed)
         setJson(res, 200, { ok: true })
         return
       }

@@ -124,7 +124,32 @@ Use task-specific screenshot names under `output/playwright/`, for example:
 
 ### Reliable CDP Launch Pattern
 
-Prefer running a separate Codex.app debug instance so the user's normal Codex session is not interrupted and the CDP target can stay alive after tests.
+Before launching anything new, first check whether a Codex.app CDP endpoint is already available and reusable. Avoid creating additional Codex instances when an existing CDP-enabled instance already exposes a usable `app://-/index.html` page target.
+
+Preferred reuse check:
+
+```bash
+for port in 3434 3435 9222 9223; do
+  if curl -fsS "http://127.0.0.1:$port/json/list" >/tmp/codex-cdp-list.json 2>/dev/null; then
+    python3 - <<'PY'
+import json
+from pathlib import Path
+rows = json.loads(Path('/tmp/codex-cdp-list.json').read_text())
+page = next((row for row in rows if row.get('type') == 'page' and str(row.get('url', '')).startswith('app://-/index.html')), None)
+if page:
+    print(page['webSocketDebuggerUrl'])
+PY
+    if [ -s /tmp/codex-cdp-list.json ]; then
+      echo "Reusing CDP on port $port"
+      break
+    fi
+  fi
+done
+```
+
+If a usable target is found, reuse it and do not launch another Codex instance.
+
+Only if no reusable CDP target exists, prefer running a separate Codex.app debug instance so the user's normal Codex session is not interrupted and the CDP target can stay alive after tests.
 
 Use a fresh app instance with its own profile directory:
 
@@ -166,6 +191,7 @@ Pick the page target from `/json/list` where `type == "page"` and `url` starts w
 
 Important caveats:
 
+- Reuse any already-running Codex.app CDP endpoint when possible; do not spawn a second or third debug instance just because the default example uses `3434`.
 - `open -na "Codex"` is required for a true separate instance; `open -a "Codex"` reuses an existing app process and often does not enable CDP flags.
 - Always pass an isolated `--user-data-dir` for the debug instance to avoid profile lock contention and cross-session side effects.
 - If launched via raw binary, use `nohup` or a long-lived shell; short one-shot launches can drop the CDP listener when the shell exits.
@@ -173,6 +199,12 @@ Important caveats:
 - In Playwright builds where `browser.disconnect()` is unavailable for CDP sessions, connect, inspect/capture, and exit the test process without `close()`; this preserves the running Codex.app instance.
 - Existing helper processes can keep stale non-CDP state alive; killing all `/Applications/Codex.app` processes is more reliable than only `pkill -x Codex`.
 - CDP inspection can expose local thread titles and workspace names. Avoid pasting sensitive screenshot contents into public artifacts.
+
+## Findings: CDP Instance Reuse (2026-04-26)
+
+- In this workspace, parity work often happens repeatedly in the same session, so a previously launched Codex.app debug instance may already be listening on a local CDP port.
+- Before using `open -na "Codex"` or starting a fresh debug profile, probe common local ports and reuse an existing endpoint when it already serves a valid `app://-/index.html` page target.
+- Creating unnecessary extra Codex.app instances makes parity work noisier and can leave behind multiple stale debug profiles under `/tmp/codex-cdp-*`.
 
 ### Architecture Notes
 

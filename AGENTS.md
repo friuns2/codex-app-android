@@ -59,6 +59,7 @@
 
 - After every feature implementation, update `tests.md` in the repository root.
 - Add a new section describing how to test the feature manually.
+- For any new or changed UI, include both light-theme and dark-theme verification steps/results in that test section.
 - Each test section must include:
   - feature/change name
   - prerequisites/setup
@@ -71,6 +72,10 @@
 ## Completion Verification Requirement (MANDATORY)
 
 - Test changes before reporting completion when feasible.
+- For any new or changed UI, always verify both light theme and dark theme before reporting completion.
+- Do not treat dark theme as optional polish; dark-theme support is part of the feature being complete.
+- When a user asks to "test it" for UI work and a local dev server is available, prefer actually loading the changed route and checking the rendered result instead of stopping at static analysis.
+- If a dark-theme screenshot shows light-theme surfaces on a dark page, fix the actual CSS/theme wiring first; do not treat "text is visible" as sufficient.
 - Run Playwright verification only when the user explicitly asks for Playwright/browser automation testing.
 - If a change affects package/runtime/module loading behavior, also run a CJS smoke test before completion.
 - CJS smoke test requirement:
@@ -88,9 +93,10 @@
   1. Start or confirm a single dev server instance (`pnpm run dev -- --host 0.0.0.0 --port 4173`).
   2. If there are stale servers on the same port, stop them first to avoid false test results.
   3. Run Playwright CLI against `http://127.0.0.1:4173` (or required test URL) and exercise the changed flow.
-  4. For responsive/mobile changes, run checks at 375x812 and 768x1024.
-  5. Wait 2-3 seconds before capturing final screenshot(s).
-  6. Save screenshots under `output/playwright/` with task-specific names.
+  4. For visual/UI changes, capture both light-theme and dark-theme results.
+  5. For responsive/mobile changes, run checks at 375x812 and 768x1024.
+  6. Wait 2-3 seconds before capturing final screenshot(s).
+  7. Save screenshots under `output/playwright/` with task-specific names.
 - Capture screenshots only when Playwright verification is requested.
 - If the dev server fails to start due to pre-existing errors, fix them first or work around them before testing.
 - If requested Playwright assertions fail, do not report completion; fix and re-run until passing.
@@ -108,6 +114,17 @@
   - assertion/result summary
   - screenshot absolute path(s)
   - CJS command/result (when module-loading behavior was changed)
+
+## Worktree Dev Server Rule
+
+- When working in a git worktree, prefer reusing an existing compatible `node_modules` tree when it is already available instead of triggering a fresh install by default.
+- If `node_modules` is symlinked to a shared dependency directory, avoid workflows that prompt to remove and recreate that shared directory just to run `npm run dev` or `pnpm run dev`.
+- For dev-server fixes, verify the exact user-requested command afterwards (for example `npm run dev`), not only a fallback Vite invocation.
+
+## Dark Theme CSS Rule
+
+- For shared route surfaces and large feature UIs, prefer putting the decisive dark-theme overrides in the global theme stylesheet (`src/style.css`) instead of relying only on component-scoped `:global(:root.dark)` blocks.
+- Scoped dark overrides are fine for truly local elements, but if a full route still looks like light theme in dark mode, add or strengthen the global selectors for that surface.
 
 ## NPX Testing Rule
 
@@ -132,6 +149,7 @@
 
 - When the user asks to test with Playwright, run the verification on the explicitly requested project/thread context (for example `TestChat`).
 - Screenshot artifacts must show complete passing evidence for the tested feature, not only the base page load.
+- For UI work, include dark-theme evidence in addition to the default/light-theme evidence unless the task is explicitly light-only.
 - For refresh-persistence fixes, include a post-refresh screenshot that still shows the expected UI state.
 
 ## Mandatory CJS + TestChat Validation For Markdown/File-Link Features

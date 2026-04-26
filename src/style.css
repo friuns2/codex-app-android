@@ -171,11 +171,11 @@
 }
 
 :root.dark .sidebar-skills-link {
-  @apply text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200;
+  @apply border-emerald-900/70 bg-[linear-gradient(135deg,_rgba(6,78,59,0.42),_rgba(24,24,27,0.96))] text-zinc-100 hover:border-emerald-700 hover:bg-emerald-950;
 }
 
 :root.dark .sidebar-skills-link.is-active {
-  @apply bg-zinc-800 text-zinc-100;
+  @apply border-emerald-700 bg-emerald-950/80 text-zinc-50;
 }
 
 :root.dark .sidebar-search-toggle {
@@ -1273,6 +1273,61 @@
 
 :root.dark .skills-hub-error {
   @apply border-rose-800 bg-rose-950/40 text-rose-200;
+}
+
+:root.dark .directory-title,
+:root.dark .directory-card-title,
+:root.dark .directory-modal-title,
+:root.dark .directory-mini-heading,
+:root.dark .directory-detail-heading {
+  @apply text-zinc-100;
+}
+
+:root.dark .directory-subtitle,
+:root.dark .directory-card-meta,
+:root.dark .directory-card-description,
+:root.dark .directory-mini-list,
+:root.dark .directory-detail-description {
+  @apply text-zinc-400;
+}
+
+:root.dark .directory-tabs,
+:root.dark .directory-search,
+:root.dark .directory-card,
+:root.dark .directory-loading,
+:root.dark .directory-empty,
+:root.dark .directory-modal,
+:root.dark .directory-refresh,
+:root.dark .directory-action,
+:root.dark .directory-action-link,
+:root.dark .directory-modal-close {
+  @apply border-zinc-700 bg-zinc-900 text-zinc-100;
+}
+
+:root.dark .directory-tab,
+:root.dark .directory-sort-button {
+  @apply text-zinc-400 hover:text-zinc-100;
+}
+
+:root.dark .directory-search {
+  @apply text-zinc-100 placeholder:text-zinc-500 focus:border-zinc-500;
+}
+
+:root.dark .directory-tab.is-active,
+:root.dark .directory-sort-button.is-active,
+:root.dark .directory-detail-block,
+:root.dark .directory-auth-panel,
+:root.dark .directory-chip {
+  @apply border-zinc-700 bg-zinc-800 text-zinc-100;
+}
+
+:root.dark .directory-sort-group {
+  @apply border-zinc-700 bg-zinc-950;
+}
+
+:root.dark .directory-badge.is-muted,
+:root.dark .directory-auth-status.is-muted {
+  @apply border-zinc-700 bg-zinc-900 text-zinc-400;
 }
 
 :root.dark .skill-card {
