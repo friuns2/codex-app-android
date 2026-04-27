@@ -3560,3 +3560,78 @@ The composer control row shows a `Prompt` dropdown next to `Skills`, both menus 
 
 #### Rollback/Cleanup
 - Delete any temporary verification prompt created during the test
+
+---
+
+### App shell deep-module refactor
+
+#### Feature/Change Name
+`App.vue` delegates app-shell orchestration into `src/features/app-shell/` modules for settings, routing, accounts, projects, integrations, and viewport behavior without changing the existing UI behavior.
+
+#### Prerequisites/Setup
+1. Shared dependencies available for the worktree (`node_modules` linked or present)
+2. Frontend build passes with `pnpm run build:frontend`
+3. Unit tests pass with `pnpm run test:unit`
+4. Dev server running at `http://127.0.0.1:4173`
+5. At least one existing thread and one selectable project folder are available
+
+#### Steps
+1. Open the app in light theme and verify the sidebar thread list renders
+2. Toggle the sidebar search, filter for a known thread, and open that thread
+3. Switch between the home route, a thread route, and the Skills route
+4. Open Settings, change appearance, chat width, and send-mode preferences, then refresh the page
+5. In the Accounts section, reload accounts and verify switch/remove actions still render with the same labels and disabled states
+6. Return to the home route, open the existing-folder picker, browse folders, and confirm a folder selection
+7. Open the create-folder flow, create a temporary folder, and confirm it becomes selectable
+8. If the selected folder is a Git repo, switch the new-thread runtime to worktree and verify base-branch options load
+9. Open Telegram settings, verify current values load, and save a test-safe configuration only if a disposable bot/token is available
+10. Open a thread or home composer terminal with the keyboard shortcut and close it again
+11. Repeat steps 1, 3, 4, 6, and 10 in dark theme
+
+#### Expected Results
+- Thread search, route synchronization, and thread selection behave the same as before the refactor
+- Settings changes persist across refresh and dark theme still applies correctly
+- Account controls still show the same quota text, switch/remove buttons, and blocking behavior
+- Folder picker, create-folder flow, and worktree branch loading still function from the home route
+- Telegram status/config UI still loads and saves through the same panel
+- Terminal toggle and mobile/viewport-sensitive layout behavior remain functional
+- No user-visible behavior changes are introduced beyond the internal module split
+
+#### Rollback/Cleanup
+- Remove any temporary test folder created during verification
+- Revert any non-production Telegram test values if they were changed
+
+---
+
+### Thread-state deep-module refactor
+
+#### Feature/Change Name
+`useDesktopState()` keeps the same public API, but its storage/persistence helpers and thread/message merge helpers are extracted into `src/features/thread-state/`.
+
+#### Prerequisites/Setup
+1. Shared dependencies available for the worktree during verification
+2. Frontend build passes with `pnpm run build:frontend`
+3. Unit tests pass with `pnpm run test:unit`
+4. Dev server running at `http://127.0.0.1:4173`
+5. At least one existing thread, one in-progress or recently updated thread, and the home route are available
+
+#### Steps
+1. Open the app and confirm the previously selected thread restores after reload
+2. Switch between home, skills, and at least two thread routes and confirm the selected thread, read state, and scroll state still restore correctly
+3. Send a prompt in an existing thread and confirm new persisted/live messages render correctly during and after completion
+4. Trigger a thread action that updates optimistic state, such as rename, fork, archive, or rollback, and confirm the sidebar and thread view stay in sync
+5. Change the selected model or collaboration mode, refresh the page, and confirm the selection is preserved for the same thread or new-thread context
+6. Open and close a thread terminal, refresh the page, and confirm terminal-open state persistence still behaves as before
+7. Reorder projects or rename a project display name, reload, and confirm the order/name persists
+8. Repeat the route switch and message send checks in dark theme
+
+#### Expected Results
+- `useDesktopState()` behavior remains unchanged from the UI perspective
+- Selected thread, model, collaboration mode, terminal-open state, project order, and project display names still persist
+- Message merging, live overlay updates, and optimistic thread updates still reconcile without duplicate rows or stale state
+- Route changes do not lose selected-thread state or break persisted scroll/read state
+- Dark theme behavior is unchanged by the internal split
+
+#### Rollback/Cleanup
+- Restore any renamed or reordered test projects if they were changed only for verification
+- Archive or delete any disposable test thread created during the check
