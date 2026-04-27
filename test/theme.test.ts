@@ -164,9 +164,31 @@ test('default theme tokens resolve to the legacy light palette', () => {
   assert.equal(tokens['--theme-heading-text'], '#18181b')
   assert.equal(tokens['--theme-content-title-text'], '#0f172a')
   assert.equal(tokens['--theme-sidebar-control-text'], '#52525b')
+  assert.equal(tokens['--theme-sidebar-row-text'], '#0f172a')
+  assert.equal(tokens['--theme-project-title-text'], '#3f3f46')
+  assert.equal(tokens['--theme-thread-title-text'], '#27272a')
+  assert.equal(tokens['--theme-thread-time-text'], '#71717a')
   assert.equal(tokens['--theme-composer-shell-border'], '#d4d4d8')
   assert.equal(tokens['--theme-composer-input-disabled-bg'], '#f4f4f5')
   assert.equal(tokens['--theme-composer-input-disabled-text'], '#71717a')
+  assert.equal(tokens['--theme-settings-row-text'], '#3f3f46')
+  assert.equal(tokens['--theme-settings-value-text'], '#71717a')
+  assert.equal(tokens['--theme-settings-button-hover-bg'], '#e4e4e7')
+  assert.equal(tokens['--theme-settings-button-hover-text'], '#18181b')
+  assert.equal(tokens['--theme-settings-control-bg'], '#ffffff')
+  assert.equal(tokens['--theme-settings-control-border'], '#e4e4e7')
+  assert.equal(tokens['--theme-settings-control-text'], '#3f3f46')
+  assert.equal(tokens['--theme-settings-toggle-bg'], '#d4d4d8')
+  assert.equal(tokens['--theme-settings-account-section-bg'], 'rgb(250 250 250 / 0.6)')
+  assert.equal(tokens['--theme-settings-account-count-bg'], '#e4e4e7')
+  assert.equal(tokens['--theme-settings-account-count-text'], '#52525b')
+  assert.equal(tokens['--theme-settings-account-id-bg'], '#f4f4f5')
+  assert.equal(tokens['--theme-settings-account-id-text'], '#52525b')
+  assert.equal(tokens['--theme-settings-account-action-bg'], '#ffffff')
+  assert.equal(tokens['--theme-settings-account-action-border'], '#e4e4e7')
+  assert.equal(tokens['--theme-settings-account-action-text'], '#3f3f46')
+  assert.equal(tokens['--theme-settings-account-action-hover-bg'], '#f4f4f5')
+  assert.equal(tokens['--theme-settings-account-action-hover-text'], '#3f3f46')
   assert.equal(tokens['--theme-runtime-bg'], '#f4f4f5')
   assert.equal(tokens['--theme-runtime-selected-bg'], '#ffffff')
   assert.equal(tokens['--theme-runtime-selected-border'], '#e4e4e7')
@@ -234,9 +256,31 @@ test('default theme tokens resolve to the legacy dark palette', () => {
   assert.equal(tokens['--theme-content-title-text'], '#e4e4e7')
   assert.equal(tokens['--theme-settings-button-text'], '#a1a1aa')
   assert.equal(tokens['--theme-sidebar-control-text'], '#a1a1aa')
+  assert.equal(tokens['--theme-sidebar-row-text'], '#f4f4f5')
+  assert.equal(tokens['--theme-project-title-text'], '#d4d4d8')
+  assert.equal(tokens['--theme-thread-title-text'], '#e4e4e7')
+  assert.equal(tokens['--theme-thread-time-text'], '#71717a')
   assert.equal(tokens['--theme-composer-shell-border'], '#3f3f46')
   assert.equal(tokens['--theme-composer-input-disabled-bg'], '#3f3f46')
   assert.equal(tokens['--theme-composer-input-disabled-text'], '#71717a')
+  assert.equal(tokens['--theme-settings-row-text'], '#d4d4d8')
+  assert.equal(tokens['--theme-settings-value-text'], '#a1a1aa')
+  assert.equal(tokens['--theme-settings-button-hover-bg'], '#27272a')
+  assert.equal(tokens['--theme-settings-button-hover-text'], '#e4e4e7')
+  assert.equal(tokens['--theme-settings-control-bg'], '#27272a')
+  assert.equal(tokens['--theme-settings-control-border'], '#52525b')
+  assert.equal(tokens['--theme-settings-control-text'], '#e4e4e7')
+  assert.equal(tokens['--theme-settings-toggle-bg'], '#52525b')
+  assert.equal(tokens['--theme-settings-account-section-bg'], 'rgb(39 39 42 / 0.7)')
+  assert.equal(tokens['--theme-settings-account-count-bg'], '#3f3f46')
+  assert.equal(tokens['--theme-settings-account-count-text'], '#d4d4d8')
+  assert.equal(tokens['--theme-settings-account-id-bg'], '#27272a')
+  assert.equal(tokens['--theme-settings-account-id-text'], '#d4d4d8')
+  assert.equal(tokens['--theme-settings-account-action-bg'], '#3f3f46')
+  assert.equal(tokens['--theme-settings-account-action-border'], '#52525b')
+  assert.equal(tokens['--theme-settings-account-action-text'], '#e4e4e7')
+  assert.equal(tokens['--theme-settings-account-action-hover-bg'], '#52525b')
+  assert.equal(tokens['--theme-settings-account-action-hover-text'], '#e4e4e7')
   assert.equal(tokens['--theme-runtime-bg'], '#18181b')
   assert.equal(tokens['--theme-runtime-selected-bg'], '#27272a')
   assert.equal(tokens['--theme-runtime-selected-text'], '#f4f4f5')
@@ -317,11 +361,27 @@ test('legacy settings styling stays on the main branch base with explicit appear
   )
   assert.match(
     styleCss,
-    /:root\[data-appearance='dark'\]:not\(\[data-theme='macos'\]\) \.sidebar-settings-account-count,\s*:root\[data-appearance='dark'\]:not\(\[data-theme='macos'\]\) \.sidebar-settings-account-id,\s*:root\[data-appearance='dark'\]:not\(\[data-theme='macos'\]\) \.sidebar-settings-value\s*\{\s*background: var\(--theme-control-active-bg\);\s*color: var\(--theme-text-secondary\);/
+    /:root\[data-appearance='dark'\]:not\(\[data-theme='macos'\]\) \.sidebar-settings-account-section\s*\{\s*background: var\(--theme-settings-account-section-bg, var\(--theme-panel-subtle-bg\)\);/
   )
   assert.match(
     styleCss,
-    /:root\[data-appearance='dark'\]:not\(\[data-theme='macos'\]\) \.sidebar-settings-toggle\s*\{\s*background: var\(--theme-border-strong\);/
+    /:root\[data-appearance='dark'\]:not\(\[data-theme='macos'\]\) \.sidebar-settings-account-refresh,\s*:root\[data-appearance='dark'\]:not\(\[data-theme='macos'\]\) \.sidebar-settings-account-switch\s*\{\s*border-color: var\(--theme-settings-account-action-border, var\(--theme-border\)\);\s*background: var\(--theme-settings-account-action-bg, var\(--theme-control-bg\)\);\s*color: var\(--theme-settings-account-action-text, var\(--theme-text-secondary\)\);/
+  )
+  assert.match(
+    styleCss,
+    /:root\[data-appearance='dark'\]:not\(\[data-theme='macos'\]\) \.sidebar-settings-account-count,\s*:root\[data-appearance='dark'\]:not\(\[data-theme='macos'\]\) \.sidebar-settings-value\s*\{\s*background: var\(--theme-control-active-bg\);\s*color: var\(--theme-settings-value-text, var\(--theme-text-secondary\)\);/
+  )
+  assert.match(
+    styleCss,
+    /:root\[data-appearance='dark'\]:not\(\[data-theme='macos'\]\) \.sidebar-settings-account-count\s*\{\s*background: var\(--theme-settings-account-count-bg, var\(--theme-control-active-bg\)\);\s*color: var\(--theme-settings-account-count-text, var\(--theme-text-secondary\)\);/
+  )
+  assert.match(
+    styleCss,
+    /:root\[data-appearance='dark'\]:not\(\[data-theme='macos'\]\) \.sidebar-settings-account-id\s*\{\s*background: var\(--theme-settings-account-id-bg, var\(--theme-control-active-bg\)\);\s*color: var\(--theme-settings-account-id-text, var\(--theme-text-secondary\)\);/
+  )
+  assert.match(
+    styleCss,
+    /:root\[data-appearance='dark'\]:not\(\[data-theme='macos'\]\) \.sidebar-settings-toggle\s*\{\s*background: var\(--theme-settings-toggle-bg, var\(--theme-border-strong\)\);/
   )
   assert.match(
     styleCss,
@@ -381,6 +441,22 @@ test('legacy component styling remains the default base for non-macos themes', (
   assert.match(
     styleCss,
     /:root\[data-theme\]\[data-appearance\] \.content-title\s*\{\s*color: var\(--theme-content-title-text, var\(--theme-text-primary\)\);/
+  )
+  assert.match(
+    styleCss,
+    /:root\[data-theme\]\[data-appearance\] \.project-title\s*\{\s*color: var\(--theme-project-title-text, var\(--theme-text-muted\)\);/
+  )
+  assert.match(
+    styleCss,
+    /:root\[data-theme\]\[data-appearance\] \.thread-row-title\s*\{\s*color: var\(--theme-thread-title-text, var\(--theme-text-primary\)\);/
+  )
+  assert.match(
+    styleCss,
+    /:root\[data-theme\]\[data-appearance\] \.project-header-row,\s*:root\[data-theme\]\[data-appearance\] \.thread-row\s*\{\s*color: var\(--theme-sidebar-row-text, var\(--theme-text-secondary\)\);/
+  )
+  assert.match(
+    styleCss,
+    /:root\[data-appearance='dark'\]:not\(\[data-theme='macos'\]\) \.sidebar-settings-provider-select\s*\{\s*border-color: var\(--theme-settings-control-border, var\(--theme-border\)\);\s*background: var\(--theme-settings-control-bg, var\(--theme-control-bg\)\);\s*color: var\(--theme-settings-control-text, var\(--theme-text-secondary\)\);/
   )
   assert.match(
     sidebarThreadControlsVue,

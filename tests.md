@@ -3611,14 +3611,17 @@ The default theme keeps the legacy sidebar control, header title, composer shell
 3. Light theme and dark theme both available from the appearance switcher
 
 #### Steps
-1. In light theme, open the main app shell and compare the sidebar icon controls, content header title, and composer shell border with the upstream/default reference
+1. In light theme, open the main app shell and compare the sidebar icon controls, project/thread list text, content header title, and composer shell border with the upstream/default reference
 2. Confirm a disabled composer input, such as the no-thread-selected state, keeps the old muted background and text color
-3. Switch to dark theme and repeat the same checks for the content header title, sidebar icon controls, composer border, and disabled composer input
-4. Run the theme parity Playwright check and inspect the generated light/dark screenshots under `output/playwright/`
+3. Open the settings panel and compare shared settings rows, buttons, toggles, provider selects, and account controls against the upstream/default reference
+4. Switch to dark theme and repeat the same checks for the project/thread list, content header title, sidebar icon controls, settings controls, account controls, composer border, and disabled composer input
+5. Run the theme parity Playwright check and inspect the generated light/dark screenshots under `output/playwright/`
 
 #### Expected Results
 - Sidebar icon controls use the old muted zinc tone in light and dark themes
+- Project and thread rows keep their old title, metadata, and inherited row tones
 - The content header title keeps the old dark-theme zinc-200 tone instead of becoming brighter
+- Dark settings controls keep the old row, value, hover, toggle, provider-select, account-section, account-count, and account-action tones
 - The composer shell keeps the old default border shade
 - Disabled composer inputs keep the old muted background/text styling
 - Light theme and dark theme both remain readable and visually aligned with the upstream default look

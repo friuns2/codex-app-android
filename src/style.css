@@ -47,9 +47,31 @@
   --theme-heading-text: #18181b;
   --theme-content-title-text: #0f172a;
   --theme-sidebar-control-text: #52525b;
+  --theme-sidebar-row-text: #0f172a;
+  --theme-project-title-text: #3f3f46;
+  --theme-thread-title-text: #27272a;
+  --theme-thread-time-text: #71717a;
   --theme-composer-shell-border: #d4d4d8;
   --theme-composer-input-disabled-bg: #f4f4f5;
   --theme-composer-input-disabled-text: #71717a;
+  --theme-settings-row-text: #3f3f46;
+  --theme-settings-value-text: #71717a;
+  --theme-settings-button-hover-bg: #e4e4e7;
+  --theme-settings-button-hover-text: #18181b;
+  --theme-settings-control-bg: #ffffff;
+  --theme-settings-control-border: #e4e4e7;
+  --theme-settings-control-text: #3f3f46;
+  --theme-settings-toggle-bg: #d4d4d8;
+  --theme-settings-account-section-bg: rgb(250 250 250 / 0.6);
+  --theme-settings-account-count-bg: #e4e4e7;
+  --theme-settings-account-count-text: #52525b;
+  --theme-settings-account-id-bg: #f4f4f5;
+  --theme-settings-account-id-text: #52525b;
+  --theme-settings-account-action-bg: #ffffff;
+  --theme-settings-account-action-border: #e4e4e7;
+  --theme-settings-account-action-text: #3f3f46;
+  --theme-settings-account-action-hover-bg: #f4f4f5;
+  --theme-settings-account-action-hover-text: #3f3f46;
   --theme-runtime-bg: #f4f4f5;
   --theme-runtime-selected-bg: #ffffff;
   --theme-runtime-selected-border: #e4e4e7;
@@ -160,9 +182,31 @@
   --theme-content-title-text: #e4e4e7;
   --theme-settings-button-text: #a1a1aa;
   --theme-sidebar-control-text: #a1a1aa;
+  --theme-sidebar-row-text: #f4f4f5;
+  --theme-project-title-text: #d4d4d8;
+  --theme-thread-title-text: #e4e4e7;
+  --theme-thread-time-text: #71717a;
   --theme-composer-shell-border: #3f3f46;
   --theme-composer-input-disabled-bg: #3f3f46;
   --theme-composer-input-disabled-text: #71717a;
+  --theme-settings-row-text: #d4d4d8;
+  --theme-settings-value-text: #a1a1aa;
+  --theme-settings-button-hover-bg: #27272a;
+  --theme-settings-button-hover-text: #e4e4e7;
+  --theme-settings-control-bg: #27272a;
+  --theme-settings-control-border: #52525b;
+  --theme-settings-control-text: #e4e4e7;
+  --theme-settings-toggle-bg: #52525b;
+  --theme-settings-account-section-bg: rgb(39 39 42 / 0.7);
+  --theme-settings-account-count-bg: #3f3f46;
+  --theme-settings-account-count-text: #d4d4d8;
+  --theme-settings-account-id-bg: #27272a;
+  --theme-settings-account-id-text: #d4d4d8;
+  --theme-settings-account-action-bg: #3f3f46;
+  --theme-settings-account-action-border: #52525b;
+  --theme-settings-account-action-text: #e4e4e7;
+  --theme-settings-account-action-hover-bg: #52525b;
+  --theme-settings-account-action-hover-text: #e4e4e7;
   --theme-runtime-bg: #18181b;
   --theme-runtime-selected-bg: #27272a;
   --theme-runtime-selected-border: #52525b;
@@ -810,8 +854,8 @@ body {
 }
 
 :root[data-appearance='dark']:not([data-theme='macos']) .sidebar-settings-button:hover {
-  background: var(--theme-control-hover-bg);
-  color: var(--theme-text-primary);
+  background: var(--theme-settings-button-hover-bg, var(--theme-control-hover-bg));
+  color: var(--theme-settings-button-hover-text, var(--theme-text-primary));
 }
 
 :root[data-appearance='dark']:not([data-theme='macos']) .sidebar-settings-button-version {
@@ -824,7 +868,7 @@ body {
 }
 
 :root[data-appearance='dark']:not([data-theme='macos']) .sidebar-settings-row {
-  color: var(--theme-text-primary);
+  color: var(--theme-settings-row-text, var(--theme-text-primary));
 }
 
 :root[data-appearance='dark']:not([data-theme='macos']) .sidebar-settings-row:hover {
@@ -832,9 +876,15 @@ body {
 }
 
 :root[data-appearance='dark']:not([data-theme='macos']) .sidebar-settings-language-dropdown .composer-dropdown-trigger {
-  border-color: var(--theme-border);
-  background: var(--theme-control-bg);
-  color: var(--theme-text-secondary);
+  border-color: var(--theme-settings-control-border, var(--theme-border));
+  background: var(--theme-settings-control-bg, var(--theme-control-bg));
+  color: var(--theme-settings-control-text, var(--theme-text-secondary));
+}
+
+:root[data-appearance='dark']:not([data-theme='macos']) .sidebar-settings-provider-select {
+  border-color: var(--theme-settings-control-border, var(--theme-border));
+  background: var(--theme-settings-control-bg, var(--theme-control-bg));
+  color: var(--theme-settings-control-text, var(--theme-text-secondary));
 }
 
 :root[data-appearance='dark']:not([data-theme='macos']) .sidebar-settings-row + .sidebar-settings-row {
@@ -845,6 +895,10 @@ body {
 :root[data-appearance='dark']:not([data-theme='macos']) .sidebar-settings-account-section {
   border-color: var(--theme-border);
   background: var(--theme-panel-subtle-bg);
+}
+
+:root[data-appearance='dark']:not([data-theme='macos']) .sidebar-settings-account-section {
+  background: var(--theme-settings-account-section-bg, var(--theme-panel-subtle-bg));
 }
 
 :root[data-appearance='dark']:not([data-theme='macos']) .sidebar-settings-field-label,
@@ -876,23 +930,32 @@ body {
 :root[data-appearance='dark']:not([data-theme='macos']) .sidebar-settings-account-collapse,
 :root[data-appearance='dark']:not([data-theme='macos']) .sidebar-settings-account-refresh,
 :root[data-appearance='dark']:not([data-theme='macos']) .sidebar-settings-account-switch {
-  border-color: var(--theme-border);
-  background: var(--theme-control-bg);
-  color: var(--theme-text-secondary);
+  border-color: var(--theme-settings-account-action-border, var(--theme-border));
+  background: var(--theme-settings-account-action-bg, var(--theme-control-bg));
+  color: var(--theme-settings-account-action-text, var(--theme-text-secondary));
 }
 
 :root[data-appearance='dark']:not([data-theme='macos']) .sidebar-settings-account-collapse:hover,
 :root[data-appearance='dark']:not([data-theme='macos']) .sidebar-settings-account-refresh:hover,
 :root[data-appearance='dark']:not([data-theme='macos']) .sidebar-settings-account-switch:hover {
-  background: var(--theme-control-hover-bg);
-  color: var(--theme-text-primary);
+  background: var(--theme-settings-account-action-hover-bg, var(--theme-control-hover-bg));
+  color: var(--theme-settings-account-action-hover-text, var(--theme-text-primary));
 }
 
 :root[data-appearance='dark']:not([data-theme='macos']) .sidebar-settings-account-count,
-:root[data-appearance='dark']:not([data-theme='macos']) .sidebar-settings-account-id,
 :root[data-appearance='dark']:not([data-theme='macos']) .sidebar-settings-value {
   background: var(--theme-control-active-bg);
-  color: var(--theme-text-secondary);
+  color: var(--theme-settings-value-text, var(--theme-text-secondary));
+}
+
+:root[data-appearance='dark']:not([data-theme='macos']) .sidebar-settings-account-count {
+  background: var(--theme-settings-account-count-bg, var(--theme-control-active-bg));
+  color: var(--theme-settings-account-count-text, var(--theme-text-secondary));
+}
+
+:root[data-appearance='dark']:not([data-theme='macos']) .sidebar-settings-account-id {
+  background: var(--theme-settings-account-id-bg, var(--theme-control-active-bg));
+  color: var(--theme-settings-account-id-text, var(--theme-text-secondary));
 }
 
 :root[data-appearance='dark']:not([data-theme='macos']) .sidebar-settings-account-item {
@@ -911,7 +974,7 @@ body {
 }
 
 :root[data-appearance='dark']:not([data-theme='macos']) .sidebar-settings-toggle {
-  background: var(--theme-border-strong);
+  background: var(--theme-settings-toggle-bg, var(--theme-border-strong));
 }
 
 :root[data-appearance='dark']:not([data-theme='macos']) .sidebar-settings-toggle::after {
@@ -992,6 +1055,14 @@ body {
 :root[data-theme][data-appearance] .conversation-empty,
 :root[data-theme][data-appearance] .worktree-init-status.is-running {
   color: var(--theme-text-muted);
+}
+
+:root[data-theme][data-appearance] .project-title {
+  color: var(--theme-project-title-text, var(--theme-text-muted));
+}
+
+:root[data-theme][data-appearance] .thread-row-time {
+  color: var(--theme-thread-time-text, var(--theme-text-muted));
 }
 
 :root[data-theme][data-appearance] .sidebar-settings-context-value[data-state='ok'],
@@ -1101,6 +1172,10 @@ body {
 :root[data-theme][data-appearance] .request-title,
 :root[data-theme][data-appearance] .request-reason {
   color: var(--theme-text-primary);
+}
+
+:root[data-theme][data-appearance] .thread-row-title {
+  color: var(--theme-thread-title-text, var(--theme-text-primary));
 }
 
 :root[data-theme][data-appearance] .new-thread-hero {
@@ -1553,6 +1628,11 @@ body {
 :root[data-theme][data-appearance] .skill-card,
 :root[data-theme][data-appearance] .thread-composer-attach-mode-button {
   color: var(--theme-text-secondary);
+}
+
+:root[data-theme][data-appearance] .project-header-row,
+:root[data-theme][data-appearance] .thread-row {
+  color: var(--theme-sidebar-row-text, var(--theme-text-secondary));
 }
 
 :root[data-theme][data-appearance] .review-pane-file:hover,
