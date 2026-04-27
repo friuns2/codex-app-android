@@ -61,7 +61,7 @@ const { t } = useUiLanguage()
 }
 
 .sidebar-thread-controls-button {
-  color: var(--theme-text-secondary);
+  color: var(--theme-sidebar-control-text, var(--theme-text-subtle));
 }
 
 .sidebar-thread-controls-button:hover {

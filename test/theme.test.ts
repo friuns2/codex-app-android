@@ -35,6 +35,7 @@ const skillsHubVue = readFileSync(resolve(process.cwd(), 'src/components/content
 const threadComposerVue = readFileSync(resolve(process.cwd(), 'src/components/content/ThreadComposer.vue'), 'utf8')
 const threadConversationVue = readFileSync(resolve(process.cwd(), 'src/components/content/ThreadConversation.vue'), 'utf8')
 const desktopLayoutVue = readFileSync(resolve(process.cwd(), 'src/components/layout/DesktopLayout.vue'), 'utf8')
+const sidebarThreadControlsVue = readFileSync(resolve(process.cwd(), 'src/components/sidebar/SidebarThreadControls.vue'), 'utf8')
 const sidebarThreadTreeVue = readFileSync(resolve(process.cwd(), 'src/components/sidebar/SidebarThreadTree.vue'), 'utf8')
 
 function getThemeTokenBlock(theme: string, appearance: string): Record<string, string> {
@@ -161,6 +162,11 @@ test('default theme tokens resolve to the legacy light palette', () => {
   assert.equal(tokens['--theme-text-muted'], '#71717a')
   assert.equal(tokens['--theme-shell-text'], '#0f172a')
   assert.equal(tokens['--theme-heading-text'], '#18181b')
+  assert.equal(tokens['--theme-content-title-text'], '#0f172a')
+  assert.equal(tokens['--theme-sidebar-control-text'], '#52525b')
+  assert.equal(tokens['--theme-composer-shell-border'], '#d4d4d8')
+  assert.equal(tokens['--theme-composer-input-disabled-bg'], '#f4f4f5')
+  assert.equal(tokens['--theme-composer-input-disabled-text'], '#71717a')
   assert.equal(tokens['--theme-runtime-bg'], '#f4f4f5')
   assert.equal(tokens['--theme-runtime-selected-bg'], '#ffffff')
   assert.equal(tokens['--theme-runtime-selected-border'], '#e4e4e7')
@@ -225,7 +231,12 @@ test('default theme tokens resolve to the legacy dark palette', () => {
   assert.equal(tokens['--theme-text-muted'], '#a1a1aa')
   assert.equal(tokens['--theme-shell-text'], '#f4f4f5')
   assert.equal(tokens['--theme-heading-text'], '#f4f4f5')
+  assert.equal(tokens['--theme-content-title-text'], '#e4e4e7')
   assert.equal(tokens['--theme-settings-button-text'], '#a1a1aa')
+  assert.equal(tokens['--theme-sidebar-control-text'], '#a1a1aa')
+  assert.equal(tokens['--theme-composer-shell-border'], '#3f3f46')
+  assert.equal(tokens['--theme-composer-input-disabled-bg'], '#3f3f46')
+  assert.equal(tokens['--theme-composer-input-disabled-text'], '#71717a')
   assert.equal(tokens['--theme-runtime-bg'], '#18181b')
   assert.equal(tokens['--theme-runtime-selected-bg'], '#27272a')
   assert.equal(tokens['--theme-runtime-selected-text'], '#f4f4f5')
@@ -358,6 +369,22 @@ test('legacy component styling remains the default base for non-macos themes', (
   assert.match(
     styleCss,
     /:root\[data-theme\]\[data-appearance\] \.runtime-toggle-option\.is-selected\s*\{\s*border-color: var\(--theme-runtime-selected-border, var\(--theme-selection-border\)\);\s*background: var\(--theme-runtime-selected-bg, var\(--theme-selection-bg\)\);\s*color: var\(--theme-runtime-selected-text, var\(--theme-selection-text\)\);/
+  )
+  assert.match(
+    styleCss,
+    /:root\[data-theme\]\[data-appearance\] \.thread-composer-shell\s*\{\s*border-color: var\(--theme-composer-shell-border, var\(--theme-border\)\);/
+  )
+  assert.match(
+    styleCss,
+    /:root\[data-theme\]\[data-appearance\] \.thread-composer-input:disabled\s*\{\s*background: var\(--theme-composer-input-disabled-bg, var\(--theme-control-active-bg\)\);\s*color: var\(--theme-composer-input-disabled-text, var\(--theme-text-muted\)\);/
+  )
+  assert.match(
+    styleCss,
+    /:root\[data-theme\]\[data-appearance\] \.content-title\s*\{\s*color: var\(--theme-content-title-text, var\(--theme-text-primary\)\);/
+  )
+  assert.match(
+    sidebarThreadControlsVue,
+    /color: var\(--theme-sidebar-control-text, var\(--theme-text-subtle\)\);/
   )
   assert.doesNotMatch(styleCss, /^\.sidebar-settings-panel\s*\{/m)
   assert.doesNotMatch(styleCss, /^\.sidebar-settings-row\s*\{/m)

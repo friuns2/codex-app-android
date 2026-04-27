@@ -45,6 +45,11 @@
   --theme-text-muted: #71717a;
   --theme-shell-text: #0f172a;
   --theme-heading-text: #18181b;
+  --theme-content-title-text: #0f172a;
+  --theme-sidebar-control-text: #52525b;
+  --theme-composer-shell-border: #d4d4d8;
+  --theme-composer-input-disabled-bg: #f4f4f5;
+  --theme-composer-input-disabled-text: #71717a;
   --theme-runtime-bg: #f4f4f5;
   --theme-runtime-selected-bg: #ffffff;
   --theme-runtime-selected-border: #e4e4e7;
@@ -152,7 +157,12 @@
   --theme-text-muted: #a1a1aa;
   --theme-shell-text: #f4f4f5;
   --theme-heading-text: #f4f4f5;
+  --theme-content-title-text: #e4e4e7;
   --theme-settings-button-text: #a1a1aa;
+  --theme-sidebar-control-text: #a1a1aa;
+  --theme-composer-shell-border: #3f3f46;
+  --theme-composer-input-disabled-bg: #3f3f46;
+  --theme-composer-input-disabled-text: #71717a;
   --theme-runtime-bg: #18181b;
   --theme-runtime-selected-bg: #27272a;
   --theme-runtime-selected-border: #52525b;
@@ -1052,6 +1062,10 @@ body {
   background: var(--theme-panel-bg);
 }
 
+:root[data-theme][data-appearance] .thread-composer-shell {
+  border-color: var(--theme-composer-shell-border, var(--theme-border));
+}
+
 :root[data-theme][data-appearance] .file-change-list,
 :root[data-theme][data-appearance] .request-card,
 :root[data-theme][data-appearance] .build-badge,
@@ -1477,6 +1491,15 @@ body {
 :root[data-theme][data-appearance] .skills-hub-search,
 :root[data-theme][data-appearance] .thread-composer-input {
   color: var(--theme-text-primary);
+}
+
+:root[data-theme][data-appearance] .thread-composer-input:disabled {
+  background: var(--theme-composer-input-disabled-bg, var(--theme-control-active-bg));
+  color: var(--theme-composer-input-disabled-text, var(--theme-text-muted));
+}
+
+:root[data-theme][data-appearance] .content-title {
+  color: var(--theme-content-title-text, var(--theme-text-primary));
 }
 
 :root[data-theme][data-appearance] .rename-thread-input,
