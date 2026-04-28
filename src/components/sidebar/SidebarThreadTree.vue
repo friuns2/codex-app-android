@@ -516,6 +516,9 @@
         <button class="thread-menu-item" type="button" @click="onBrowseThreadFiles(openThreadMenuThread.id)">
           Browse files
         </button>
+        <button class="thread-menu-item" type="button" @click="onCopyThreadPath(openThreadMenuThread.id)">
+          Copy path
+        </button>
         <button class="thread-menu-item" type="button" @click="onExportThread(openThreadMenuThread.id)">
           Export chat
         </button>
@@ -1134,6 +1137,17 @@ function onStartNewThread(projectName: string): void {
 function onBrowseThreadFiles(threadId: string): void {
   emit('browse-thread-files', threadId)
   closeThreadMenu()
+}
+
+async function onCopyThreadPath(threadId: string): Promise<void> {
+  const path = threadById.value.get(threadId)?.cwd?.trim() ?? ''
+  closeThreadMenu()
+  if (!path || typeof navigator === 'undefined' || !navigator.clipboard) return
+  try {
+    await navigator.clipboard.writeText(path)
+  } catch {
+    // Clipboard writes can be blocked by browser permissions; the menu action is best-effort.
+  }
 }
 
 function onThreadRowLeave(threadId: string, event?: MouseEvent): void {
