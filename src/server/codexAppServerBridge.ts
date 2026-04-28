@@ -1449,14 +1449,13 @@ async function startComposioLogin(): Promise<ComposioLoginResult> {
 }
 
 async function installComposioCli(): Promise<ComposioInstallResult> {
-  const homeBin = join(homedir(), '.npm-global', 'bin')
-  const command = 'npm'
-  const args = ['install', '-g', '@composio/cli@latest']
+  const command = 'bash'
+  const installScriptUrl = 'https://composio.dev/install'
+  const args = ['-lc', `curl -fsSL ${installScriptUrl} | bash`]
   const invocation = getSpawnInvocation(command, args)
   const env = {
     ...process.env,
-    npm_config_prefix: process.env.npm_config_prefix?.trim() || join(homedir(), '.npm-global'),
-    PATH: process.env.PATH ? `${homeBin}:${process.env.PATH}` : homeBin,
+    COMPOSIO_INSTALL_DIR: process.env.COMPOSIO_INSTALL_DIR?.trim() || join(homedir(), '.composio'),
   }
   const result = spawnSync(invocation.command, invocation.args, {
     encoding: 'utf8',
@@ -1469,7 +1468,7 @@ async function installComposioCli(): Promise<ComposioInstallResult> {
   }
   return {
     ok: true,
-    command: `${command} ${args.join(' ')}`,
+    command: `curl -fsSL ${installScriptUrl} | bash`,
     output,
   }
 }
