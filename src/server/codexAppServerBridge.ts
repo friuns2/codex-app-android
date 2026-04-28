@@ -195,6 +195,8 @@ const PROVIDER_MODELS_FETCH_TIMEOUT_MS = 5_000
 const THREAD_RESPONSE_TURN_LIMIT = 10
 const THREAD_METHODS_WITH_TURNS = new Set(['thread/read', 'thread/resume', 'thread/fork', 'thread/rollback'])
 const THREAD_SEARCH_FULL_TEXT_THREAD_LIMIT = 100
+const PROJECTLESS_THREAD_DIRECTORY_MAX_ATTEMPTS = 100
+const PROJECTLESS_THREAD_SLUG_MAX_LENGTH = 80
 const API_PERF_LOGGING_ENV_KEY = 'CODEXUI_API_PERF_LOGGING'
 const API_PERF_MS_THRESHOLD_ENV_KEY = 'CODEXUI_API_PERF_MS_THRESHOLD'
 const API_PERF_BODY_MB_THRESHOLD_ENV_KEY = 'CODEXUI_API_PERF_BODY_MB_THRESHOLD'
@@ -713,6 +715,57 @@ function logProviderModelDiscoveryWarning(message: string, details: Record<strin
 
 function isTimeoutError(payload: unknown): boolean {
   return payload instanceof Error && (payload.name === 'AbortError' || payload.name === 'TimeoutError')
+}
+
+function formatProjectlessDateSegment(date = new Date()): string {
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${date.getFullYear()}-${month}-${day}`
+}
+
+function buildProjectlessPromptSlug(prompt: string | null): string {
+  const slug = prompt
+    ?.toLowerCase()
+    .match(/[a-z0-9]+/g)
+    ?.slice(0, 6)
+    .join('-')
+    .slice(0, PROJECTLESS_THREAD_SLUG_MAX_LENGTH)
+  return slug && slug.length > 0 ? slug : 'new-chat'
+}
+
+async function ensureRealDirectory(path: string, label: string): Promise<void> {
+  const info = await lstat(path)
+  if (info.isSymbolicLink() || !info.isDirectory()) {
+    throw new Error(`${label} must be a real directory`)
+  }
+}
+
+async function createProjectlessThreadDirectory(prompt: string | null): Promise<{ cwd: string; outputDirectory: string; workspaceRoot: string }> {
+  const workspaceRoot = join(homedir(), 'Documents', 'Codex')
+  await mkdir(workspaceRoot, { recursive: true })
+  await ensureRealDirectory(workspaceRoot, 'Projectless workspace root')
+
+  const dateDir = join(workspaceRoot, formatProjectlessDateSegment())
+  await mkdir(dateDir, { recursive: true })
+  await ensureRealDirectory(dateDir, 'Projectless thread date directory')
+
+  const slug = buildProjectlessPromptSlug(prompt)
+  for (let index = 0; index < PROJECTLESS_THREAD_DIRECTORY_MAX_ATTEMPTS; index += 1) {
+    const folderName = index === 0 ? slug : `${slug}-${index + 1}`
+    const cwd = join(dateDir, folderName)
+    try {
+      await mkdir(cwd, { recursive: false })
+      return { cwd, outputDirectory: cwd, workspaceRoot }
+    } catch {
+      try {
+        await stat(cwd)
+      } catch {
+        throw new Error('Failed to create new chat folder')
+      }
+    }
+  }
+
+  throw new Error('Unable to create a unique new chat folder')
 }
 
 function normalizeHeaderValue(value: unknown): string | null {
@@ -5033,6 +5086,18 @@ export function createCodexBridgeMiddleware(): CodexBridgeMiddleware {
         }
 
         setJson(res, 200, { data: { path: normalizedPath } })
+        return
+      }
+
+      if (req.method === 'POST' && url.pathname === '/codex-api/projectless-thread-cwd') {
+        const payload = asRecord(await readJsonBody(req))
+        const prompt = typeof payload?.prompt === 'string' ? payload.prompt : null
+        try {
+          const directory = await createProjectlessThreadDirectory(prompt)
+          setJson(res, 200, { data: directory })
+        } catch (error) {
+          setJson(res, 500, { error: error instanceof Error ? error.message : 'Failed to create new chat folder' })
+        }
         return
       }
 

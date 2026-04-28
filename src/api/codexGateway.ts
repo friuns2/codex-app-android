@@ -2434,6 +2434,36 @@ export async function createLocalDirectory(path: string): Promise<string> {
   return typeof data.path === 'string' ? normalizePathForUi(data.path) : ''
 }
 
+export async function createProjectlessThreadDirectory(prompt?: string): Promise<{ cwd: string; outputDirectory: string; workspaceRoot: string }> {
+  const response = await fetch('/codex-api/projectless-thread-cwd', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prompt: prompt ?? null }),
+  })
+  const payload = await readJsonResponse(response)
+  if (!response.ok) {
+    const message = getErrorMessageFromPayload(payload, 'Failed to create new chat folder')
+    throw new Error(message)
+  }
+  const record =
+    payload && typeof payload === 'object' && !Array.isArray(payload)
+      ? (payload as Record<string, unknown>)
+      : {}
+  const data =
+    record.data && typeof record.data === 'object' && !Array.isArray(record.data)
+      ? (record.data as Record<string, unknown>)
+      : {}
+  const cwd = typeof data.cwd === 'string' ? normalizePathForUi(data.cwd) : ''
+  if (!cwd) {
+    throw new Error('Failed to create new chat folder')
+  }
+  return {
+    cwd,
+    outputDirectory: typeof data.outputDirectory === 'string' ? normalizePathForUi(data.outputDirectory) : cwd,
+    workspaceRoot: typeof data.workspaceRoot === 'string' ? normalizePathForUi(data.workspaceRoot) : '',
+  }
+}
+
 export async function getProjectRootSuggestion(basePath: string): Promise<{ name: string; path: string }> {
   const query = new URLSearchParams({ basePath })
   const response = await fetch(`/codex-api/project-root-suggestion?${query.toString()}`)

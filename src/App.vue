@@ -867,6 +867,7 @@ import {
   checkoutGitBranch,
   configureTelegramBot,
   createWorktree,
+  createProjectlessThreadDirectory,
   getGitBranchState,
   getWorktreeBranchOptions,
   getAccounts,
@@ -2034,13 +2035,8 @@ function onBrowseThreadFiles(threadId: string): void {
 }
 
 function onStartNewThreadFromToolbar(): void {
-  const selected = selectedThread.value
-  const cwd = selected
-    ? resolvePreferredLocalCwd(selected.projectName, selected.cwd?.trim() ?? '')
-    : ''
-  if (cwd) {
-    newThreadCwd.value = cwd
-  }
+  newThreadCwd.value = ''
+  newThreadRuntime.value = 'local'
   if (isMobile.value) setSidebarCollapsed(true)
   if (isHomeRoute.value) return
   void router.push({ name: 'home' })
@@ -3310,11 +3306,15 @@ watch(
   (options) => {
     if (options.length === 0) {
       newThreadCwd.value = ''
+      void refreshDefaultProjectName()
       return
     }
-    const hasSelected = options.some((option) => option.value === newThreadCwd.value)
-    if (!hasSelected) {
-      newThreadCwd.value = options[0].value
+    const selected = newThreadCwd.value.trim()
+    if (selected) {
+      const hasSelected = options.some((option) => option.value === selected)
+      if (!hasSelected) {
+        newThreadCwd.value = ''
+      }
     }
     void refreshDefaultProjectName()
   },
@@ -3433,6 +3433,10 @@ async function submitFirstMessageForNewThread(
         }
         return
       }
+    } else if (!targetCwd.trim()) {
+      const directory = await createProjectlessThreadDirectory(text)
+      targetCwd = directory.cwd
+      newThreadCwd.value = directory.cwd
     }
     const threadId = await sendMessageToNewThread(text, targetCwd, imageUrls, skills, fileAttachments)
     if (!threadId) return

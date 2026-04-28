@@ -722,3 +722,12 @@ After each feature implementation session that uses this skill:
   - infer bare base64 image MIME only from byte signatures such as PNG/JPEG/WebP/GIF
   - leave non-image base64 and non-image data URLs untouched
 - This is a read-path/UI-payload mitigation. Historical `.jsonl` files written by Codex app-server remain unchanged unless a separate compaction tool is introduced.
+
+## Findings: Projectless New Chat Folders (2026-04-28)
+
+- Codex.app creates projectless new-chat folders through the `projectless-thread-cwd` main-process handler before starting the conversation.
+- The created root is `~/Documents/Codex`, with one date subdirectory per local date formatted as `YYYY-MM-DD`.
+- The leaf directory slug comes from the first six lowercase alphanumeric prompt tokens, joined with `-`, capped at 80 characters, and falls back to `new-chat`.
+- Duplicate slugs retry as `slug-2`, `slug-3`, and so on for up to 100 attempts.
+- Both the workspace root and date directory are created recursively and verified as real directories, not symlinks.
+- The app-server start payload for projectless chats uses the created directory as `cwd` and `outputDirectory`, with `workspaceRoot` set to `~/Documents/Codex`.
