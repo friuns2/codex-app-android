@@ -3600,31 +3600,36 @@ The `Select folder` dialog now lets the user edit the current folder path direct
 
 ---
 
-### Codex.app-style bottom Chats shelf
+### Expandable Projects, Pinned, and Chats sidebar sections
 
 #### Feature/Change Name
-The sidebar includes a Codex.app-style bottom `Chats` shelf above Settings with recent global chats, a filter toggle, and a new-chat button.
+The sidebar labels the grouped thread area as `Projects`, makes `Projects`, `Pinned`, and `Chats` independently expandable, and places `Chats` after `Projects` in the same scrollable sidebar area.
 
 #### Prerequisites/Setup
-1. Dev server running at `http://127.0.0.1:5173` or the active Vite dev URL
+1. Dev server running at `http://127.0.0.1:5174` or the active Vite dev URL
 2. At least one existing thread is available in the sidebar
-3. Light theme and dark theme are available from the appearance switcher
+3. At least one pinned thread exists to verify the `Pinned` section
+4. Light theme and dark theme are available from the appearance switcher
 
 #### Steps
 1. In light theme, open the app with the sidebar expanded
-2. Verify a `Chats` section appears fixed near the bottom above Settings
-3. Verify recent chats show truncated titles and relative timestamps
-4. Click a chat row and verify the selected thread opens
-5. Click the filter icon and verify the existing sidebar search field opens and the filter button shows active state
-6. Click the compose icon and verify the app navigates to the new-chat/home composer
-7. Switch to dark theme and repeat the visual checks for the shelf, buttons, active row, and row text
+2. Verify the grouped thread header reads `Projects` instead of `Threads`
+3. Verify `Pinned`, `Projects`, and `Chats` each show a chevron when present
+4. Collapse and expand `Pinned`, confirming pinned rows hide and return
+5. Collapse and expand `Projects`, confirming project groups hide and return
+6. Confirm `Chats` appears after `Projects` and scrolls with the same sidebar content, not as a fixed bottom shelf
+7. Collapse and expand `Chats`, confirming recent chat rows hide and return
+8. Click the `Chats` filter icon and verify the existing sidebar search field opens and the filter button shows active state
+9. Click the `Chats` compose icon and verify the app navigates to the new-chat/home composer
+10. Switch to dark theme and repeat the visibility checks for section headers, chevrons, active filter state, and row text
 
 #### Expected Results
-- The bottom `Chats` shelf remains visible while the main grouped thread list scrolls
-- The shelf shows globally recent chats regardless of project grouping
-- The filter icon toggles the sidebar search without losing the recent chat rows
+- The sidebar uses `Projects` for the grouped project/thread area
+- `Pinned`, `Projects`, and `Chats` expansion state changes immediately and persists across reload
+- `Chats` is appended after `Projects` in the same scroll space
+- The filter icon toggles the sidebar search without losing the `Chats` section
 - The compose icon starts a new chat using the existing new-thread flow
-- Light theme and dark theme both keep the shelf aligned with the surrounding sidebar colors and readable
+- Light theme and dark theme both keep section headers, controls, and rows readable
 
 #### Rollback/Cleanup
 - Clear the sidebar search query if the filter step left it open

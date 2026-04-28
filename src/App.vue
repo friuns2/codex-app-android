@@ -65,24 +65,17 @@
             :selected-thread-id="selectedThreadId" :is-loading="isLoadingThreads"
             :search-query="sidebarSearchQuery"
             :search-matched-thread-ids="serverMatchedThreadIds"
+            :filter-active="isSidebarSearchVisible"
             @select="onSelectThread"
             @archive="onArchiveThread" @start-new-thread="onStartNewThread" @rename-project="onRenameProject"
             @browse-thread-files="onBrowseThreadFiles"
             @rename-thread="onRenameThread"
             @fork-thread="onForkThread"
             @remove-project="onRemoveProject" @reorder-project="onReorderProject"
-            @export-thread="onExportThread" />
+            @export-thread="onExportThread"
+            @start-new-chat="onStartNewThreadFromToolbar"
+            @toggle-filter="toggleSidebarSearch" />
         </div>
-
-        <SidebarChatsShelf
-          v-if="!isSidebarCollapsed"
-          :groups="projectGroups"
-          :selected-thread-id="selectedThreadId"
-          :filter-active="isSidebarSearchVisible"
-          @select="onSelectThread"
-          @start-new-chat="onStartNewThreadFromToolbar"
-          @toggle-filter="toggleSidebarSearch"
-        />
 
         <div
           v-if="!isSidebarCollapsed"
@@ -854,7 +847,6 @@ import { computed, defineAsyncComponent, nextTick, onMounted, onUnmounted, ref, 
 import { useRoute, useRouter } from 'vue-router'
 import DesktopLayout from './components/layout/DesktopLayout.vue'
 import SidebarThreadTree from './components/sidebar/SidebarThreadTree.vue'
-import SidebarChatsShelf from './components/sidebar/SidebarChatsShelf.vue'
 import ContentHeader from './components/content/ContentHeader.vue'
 import ThreadComposer from './components/content/ThreadComposer.vue'
 import ThreadPendingRequestPanel from './components/content/ThreadPendingRequestPanel.vue'

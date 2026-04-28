@@ -194,34 +194,20 @@
   @apply text-zinc-200 placeholder-zinc-500;
 }
 
-:root.dark .sidebar-chats-shelf {
-  @apply border-zinc-700 bg-zinc-900;
-}
-
-:root.dark .sidebar-chats-title,
-:root.dark .sidebar-chat-time,
-:root.dark .sidebar-chats-empty {
+:root.dark .thread-tree-header {
   @apply text-zinc-500;
 }
 
-:root.dark .sidebar-chats-action {
+:root.dark .section-toggle-row {
+  @apply hover:bg-zinc-800 focus-visible:ring-zinc-600;
+}
+
+:root.dark .chats-section-action {
   @apply text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200;
 }
 
-:root.dark .sidebar-chats-action[aria-pressed='true'] {
+:root.dark .chats-section-action[aria-pressed='true'] {
   @apply bg-zinc-800 text-zinc-200;
-}
-
-:root.dark .sidebar-chat-row {
-  @apply text-zinc-200 hover:bg-zinc-800;
-}
-
-:root.dark .sidebar-chat-row.is-active {
-  @apply bg-zinc-800 text-zinc-50;
-}
-
-:root.dark .thread-tree-header {
-  @apply text-zinc-500;
 }
 
 :root.dark .thread-row {

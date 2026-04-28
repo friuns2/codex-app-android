@@ -11,6 +11,8 @@ const zhCN: Record<string, string> = {
   'Filter threads...': '筛选线程...',
   'Clear search': '清除搜索',
   'Chats': '聊天',
+  'Projects': '项目',
+  'Pinned': '已固定',
   'Filter chats': '筛选聊天',
   'Hide chat filters': '隐藏聊天筛选',
   'New chat': '新聊天',
