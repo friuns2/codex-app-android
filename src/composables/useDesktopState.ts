@@ -81,7 +81,7 @@ const TURN_START_FOLLOW_UP_SYNC_DELAY_MS = 3000
 const RECENT_THREAD_MESSAGE_LOAD_REUSE_MS = 2000
 const REASONING_EFFORT_OPTIONS: ReasoningEffort[] = ['none', 'minimal', 'low', 'medium', 'high', 'xhigh']
 const GLOBAL_SERVER_REQUEST_SCOPE = '__global__'
-const MODEL_FALLBACK_ID = 'gpt-5.2-codex'
+const MODEL_FALLBACK_ID = 'gpt-5.4-mini'
 
 function loadReadStateMap(): Record<string, string> {
   if (typeof window === 'undefined') return {}
@@ -617,7 +617,8 @@ function isUnsupportedChatGptModelError(error: unknown): boolean {
   const message = error.message.toLowerCase()
   return (
     message.includes('not supported when using codex with a chatgpt account') ||
-    message.includes('model is not supported')
+    message.includes('model is not supported') ||
+    message.includes('requires a newer version of codex')
   )
 }
 

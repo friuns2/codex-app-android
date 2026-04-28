@@ -891,7 +891,7 @@ import type { ReasoningEffort, SpeedMode, ThreadScrollState, UiAccountEntry, UiR
 import type { ComposerDraftPayload, ThreadComposerExposed } from './components/content/ThreadComposer.vue'
 import type { LocalDirectoryEntry, TelegramStatus, WorktreeBranchOption } from './api/codexGateway'
 import { getFreeModeStatus, setFreeMode, setFreeModeCustomKey, setCustomProvider } from './api/codexGateway'
-import { getPathLeafName, getPathParent, normalizePathForUi } from './pathUtils.js'
+import { getPathLeafName, getPathParent, isProjectlessChatPath, normalizePathForUi } from './pathUtils.js'
 
 const ThreadConversation = defineAsyncComponent(() => import('./components/content/ThreadConversation.vue'))
 const ThreadTerminalPanel = defineAsyncComponent(() => import('./components/content/ThreadTerminalPanel.vue'))
@@ -1393,7 +1393,7 @@ const newThreadFolderOptions = computed(() => {
 
   for (const group of projectGroups.value) {
     const cwd = group.threads[0]?.cwd?.trim() ?? ''
-    if (!cwd || seenCwds.has(cwd)) continue
+    if (!cwd || seenCwds.has(cwd) || isProjectlessChatPath(cwd)) continue
     seenCwds.add(cwd)
     options.push({
       value: cwd,

@@ -689,6 +689,7 @@ import IconTablerGitFork from '../icons/IconTablerGitFork.vue'
 import IconTablerFilter from '../icons/IconTablerFilter.vue'
 import IconTablerPin from '../icons/IconTablerPin.vue'
 import { useUiLanguage } from '../../composables/useUiLanguage'
+import { isProjectlessChatPath } from '../../pathUtils.js'
 import SidebarMenuRow from './SidebarMenuRow.vue'
 
 const props = defineProps<{
@@ -936,11 +937,10 @@ function threadMatchesSearch(thread: UiThread): boolean {
 }
 
 const filteredGroups = computed<UiProjectGroup[]>(() => {
-  if (!isSearchActive.value) return props.groups
   return props.groups
     .map((group) => ({
       ...group,
-      threads: group.threads.filter(threadMatchesSearch),
+      threads: group.threads.filter((thread) => !isProjectlessChatPath(thread.cwd) && threadMatchesSearch(thread)),
     }))
     .filter((group) => group.threads.length > 0)
 })
@@ -948,12 +948,12 @@ const filteredGroups = computed<UiProjectGroup[]>(() => {
 const isChronologicalView = computed(() => threadViewMode.value === 'chronological')
 
 const globalThreads = computed<UiThread[]>(() => {
-  const sourceGroups = filteredGroups.value
   const rows: UiThread[] = []
 
-  for (const group of sourceGroups) {
+  for (const group of props.groups) {
     for (const thread of group.threads) {
       if (pinnedThreadIdSet.value.has(thread.id)) continue
+      if (!threadMatchesSearch(thread)) continue
       rows.push(thread)
     }
   }
