@@ -1435,7 +1435,7 @@ This file tracks manual regression and feature verification steps.
 1. Run `scripts/import-working-accounts-from-db.sh`.
 2. Verify script reports `imported` rows and ends with `done imported=<n>` where `n <= 10`.
 3. Open `~/.codex/accounts.json` and verify new account entries were appended/updated.
-4. Verify snapshot files exist under `~/.codex/accounts/<sha256(account_id)>/auth.json`.
+4. Verify snapshot files exist under `~/.codex/accounts/<sha256(account_id + NUL + user_id)>/auth.json` when the token has a user id, or `~/.codex/accounts/<sha256(account_id)>/auth.json` when it does not.
 5. Open app settings and check the `Accounts` section is collapsed on first load.
 6. Click the chevron toggle in Accounts header to expand.
 7. Confirm account list/error/empty state renders correctly after expanding.
