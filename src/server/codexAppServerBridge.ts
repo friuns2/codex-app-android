@@ -35,6 +35,7 @@ import {
   resolveCodexCommand,
   resolveRipgrepCommand,
 } from '../commandResolution.js'
+import type { CollaborationModeKind, ReasoningEffort } from '../types/codex.js'
 
 type JsonRpcCall = {
   jsonrpc: '2.0'
@@ -2906,6 +2907,16 @@ type StoredQueuedMessage = {
 
 type ThreadQueueState = Record<string, StoredQueuedMessage[]>
 
+type BackendQueuedTurn = {
+  threadId: string
+  message: StoredQueuedMessage
+}
+
+type ResolvedCollaborationModeSettings = {
+  model: string
+  reasoningEffort: ReasoningEffort | null
+}
+
 function normalizeStoredQueuedMessage(value: unknown): StoredQueuedMessage | null {
   const record = asRecord(value)
   if (!record) return null
@@ -2992,6 +3003,69 @@ async function writeThreadQueueState(nextState: ThreadQueueState): Promise<void>
     delete payload[THREAD_QUEUE_STATE_KEY]
   }
   await writeFile(statePath, JSON.stringify(payload), 'utf8')
+}
+
+function normalizeReasoningEffort(value: unknown): ReasoningEffort | '' {
+  const allowed: ReasoningEffort[] = ['none', 'minimal', 'low', 'medium', 'high', 'xhigh']
+  return typeof value === 'string' && allowed.includes(value as ReasoningEffort)
+    ? (value as ReasoningEffort)
+    : ''
+}
+
+function normalizeCollaborationModeReasoningEffort(value: ReasoningEffort | '' | null | undefined): ReasoningEffort | null {
+  return value && value.length > 0 ? value : null
+}
+
+function extractLocalImagePathFromUrl(value: string): string | null {
+  if (!value) return null
+  try {
+    const parsed = new URL(value, 'http://localhost')
+    if (parsed.pathname !== '/codex-local-image') return null
+    const path = parsed.searchParams.get('path')?.trim() ?? ''
+    return path.length > 0 ? path : null
+  } catch {
+    return null
+  }
+}
+
+function buildTextWithAttachments(prompt: string, files: StoredQueuedMessage['fileAttachments']): string {
+  if (files.length === 0) return prompt
+  let prefix = '# Files mentioned by the user:\n'
+  for (const f of files) {
+    prefix += `\n## ${f.label}: ${f.path}\n`
+  }
+  return `${prefix}\n## My request for Codex:\n\n${prompt}\n`
+}
+
+function fileNameFromPath(pathValue: string): string {
+  const normalized = pathValue.replace(/\\/g, '/')
+  const segments = normalized.split('/').filter(Boolean)
+  return segments.at(-1) ?? normalized
+}
+
+function extractThreadIdFromNotificationParams(params: unknown): string {
+  const record = asRecord(params)
+  if (!record) return ''
+  const threadId =
+    (typeof record.threadId === 'string' ? record.threadId : '') ||
+    (typeof record.thread_id === 'string' ? record.thread_id : '') ||
+    (typeof record.conversationId === 'string' ? record.conversationId : '') ||
+    (typeof record.conversation_id === 'string' ? record.conversation_id : '')
+  if (threadId) return threadId
+  const thread = asRecord(record.thread)
+  if (thread && typeof thread.id === 'string') return thread.id
+  const turn = asRecord(record.turn)
+  if (turn) {
+    const turnThreadId =
+      (typeof turn.threadId === 'string' ? turn.threadId : '') ||
+      (typeof turn.thread_id === 'string' ? turn.thread_id : '')
+    if (turnThreadId) return turnThreadId
+  }
+  return ''
+}
+
+function isTurnCompletedNotification(notification: { method: string; params: unknown }): boolean {
+  return notification.method === 'turn/completed'
 }
 
 async function readFirstLaunchPluginsCardDismissed(): Promise<boolean> {
@@ -3925,6 +3999,171 @@ class AppServerProcess {
   }
 }
 
+class BackendQueueProcessor {
+  private readonly processingThreadIds = new Set<string>()
+  private readonly unsubscribe: () => void
+
+  constructor(private readonly appServer: AppServerProcess) {
+    this.unsubscribe = appServer.onNotification((notification) => {
+      if (!isTurnCompletedNotification(notification)) return
+      const threadId = extractThreadIdFromNotificationParams(notification.params)
+      if (!threadId) return
+      void this.processThreadQueue(threadId)
+    })
+  }
+
+  dispose(): void {
+    this.unsubscribe()
+    this.processingThreadIds.clear()
+  }
+
+  private async processThreadQueue(threadId: string): Promise<void> {
+    if (this.processingThreadIds.has(threadId)) return
+    this.processingThreadIds.add(threadId)
+    try {
+      const next = await this.popNextQueuedTurn(threadId)
+      if (!next) return
+      try {
+        await this.startQueuedTurn(next)
+      } catch {
+        await this.restoreQueuedTurn(next)
+      }
+    } catch {
+      // Queue processing is best-effort. Keep the bridge alive if app-server is unavailable.
+    } finally {
+      this.processingThreadIds.delete(threadId)
+    }
+  }
+
+  private async popNextQueuedTurn(threadId: string): Promise<BackendQueuedTurn | null> {
+    const state = await readThreadQueueState()
+    const queue = state[threadId]
+    if (!queue || queue.length === 0) return null
+
+    const [message, ...rest] = queue
+    const nextState = { ...state }
+    if (rest.length > 0) {
+      nextState[threadId] = rest
+    } else {
+      delete nextState[threadId]
+    }
+    await writeThreadQueueState(nextState)
+    return { threadId, message }
+  }
+
+  private async restoreQueuedTurn(turn: BackendQueuedTurn): Promise<void> {
+    const state = await readThreadQueueState()
+    const queue = state[turn.threadId] ?? []
+    await writeThreadQueueState({
+      ...state,
+      [turn.threadId]: [turn.message, ...queue],
+    })
+  }
+
+  private async resolveCollaborationModeSettings(mode: CollaborationModeKind): Promise<ResolvedCollaborationModeSettings> {
+    let currentConfig: Record<string, unknown> | null = null
+    try {
+      const configPayload = asRecord(await this.appServer.rpc('config/read', {}))
+      currentConfig = asRecord(configPayload?.config)
+    } catch {
+      currentConfig = null
+    }
+
+    const configuredModel = readNonEmptyString(currentConfig?.model)
+    if (configuredModel) {
+      return {
+        model: configuredModel,
+        reasoningEffort: normalizeCollaborationModeReasoningEffort(normalizeReasoningEffort(currentConfig?.model_reasoning_effort)),
+      }
+    }
+
+    try {
+      const modelsPayload = asRecord(await this.appServer.rpc('model/list', {}))
+      const models = Array.isArray(modelsPayload?.data) ? modelsPayload.data : []
+      for (const row of models) {
+        const record = asRecord(row)
+        const candidate = readNonEmptyString(record?.id) || readNonEmptyString(record?.model)
+        if (candidate) {
+          return {
+            model: candidate,
+            reasoningEffort: normalizeCollaborationModeReasoningEffort(normalizeReasoningEffort(currentConfig?.model_reasoning_effort)),
+          }
+        }
+      }
+    } catch {
+      // Fall through to no collaboration-mode payload.
+    }
+
+    throw new Error(`${mode === 'plan' ? 'Plan' : 'Default'} mode requires an available model.`)
+  }
+
+  private async buildQueuedTurnParams(turn: BackendQueuedTurn): Promise<Record<string, unknown>> {
+    const localImageAttachments: StoredQueuedMessage['fileAttachments'] = []
+    for (const imageUrl of turn.message.imageUrls) {
+      const localImagePath = extractLocalImagePathFromUrl(imageUrl.trim())
+      if (!localImagePath) continue
+      localImageAttachments.push({
+        label: fileNameFromPath(localImagePath),
+        path: localImagePath,
+        fsPath: localImagePath,
+      })
+    }
+
+    const allFileAttachments = [...turn.message.fileAttachments, ...localImageAttachments]
+    const dedupedFileAttachments = allFileAttachments.filter((entry, index) =>
+      allFileAttachments.findIndex((candidate) => candidate.fsPath === entry.fsPath) === index)
+
+    const input: Array<Record<string, unknown>> = [{
+      type: 'text',
+      text: buildTextWithAttachments(turn.message.text, dedupedFileAttachments),
+    }]
+
+    for (const imageUrl of turn.message.imageUrls) {
+      const normalizedUrl = imageUrl.trim()
+      if (!normalizedUrl) continue
+      const localImagePath = extractLocalImagePathFromUrl(normalizedUrl)
+      if (localImagePath) {
+        input.push({ type: 'localImage', path: localImagePath })
+      } else {
+        input.push({ type: 'image', url: normalizedUrl, image_url: normalizedUrl })
+      }
+    }
+
+    for (const skill of turn.message.skills) {
+      input.push({ type: 'skill', name: skill.name, path: skill.path })
+    }
+
+    const params: Record<string, unknown> = {
+      threadId: turn.threadId,
+      input,
+    }
+    if (dedupedFileAttachments.length > 0) {
+      params.attachments = dedupedFileAttachments.map((f) => ({ label: f.label, path: f.path, fsPath: f.fsPath }))
+    }
+
+    try {
+      const settings = await this.resolveCollaborationModeSettings(turn.message.collaborationMode)
+      params.collaborationMode = {
+        mode: turn.message.collaborationMode,
+        settings: {
+          model: settings.model,
+          reasoning_effort: settings.reasoningEffort,
+          developer_instructions: null,
+        },
+      }
+    } catch {
+      // Older app-server versions still accept a plain turn/start without collaborationMode.
+    }
+
+    return params
+  }
+
+  private async startQueuedTurn(turn: BackendQueuedTurn): Promise<void> {
+    await this.appServer.rpc('thread/resume', { threadId: turn.threadId })
+    await this.appServer.rpc('turn/start', await this.buildQueuedTurnParams(turn))
+  }
+}
+
 class MethodCatalog {
   private methodCache: string[] | null = null
   private notificationCache: string[] | null = null
@@ -4049,6 +4288,7 @@ type SharedBridgeState = {
   terminalManager: ThreadTerminalManager
   methodCatalog: MethodCatalog
   telegramBridge: TelegramThreadBridge
+  backendQueueProcessor: BackendQueueProcessor
 }
 
 const SHARED_BRIDGE_KEY = '__codexRemoteSharedBridge__'
@@ -4065,16 +4305,19 @@ function getSharedBridgeState(): SharedBridgeState {
       return existing
     }
     existing.appServer.dispose()
+    existing.backendQueueProcessor?.dispose()
     existing.terminalManager?.dispose()
   }
 
   const appServer = new AppServerProcess()
   const terminalManager = new ThreadTerminalManager()
+  const backendQueueProcessor = new BackendQueueProcessor(appServer)
   const created: SharedBridgeState = {
     version: SHARED_BRIDGE_VERSION,
     appServer,
     terminalManager,
     methodCatalog: new MethodCatalog(),
+    backendQueueProcessor,
     telegramBridge: new TelegramThreadBridge(appServer, {
       onChatSeen: (chatId) => {
         void rememberTelegramChatId(chatId).catch(() => {})
@@ -4162,7 +4405,7 @@ async function buildThreadSearchIndex(appServer: AppServerProcess): Promise<Thre
 }
 
 export function createCodexBridgeMiddleware(): CodexBridgeMiddleware {
-  const { appServer, terminalManager, methodCatalog, telegramBridge } = getSharedBridgeState()
+  const { appServer, terminalManager, methodCatalog, telegramBridge, backendQueueProcessor } = getSharedBridgeState()
   let threadSearchIndex: ThreadSearchIndex | null = null
   let threadSearchIndexPromise: Promise<ThreadSearchIndex> | null = null
 
@@ -5714,6 +5957,7 @@ export function createCodexBridgeMiddleware(): CodexBridgeMiddleware {
     threadSearchIndex = null
     telegramBridge.stop()
     terminalManager.dispose()
+    backendQueueProcessor.dispose()
     appServer.dispose()
   }
   middleware.subscribeNotifications = (

@@ -3826,3 +3826,34 @@ Queued messages are saved through the backend, survive page refresh, and can be 
 
 #### Rollback/Cleanup
 - Delete any queued test messages that should not be sent
+
+---
+
+### Backend-drained queued messages while browser is closed
+
+#### Feature/Change Name
+Queued messages are submitted by the backend after the active turn completes, even when the browser tab is closed.
+
+#### Prerequisites/Setup
+1. Dev server running (`pnpm run dev`)
+2. Open any existing thread and start a long-running turn
+3. Queue one or more messages while the turn is running
+4. Light theme and dark theme both available from the appearance switcher
+
+#### Steps
+1. In light theme, confirm queued messages appear above the composer
+2. Close the browser tab or disconnect the frontend notification stream
+3. Wait for the active turn to complete
+4. Reopen the same thread
+5. Confirm the first queued message was submitted as the next turn
+6. Confirm any remaining queued messages are still listed in order
+7. Repeat the queue visibility check in dark theme
+
+#### Expected Results
+- The backend removes only the submitted queued message from persisted queue state
+- The queued message starts as a new turn without requiring an open browser tab
+- Remaining queued messages stay persisted and preserve their order
+- Queue rows and composer spacing remain readable in both light theme and dark theme
+
+#### Rollback/Cleanup
+- Delete any remaining queued test messages or let the queue drain

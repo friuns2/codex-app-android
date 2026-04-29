@@ -4506,44 +4506,16 @@ export function useDesktopState() {
 
   async function processQueuedMessages(threadId: string): Promise<void> {
     if (queueProcessingByThreadId.value[threadId] === true) return
-    const queue = queuedMessagesByThreadId.value[threadId]
-    if (!queue || queue.length === 0) return
     queueProcessingByThreadId.value = {
       ...queueProcessingByThreadId.value,
       [threadId]: true,
     }
-    const [next, ...rest] = queue
-    queuedMessagesByThreadId.value = rest.length > 0
-      ? { ...queuedMessagesByThreadId.value, [threadId]: rest }
-      : omitKey(queuedMessagesByThreadId.value, threadId)
-    persistQueueState()
-    isSendingMessage.value = true
-    error.value = ''
-    shouldAutoScrollOnNextAgentEvent = true
-    setTurnSummaryForThread(threadId, null)
-    setTurnActivityForThread(
-      threadId,
-      {
-        label: 'Thinking',
-        details: buildPendingTurnDetails(
-          readModelIdForThread(threadId),
-          selectedReasoningEffort.value,
-          next.collaborationMode,
-        ),
-      },
-    )
-
-    setTurnErrorForThread(threadId, null)
-    setThreadInProgress(threadId, true)
     try {
-      setSelectedCollaborationMode(next.collaborationMode)
-      await startTurnForThread(threadId, next.text, next.imageUrls, next.skills, next.fileAttachments)
+      queuedMessagesByThreadId.value = await getThreadQueueState()
     } catch {
-      setThreadInProgress(threadId, false)
-      setTurnActivityForThread(threadId, null)
+      // Backend queue state is optional during transient bridge failures.
     } finally {
       queueProcessingByThreadId.value = omitKey(queueProcessingByThreadId.value, threadId)
-      isSendingMessage.value = false
     }
   }
 
