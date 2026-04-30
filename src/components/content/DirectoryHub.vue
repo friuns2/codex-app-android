@@ -487,10 +487,10 @@
               v-else-if="selectedPlugin"
               class="directory-action primary"
               type="button"
-              :disabled="isPluginActionInFlight || selectedPlugin.installPolicy === 'NOT_AVAILABLE'"
+              :disabled="isPluginActionInFlight || selectedPlugin.installPolicy === 'NOT_AVAILABLE' || selectedPluginRequiresMissingApp"
               @click="installSelectedPlugin"
             >
-              {{ isPluginActionInFlight ? 'Installing...' : 'Install' }}
+              {{ selectedPluginRequiresMissingApp ? 'Gpt plus required' : isPluginActionInFlight ? 'Installing...' : 'Install' }}
             </button>
             <button
               v-if="selectedPlugin && selectedPlugin.installed"
@@ -808,6 +808,22 @@ const selectedPluginScreenshots = computed(() => {
   if (!summary) return []
   return [...summary.screenshotUrls, ...summary.screenshots.map(localAssetSrc)].filter(Boolean)
 })
+const selectedPluginRequiresMissingApp = computed(() => {
+  const detailApps = selectedPluginDetail.value?.apps ?? []
+  if (detailApps.length === 0) return false
+  const availableApps = new Set<string>()
+  for (const app of apps.value) {
+    availableApps.add(app.id.trim().toLowerCase())
+    availableApps.add(normalizePluginAppName(app.name))
+  }
+  return detailApps.some((app) => {
+    const id = app.id.trim().toLowerCase()
+    const name = normalizePluginAppName(app.name)
+    const hasMatchingId = id.length > 0 && availableApps.has(id)
+    const hasMatchingName = name.length > 0 && availableApps.has(name)
+    return !hasMatchingId && !hasMatchingName
+  })
+})
 const visiblePlugins = computed(() => limitPopularRows(sortPlugins(filterPlugins(plugins.value, pluginSearchQuery.value), pluginSortMode.value), pluginSortMode.value, pluginSearchQuery.value))
 const visibleApps = computed(() => limitPopularApps(sortApps(filterApps(apps.value, appSearchQuery.value), appSortMode.value), appSortMode.value, appSearchQuery.value))
 const visibleComposioConnectors = computed(() => sortComposioConnectors(filterComposioConnectors(composioConnectors.value, composioSearchQuery.value), composioSortMode.value))
@@ -844,6 +860,10 @@ function normalizeAppNameForRanking(name: string): string {
     .replace(/\s+\((synced|legacy)\)\s*$/iu, '')
     .replace(/\s+\(.*?\)\s*$/u, '')
     .trim()
+}
+
+function normalizePluginAppName(name: string): string {
+  return normalizeAppNameForRanking(name).toLowerCase()
 }
 
 function formatDistributionChannel(value: string): string {
@@ -1271,6 +1291,7 @@ async function openPluginDetail(plugin: DirectoryPluginSummary): Promise<void> {
   try {
     selectedPluginDetail.value = await readDirectoryPlugin(plugin)
     selectedPlugin.value = selectedPluginDetail.value.summary
+    if (supportsApps.value && apps.value.length === 0) await loadApps()
     await refreshMcpStatusesForPluginDetail()
   } catch (error) {
     pluginDetailError.value = error instanceof Error ? error.message : 'Failed to load plugin'
@@ -1396,6 +1417,7 @@ async function installComposioCli(): Promise<void> {
 
 async function installSelectedPlugin(): Promise<void> {
   if (!selectedPlugin.value) return
+  if (selectedPluginRequiresMissingApp.value) return
   isPluginActionInFlight.value = true
   try {
     const result = await installDirectoryPlugin(selectedPlugin.value)

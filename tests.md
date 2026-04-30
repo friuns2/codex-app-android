@@ -3260,27 +3260,28 @@ The `#/skills` route shows a full Skills & Apps directory with Plugins, Apps, Co
 12. Open an installed/enabled plugin detail, click `Try it!`, and verify a new thread opens with an auto-submitted plugin test prompt
 13. Open an installed/enabled skill detail, click `Try it!`, and verify a new thread opens with an auto-submitted skill test prompt and the skill attached
 14. Install a plugin whose install response includes `appsNeedingAuth`, and verify the first required app login/manage URL opens automatically
-15. Switch Apps sorting to `A-Z` and verify apps reorder alphabetically; switch to `Date` and verify app-server catalog order is restored; switch back to `Popular` and verify casual-user relevant apps are prioritized and capped to 100 when no search is active
-16. Search Apps and verify matching results are not capped to the Popular top 100 list
-17. Switch to `Composio` and verify the workspace summary card shows the current Composio CLI login state, or a clear not-installed / not-authenticated message appears
-18. If Composio CLI is not installed, click `Install` and verify the app installs the CLI to `~/.composio/composio` using the official Composio installer
-19. If Composio CLI is installed but not authenticated, click `Login` and verify the app opens a new tab, starts `composio login --no-browser -y`, captures the returned auth URL, and navigates the new tab to that URL
-20. Verify Composio connector cards show real connector details such as tool counts, trigger counts, auth mode, and connection state instead of only aggregate totals
-21. In Composio search, type `instagram` and verify the Instagram connector appears in the results
-22. Open a disconnected Composio connector and click `Connect` or `Reconnect`; verify the returned `connect.composio.dev` authorization URL opens
-23. Open a connected Composio connector and verify connection rows show account identifiers and statuses such as `Active` or `Expired`
-24. Click `Try it!` on a connected or no-auth Composio connector and verify a new thread opens with a Composio-specific prompt and the `composio-cli` skill attached
-25. On Composio, verify that if more than one page exists, `Load more` appears and appends additional connectors while keeping prior results visible
-26. In Composio search, verify the page state resets (the list returns to the first result page and stale pagination is cleared)
-27. Switch to `Skills` and verify the view shows an `MCPs(count)` collapsible section immediately before the `Installed skills (count)` section
-28. Expand `MCPs(count)` and verify server cards show auth status and tool/resource counts, or the unavailable/empty state appears without breaking the page
-29. Click header `Refresh` while on `Skills` and verify MCP state reloads (it should perform MCP reload behavior on this tab instead of using a separate `Reload MCPs` button)
-30. Verify no separate `Reload MCPs` button is shown in the header or inside the MCP section body
-31. Verify the `MCPs(count)` section does not show its own search or sort controls
-32. Verify MCP cards use the same visual card/grid layout pattern as Installed skills cards (avatar circle, title row, badge, secondary text)
-33. Verify the `Installed skills (count)` section below MCPs still supports the existing Skills Hub behavior
-34. Verify both light and dark themes render Composio cards and status/detail actions with readable contrast
-35. In dark mode, verify MCP cards use the same dark card surface styling as Installed skills cards (not a light/white card)
+15. Open a plugin whose detail lists a required app that is absent from the Apps catalog for the current account, such as Gmail on an account without Gmail app access, and verify the footer shows a disabled `Gpt plus required` action instead of `Install`
+16. Switch Apps sorting to `A-Z` and verify apps reorder alphabetically; switch to `Date` and verify app-server catalog order is restored; switch back to `Popular` and verify casual-user relevant apps are prioritized and capped to 100 when no search is active
+17. Search Apps and verify matching results are not capped to the Popular top 100 list
+18. Switch to `Composio` and verify the workspace summary card shows the current Composio CLI login state, or a clear not-installed / not-authenticated message appears
+19. If Composio CLI is not installed, click `Install` and verify the app installs the CLI to `~/.composio/composio` using the official Composio installer
+20. If Composio CLI is installed but not authenticated, click `Login` and verify the app opens a new tab, starts `composio login --no-browser -y`, captures the returned auth URL, and navigates the new tab to that URL
+21. Verify Composio connector cards show real connector details such as tool counts, trigger counts, auth mode, and connection state instead of only aggregate totals
+22. In Composio search, type `instagram` and verify the Instagram connector appears in the results
+23. Open a disconnected Composio connector and click `Connect` or `Reconnect`; verify the returned `connect.composio.dev` authorization URL opens
+24. Open a connected Composio connector and verify connection rows show account identifiers and statuses such as `Active` or `Expired`
+25. Click `Try it!` on a connected or no-auth Composio connector and verify a new thread opens with a Composio-specific prompt and the `composio-cli` skill attached
+26. On Composio, verify that if more than one page exists, `Load more` appears and appends additional connectors while keeping prior results visible
+27. In Composio search, verify the page state resets (the list returns to the first result page and stale pagination is cleared)
+28. Switch to `Skills` and verify the view shows an `MCPs(count)` collapsible section immediately before the `Installed skills (count)` section
+29. Expand `MCPs(count)` and verify server cards show auth status and tool/resource counts, or the unavailable/empty state appears without breaking the page
+30. Click header `Refresh` while on `Skills` and verify MCP state reloads (it should perform MCP reload behavior on this tab instead of using a separate `Reload MCPs` button)
+31. Verify no separate `Reload MCPs` button is shown in the header or inside the MCP section body
+32. Verify the `MCPs(count)` section does not show its own search or sort controls
+33. Verify MCP cards use the same visual card/grid layout pattern as Installed skills cards (avatar circle, title row, badge, secondary text)
+34. Verify the `Installed skills (count)` section below MCPs still supports the existing Skills Hub behavior
+35. Verify both light and dark themes render Composio cards and status/detail actions with readable contrast
+36. In dark mode, verify MCP cards use the same dark card surface styling as Installed skills cards (not a light/white card)
 
 #### Expected Results
 - The directory tabs render without a full-page error
@@ -3296,6 +3297,7 @@ The `#/skills` route shows a full Skills & Apps directory with Plugins, Apps, Co
 - Connected or no-auth Composio connectors expose `Try it!`, creating a new chat with the `composio-cli` skill attached
 - Composio pagination supports page-by-page loading with a clear `Load more` path and cursor-based page continuation
 - Plugin install opens the first required app login/manage page before falling back to bundled MCP OAuth login
+- Plugin install is blocked with `Gpt plus required` when the plugin requires an app that is absent from the Apps catalog for the current account
 - Connected and enabled apps, plus installed/enabled plugins/skills, expose `Try it!`, creating a new chat with an auto-submitted test prompt
 - Repeated `Try it!` clicks during startup are ignored until the first request resolves, so duplicate threads are not created
 - Plugins, Apps, and the Skills-tab MCP section default to local popularity-style ordering because app-server does not expose numeric popularity fields
