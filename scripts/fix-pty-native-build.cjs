@@ -3,7 +3,6 @@ const { dirname, join } = require('node:path')
 const { spawnSync } = require('node:child_process')
 
 const PTY_PACKAGES = [
-  'node-pty-prebuilt-multiarch',
   'node-pty',
 ]
 
